@@ -52,7 +52,7 @@ Authorization rules:
 - User chỉ được xem/sửa dữ liệu của chính mình.
 - Staff không tự động có toàn quyền admin.
 - Admin có quyền quản lý dashboard, sản phẩm, user, role, đơn hàng.
-- Role lấy từ `user_roles` -> `roles`, không đọc trực tiếp từ cột `users.role`.
+- Role lấy trực tiếp từ bảng `users` qua cột `role_id` liên kết với `roles`, không dùng bảng trung gian hay cột string `users.role`.
 
 ## 4. Response Envelope
 
@@ -245,7 +245,7 @@ Validation/business rules:
 
 - `email` và `phone` phải unique theo user chưa soft delete.
 - Password không trả về response.
-- Backend gán role mặc định `USER` qua `user_roles`.
+- Backend gán role mặc định `USER` qua cột `role_id` của `users`.
 
 ### POST `/api/auth/logout`
 
@@ -851,10 +851,10 @@ Rules:
 
 | API | Tables chính |
 |---|---|
-| `POST /api/auth/login` | `users`, `user_roles`, `roles` |
-| `POST /api/auth/register` | `users`, `user_roles`, `roles` |
+| `POST /api/auth/login` | `users`, `roles` |
+| `POST /api/auth/register` | `users`, `roles` |
 | `POST /api/auth/logout` | Token/session cleanup nếu backend lưu refresh token hoặc denylist |
-| `GET /api/users/me` | `users`, `user_roles`, `roles` |
+| `GET /api/users/me` | `users`, `roles` |
 | `PUT /api/users/me` | `users` |
 | `GET /api/products` | `products`, `categories`, `price_tiers` |
 | `GET /api/products/{id}` | `products`, `categories`, `price_tiers`, `product_images` |
@@ -868,9 +868,9 @@ Rules:
 | `GET /api/notifications` | `notifications` |
 | `PUT /api/notifications/{id}/read` | `notifications` |
 | `GET /api/warehouses` | `warehouses` |
-| `GET /api/admin/dashboard` | `users`, `user_roles`, `roles`, `products`, `orders`, `complaints`, `chat_messages`, `chat_attachments` |
+| `GET /api/admin/dashboard` | `users`, `roles`, `products`, `orders`, `complaints`, `chat_messages`, `chat_attachments` |
 | `CRUD /api/admin/products` | `products`, `categories`, `price_tiers`, `product_images` |
-| `CRUD /api/admin/users` | `users`, `user_roles`, `roles` |
+| `CRUD /api/admin/users` | `users`, `roles` |
 
 ## 18. Security Checklist
 

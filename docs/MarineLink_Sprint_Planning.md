@@ -23,8 +23,8 @@ Hoàn thành MVP MarineLink B2B cho đại lý hải sản, đủ để người
 
 | Priority | Epic | Scope chính | API/Data liên quan | Status |
 |---|---|---|---|---|
-| P0 | Project foundation | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, BLoC/Cubit structure | users, roles, user_roles, products, categories, carts, orders | Chưa làm |
-| P0 | Authentication | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles`, `user_roles` | Chưa làm |
+| P0 | Project foundation | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, BLoC/Cubit structure | users, roles, products, categories, carts, orders | Chưa làm |
+| P0 | Authentication | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles` | Chưa làm |
 | P0 | Product browsing | Home, product list, product detail, search/filter, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Chưa làm |
 | P0 | Shopping flow | Cart, checkout, tạo order, clear cart sau khi đặt hàng | `/api/cart/sync`, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
 | P0 | Order tracking | Danh sách đơn, chi tiết đơn, trạng thái đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`, `notifications` | Chưa làm |
@@ -52,18 +52,18 @@ Hoàn thành MVP MarineLink B2B cho đại lý hải sản, đủ để người
 
 ### Sprint Backlog
 
-| Priority | Item | Estimate | Owner | Dependencies | Status |
-|---|---|---:|---|---|---|
-| P0 | Khởi tạo Flutter project structure, routing, theme, shared widgets | 3 pts | Toàn | None | Chưa làm |
-| P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Toàn | Docx database/API | Chưa làm |
-| P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Toàn | Project foundation | Chưa làm |
-| P0 | Login screen: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | Toàn | API client | Chưa làm |
-| P0 | Register screen: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Tâm | Auth models | Chưa làm |
-| P0 | Home screen: banner, categories, featured products, quick search entry | 3 pts | Hoàng | Product mock data | Chưa làm |
-| P1 | BLoC/Cubit wiring cho auth/product/loading/error | 2 pts | Tâm | Foundation | Chưa làm |
-| P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Hoàng | Product repository | Chưa làm |
-| P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart placeholder | 3 pts | Tâm | Product repository | Chưa làm |
-| P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Hoàng | Product models | Chưa làm |
+| Priority | Item | Estimate | Dependencies | Status |
+|---|---|---:|---|---|
+| P0 | Khởi tạo Flutter project structure, routing, theme, shared widgets | 3 pts | None | Chưa làm |
+| P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Docx database/API | Chưa làm |
+| P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Project foundation | Chưa làm |
+| P0 | Login screen: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | API client | Chưa làm |
+| P0 | Register screen: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Chưa làm |
+| P0 | Home screen: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Chưa làm |
+| P1 | BLoC/Cubit wiring cho auth/product/loading/error | 2 pts | Foundation | Chưa làm |
+| P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Product repository | Chưa làm |
+| P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart placeholder | 3 pts | Product repository | Chưa làm |
+| P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Chưa làm |
 
 **Planned Capacity:** 24 pts
 **Sprint Load:** 19 pts committed P0 + 11 pts stretch/backlog buffer. Nên commit P0 trước, chỉ kéo P1/P2 khi P0 ổn.
@@ -81,16 +81,16 @@ Hoàn thành MVP MarineLink B2B cho đại lý hải sản, đủ để người
 
 **Sprint Goal:** Hoàn thành luồng mua hàng chính từ thêm vào giỏ đến tạo đơn và theo dõi trạng thái đơn.
 
-| Priority | Item | Estimate | Owner | Dependencies | Status |
-|---|---|---:|---|---|---|
-| P0 | Cart state: thêm/sửa/xóa item, tính tổng tiền, xử lý cart rỗng | 4 pts | Tâm | Product detail | Chưa làm |
-| P0 | Cart screen: danh sách sản phẩm, tăng/giảm số lượng, xóa item | 3 pts | Tâm | Cart state | Chưa làm |
-| P0 | Checkout screen: thông tin nhận hàng, phương thức thanh toán, ghi chú | 4 pts | Hoàng | Cart state | Chưa làm |
-| P0 | Create order flow: validate, tạo order, clear cart, success screen | 4 pts | Hoàng | Checkout | Chưa làm |
-| P0 | Orders list/detail cho Đại lý: trạng thái chờ duyệt/xác nhận/đang giao/hoàn tất/hủy | 4 pts | Toàn | Order model/repository | Chưa làm |
-| P1 | Notifications list: đã đọc/chưa đọc, mở màn liên quan | 3 pts | Toàn | Order events | Chưa làm |
-| P1 | Staff/Admin cập nhật trạng thái đơn ở mức tối thiểu | 3 pts | Toàn | Role routing | Chưa làm |
-| P2 | Sync cart lên server khi có API thật | 3 pts | Tâm | `/api/cart/sync` | Chưa làm |
+| Priority | Item | Estimate | Dependencies | Status |
+|---|---|---:|---|---|
+| P0 | Cart state: thêm/sửa/xóa item, tính tổng tiền, xử lý cart rỗng | 4 pts | Product detail | Chưa làm |
+| P0 | Cart screen: danh sách sản phẩm, tăng/giảm số lượng, xóa item | 3 pts | Cart state | Chưa làm |
+| P0 | Checkout screen: thông tin nhận hàng, phương thức thanh toán, ghi chú | 4 pts | Cart state | Chưa làm |
+| P0 | Create order flow: validate, tạo order, clear cart, success screen | 4 pts | Checkout | Chưa làm |
+| P0 | Orders list/detail cho Đại lý: trạng thái chờ duyệt/xác nhận/đang giao/hoàn tất/hủy | 4 pts | Order model/repository | Chưa làm |
+| P1 | Notifications list: đã đọc/chưa đọc, mở màn liên quan | 3 pts | Order events | Chưa làm |
+| P1 | Staff/Admin cập nhật trạng thái đơn ở mức tối thiểu | 3 pts | Role routing | Chưa làm |
+| P2 | Sync cart lên server khi có API thật | 3 pts | `/api/cart/sync` | Chưa làm |
 
 **Recommended Load:** 19-20 pts P0, P1 nếu còn thời gian.
 
@@ -98,16 +98,16 @@ Hoàn thành MVP MarineLink B2B cho đại lý hải sản, đủ để người
 
 **Sprint Goal:** Bổ sung các chức năng hỗ trợ sau bán hàng: chat, hồ sơ cá nhân, kho hàng và điều hướng thông báo.
 
-| Priority | Item | Estimate | Owner | Dependencies | Status |
-|---|---|---:|---|---|---|
-| P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar placeholder | 4 pts | Tâm | Auth state | Chưa làm |
-| P0 | Logout/change password placeholder flow | 2 pts | Tâm | Profile | Chưa làm |
-| P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff/AI, timestamp | 5 pts | Hoàng | Chat model/repository | Chưa làm |
-| P0 | Chặn tin nhắn rỗng, loading/error state cho chat | 2 pts | Hoàng | Chat screen | Chưa làm |
-| P1 | AI/sample reply flow cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Hoàng | Product/order data | Chưa làm |
-| P1 | Warehouse map: marker, thông tin kho, mở Google Maps | 4 pts | Toàn | Warehouse data | Chưa làm |
-| P1 | Xử lý quyền vị trí nếu dùng current location | 3 pts | Toàn | Map plugin | Chưa làm |
-| P2 | Deep link từ notification sang order/product/chat | 3 pts | Toàn | Notifications | Chưa làm |
+| Priority | Item | Estimate | Dependencies | Status |
+|---|---|---:|---|---|
+| P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar placeholder | 4 pts | Auth state | Chưa làm |
+| P0 | Logout/change password placeholder flow | 2 pts | Profile | Chưa làm |
+| P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff/AI, timestamp | 5 pts | Chat model/repository | Chưa làm |
+| P0 | Chặn tin nhắn rỗng, loading/error state cho chat | 2 pts | Chat screen | Chưa làm |
+| P1 | AI/sample reply flow cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Product/order data | Chưa làm |
+| P1 | Warehouse map: marker, thông tin kho, mở Google Maps | 4 pts | Warehouse data | Chưa làm |
+| P1 | Xử lý quyền vị trí nếu dùng current location | 3 pts | Map plugin | Chưa làm |
+| P2 | Deep link từ notification sang order/product/chat | 3 pts | Notifications | Chưa làm |
 
 **Recommended Load:** 18-20 pts, tránh kéo cả AI polish và permission nâng cao nếu map/chat chưa ổn.
 
@@ -115,15 +115,15 @@ Hoàn thành MVP MarineLink B2B cho đại lý hải sản, đủ để người
 
 **Sprint Goal:** Hoàn thiện khu vực Admin/Staff đầy đủ theo docx để quản lý dashboard, sản phẩm, người dùng, đơn hàng và hỗ trợ chat.
 
-| Priority | Item | Estimate | Owner | Dependencies | Status |
-|---|---|---:|---|---|---|
-| P0 | Admin/Staff route guard theo role | 3 pts | Toàn | Auth role | Chưa làm |
-| P0 | Admin dashboard overview: orders, revenue sample, products, users | 4 pts | Toàn | Admin data | Chưa làm |
-| P0 | Product management: list/create/update/delete, stock/status | 5 pts | Hoàng | Product repository | Chưa làm |
-| P0 | Order status management cho Staff/Admin | 4 pts | Tâm | Orders | Chưa làm |
-| P0 | User management: danh sách user, duyệt đại lý, phân biệt role | 4 pts | Toàn | Users API/mock | Chưa làm |
-| P0 | Staff chat response view và complaint handoff cơ bản | 4 pts | Hoàng | Messaging | Chưa làm |
-| P1 | Admin dashboard loading/error/empty states | 3 pts | Cả nhóm | Admin screens | Chưa làm |
+| Priority | Item | Estimate | Dependencies | Status |
+|---|---|---:|---|---|
+| P0 | Admin/Staff route guard theo role | 3 pts | Auth role | Chưa làm |
+| P0 | Admin dashboard overview: orders, revenue sample, products, users | 4 pts | Admin data | Chưa làm |
+| P0 | Product management: list/create/update/delete, stock/status | 5 pts | Product repository | Chưa làm |
+| P0 | Order status management cho Staff/Admin | 4 pts | Orders | Chưa làm |
+| P0 | User management: danh sách user, duyệt đại lý, phân biệt role | 4 pts | Users API/mock | Chưa làm |
+| P0 | Staff chat response view và complaint handoff cơ bản | 4 pts | Messaging | Chưa làm |
+| P1 | Admin dashboard loading/error/empty states | 3 pts | Admin screens | Chưa làm |
 
 **Recommended Load:** 24 pts P0. Nếu thiếu thời gian, giảm độ sâu UI polish nhưng không cắt các module Admin chính.
 
@@ -131,15 +131,15 @@ Hoàn thành MVP MarineLink B2B cho đại lý hải sản, đủ để người
 
 **Sprint Goal:** Đổi mock repository sang Spring Boot REST API, kiểm thử luồng demo end-to-end và ổn định app trước khi trình bày.
 
-| Priority | Item | Estimate | Owner | Dependencies | Status |
-|---|---|---:|---|---|---|
-| P0 | API integration pass: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Cả nhóm | Backend availability | Chưa làm |
-| P0 | Auth integration: login/register/JWT storage/role routing với Spring Boot | 4 pts | Toàn | Auth API | Chưa làm |
-| P0 | Product/order integration: products, cart sync, checkout, orders | 5 pts | Hoàng | Product/order API | Chưa làm |
-| P1 | Admin integration: dashboard, products, users, order status | 5 pts | Tâm | Admin API | Chưa làm |
-| P0 | End-to-end demo test: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Cả nhóm | Full flow | Chưa làm |
-| P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Cả nhóm | Full app | Chưa làm |
-| P2 | Replace sample AI response rules with API-backed response later if backend supports it | 3 pts | Hoàng | AI/API availability | Chưa làm |
+| Priority | Item | Estimate | Dependencies | Status |
+|---|---|---:|---|---|
+| P0 | API integration pass: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Backend availability | Chưa làm |
+| P0 | Auth integration: login/register/JWT storage/role routing với Spring Boot | 4 pts | Auth API | Chưa làm |
+| P0 | Product/order integration: products, cart sync, checkout, orders | 5 pts | Product/order API | Chưa làm |
+| P1 | Admin integration: dashboard, products, users, order status | 5 pts | Admin API | Chưa làm |
+| P0 | End-to-end demo test: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Full flow | Chưa làm |
+| P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Full app | Chưa làm |
+| P2 | Replace sample AI response rules với API-backed response later if backend supports it | 3 pts | AI/API availability | Chưa làm |
 
 **Recommended Load:** 20 pts P0. Nếu Spring Boot API chưa sẵn sàng, giữ mock implementation nhưng hoàn thiện demo script và test data. Admin integration và UI polish là P1 hardening nếu P0 đã ổn.
 

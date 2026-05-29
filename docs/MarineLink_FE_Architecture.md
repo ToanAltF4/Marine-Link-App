@@ -23,7 +23,7 @@ Mục tiêu frontend:
 | Data source giai đoạn đầu | Mock repository + local storage |
 | Data source giai đoạn sau | Spring Boot REST API |
 | Auth | JWT Bearer token |
-| Role | Resolve từ backend qua `roles` + `user_roles`; app chỉ dùng role trong JWT/session |
+| Role | Resolve từ backend qua `roles` liên kết trực tiếp với `users`; app chỉ dùng role trong JWT/session |
 | Admin scope | Full Admin Dashboard |
 | AI support demo | Sample responses, chưa gọi model thật |
 

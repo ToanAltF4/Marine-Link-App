@@ -10,7 +10,7 @@ Mục tiêu backend:
 
 - Cung cấp REST API đúng contract cho Flutter.
 - Dùng JWT Bearer token và phân quyền Admin, Staff, User/Đại lý.
-- Quản lý dữ liệu quan hệ theo docx và DB design hiện tại: users, roles, user_roles, categories, products, product_images, price_tiers, carts, cart_items, orders, order_items, order_status_history, chat_rooms, chat_messages, chat_attachments, complaints, notifications, warehouses.
+- Quản lý dữ liệu quan hệ theo docx và DB design hiện tại: users, roles, categories, products, product_images, price_tiers, carts, cart_items, orders, order_items, order_status_history, chat_rooms, chat_messages, chat_attachments, complaints, notifications, warehouses.
 - Hỗ trợ mock-first frontend: API có thể triển khai sau nhưng phải giữ endpoint và DTO ổn định.
 - Cung cấp sample AI responses cho demo phase, chưa cần tích hợp model thật.
 
@@ -75,7 +75,6 @@ src/main/java/com/marinelink/
   users/
     User.java
     Role.java
-    UserRole.java
     UserRepository.java
     UserService.java
     UserController.java
@@ -161,8 +160,8 @@ Frontend chỉ cần parse một response format, giảm xử lý đặc biệt 
 
 | Entity | Mục đích | Quan hệ chính |
 |---|---|---|
-| User | Tài khoản người dùng | 1-n orders, chat_messages, complaints, notifications, user_roles |
-| Role | Vai trò như Admin, Staff, User | n-n users qua user_roles |
+| User | Tài khoản người dùng | n-1 role, 1-n orders, chat_messages, complaints, notifications |
+| Role | Vai trò như Admin, Staff, User | 1-n users |
 | Product | Sản phẩm hải sản | n-1 category, 1-n product_images, 1-n order_items, 1-n price_tiers |
 | Category | Danh mục sản phẩm | 1-n products |
 | PriceTier | Giá sỉ theo số lượng | n-1 product, 1-n cart_items nếu cart đã chọn tier |
@@ -276,14 +275,14 @@ Authorization rules:
 - Staff có thể xem đơn mới, cập nhật trạng thái đơn, phản hồi chat.
 - Admin có toàn quyền dashboard, sản phẩm, người dùng, đơn hàng.
 - Public chỉ được login/register và xem endpoint công khai nếu có yêu cầu demo.
-- Role được resolve từ `user_roles` -> `roles`; không đọc role trực tiếp từ bảng `users`.
+- Role được liên kết trực tiếp với `users` qua cột `role_id`; mỗi user chỉ thuộc về một role tại một thời điểm.
 
 ## 11. Business rules theo module
 
 ### Auth
 
 - Login bằng email hoặc số điện thoại.
-- Register tạo user status `PENDING_APPROVAL` hoặc `ACTIVE`, sau đó gán role mặc định `USER` qua `user_roles`.
+- Register tạo user status `PENDING_APPROVAL` hoặc `ACTIVE`, sau đó gán role mặc định `USER` qua cột `role_id`.
 - Password phải hash bằng BCrypt.
 - JWT phải có expiration.
 - Đăng nhập Google trong specification được xem là out of MVP. MVP chỉ hỗ trợ email/số điện thoại + password; nếu thêm Google OAuth sau này phải bổ sung endpoint, callback, account linking và test phân quyền riêng.
@@ -356,8 +355,8 @@ Index đề xuất:
 
 | Table | Index |
 |---|---|
-| users | email unique, phone unique, status |
-| roles/user_roles | role code unique, user_id, role_id |
+| users | email unique, phone unique, status, role_id |
+| roles | role code unique |
 | products | category_id, name, status, stock_quantity |
 | carts | user_id |
 | cart_items | cart_id, product_id, price_tier_id |
