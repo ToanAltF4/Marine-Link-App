@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 
 // NOTE: google_fonts is not added as dependency since we're using system fonts.
 // If google_fonts is added later, uncomment the import above.
@@ -46,14 +45,16 @@ abstract class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.3),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -63,8 +64,10 @@ abstract class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -74,10 +77,7 @@ abstract class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -92,10 +92,7 @@ abstract class AppTheme {
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      dividerTheme: const DividerThemeData(
-        thickness: 1,
-        space: 1,
-      ),
+      dividerTheme: const DividerThemeData(thickness: 1, space: 1),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

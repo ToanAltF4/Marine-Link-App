@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_initializing_formals
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/auth_repository.dart';
 import 'auth_event.dart';
@@ -11,8 +13,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
 
   AuthBloc({required AuthRepository authRepository})
-      : _authRepository = authRepository,
-        super(const AuthInitial()) {
+    : _authRepository = authRepository,
+      super(const AuthInitial()) {
     on<AuthCheckRequested>(_onCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
@@ -58,7 +60,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
     try {
-      final user = await _authRepository.register(
+      await _authRepository.register(
         fullName: event.fullName,
         email: event.email,
         phone: event.phone,

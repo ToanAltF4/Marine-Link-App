@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'app/app.dart';
 import 'app/di/service_locator.dart';
 

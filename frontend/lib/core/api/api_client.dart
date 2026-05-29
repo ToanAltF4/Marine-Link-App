@@ -14,22 +14,26 @@ class ApiClient {
   final SecureTokenStorage tokenStorage;
 
   ApiClient({required this.tokenStorage}) {
-    _dio = Dio(BaseOptions(
-      baseUrl: ApiEndpoints.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ApiEndpoints.baseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
     _dio.interceptors.add(_AuthInterceptor(tokenStorage));
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (o) => _log(o.toString()),
-    ));
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (o) => _log(o.toString()),
+      ),
+    );
   }
 
   void _log(String message) {
@@ -102,30 +106,30 @@ class ApiClient {
 
     return switch (statusCode) {
       401 => ApiException(
-          message: serverMessage ?? 'Phiên đăng nhập hết hạn.',
-          type: ApiExceptionType.unauthorized,
-          statusCode: statusCode,
-        ),
+        message: serverMessage ?? 'Phiên đăng nhập hết hạn.',
+        type: ApiExceptionType.unauthorized,
+        statusCode: statusCode,
+      ),
       403 => ApiException(
-          message: serverMessage ?? 'Bạn không có quyền thực hiện thao tác này.',
-          type: ApiExceptionType.forbidden,
-          statusCode: statusCode,
-        ),
+        message: serverMessage ?? 'Bạn không có quyền thực hiện thao tác này.',
+        type: ApiExceptionType.forbidden,
+        statusCode: statusCode,
+      ),
       404 => ApiException(
-          message: serverMessage ?? 'Không tìm thấy dữ liệu.',
-          type: ApiExceptionType.notFound,
-          statusCode: statusCode,
-        ),
+        message: serverMessage ?? 'Không tìm thấy dữ liệu.',
+        type: ApiExceptionType.notFound,
+        statusCode: statusCode,
+      ),
       422 => ApiException(
-          message: serverMessage ?? 'Dữ liệu không hợp lệ.',
-          type: ApiExceptionType.validation,
-          statusCode: statusCode,
-        ),
+        message: serverMessage ?? 'Dữ liệu không hợp lệ.',
+        type: ApiExceptionType.validation,
+        statusCode: statusCode,
+      ),
       _ => ApiException(
-          message: serverMessage ?? 'Lỗi hệ thống. Vui lòng thử lại.',
-          type: ApiExceptionType.server,
-          statusCode: statusCode,
-        ),
+        message: serverMessage ?? 'Lỗi hệ thống. Vui lòng thử lại.',
+        type: ApiExceptionType.server,
+        statusCode: statusCode,
+      ),
     };
   }
 

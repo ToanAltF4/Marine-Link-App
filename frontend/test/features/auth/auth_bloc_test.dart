@@ -26,42 +26,36 @@ void main() {
       build: () => AuthBloc(authRepository: AuthMockRepository()),
       act: (bloc) => bloc.add(const AuthCheckRequested()),
       wait: const Duration(milliseconds: 600),
-      expect: () => [
-        const AuthLoading(),
-        const AuthUnauthenticated(),
-      ],
+      expect: () => [const AuthLoading(), const AuthUnauthenticated()],
     );
 
     blocTest<AuthBloc, AuthState>(
       'emits [Loading, Authenticated] on successful admin login',
       build: () => AuthBloc(authRepository: AuthMockRepository()),
-      act: (bloc) => bloc.add(const AuthLoginRequested(
-        emailOrPhone: 'admin@marinelink.demo',
-        password: 'Admin@123',
-      )),
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(
+          emailOrPhone: 'admin@marinelink.demo',
+          password: 'Admin@123',
+        ),
+      ),
       wait: const Duration(milliseconds: 600),
       expect: () => [
         const AuthLoading(),
-        isA<AuthAuthenticated>().having(
-          (s) => s.user.isAdmin,
-          'isAdmin',
-          true,
-        ),
+        isA<AuthAuthenticated>().having((s) => s.user.isAdmin, 'isAdmin', true),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
       'emits [Loading, AuthFailure] on wrong password',
       build: () => AuthBloc(authRepository: AuthMockRepository()),
-      act: (bloc) => bloc.add(const AuthLoginRequested(
-        emailOrPhone: 'admin@marinelink.demo',
-        password: 'wrong-password',
-      )),
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(
+          emailOrPhone: 'admin@marinelink.demo',
+          password: 'wrong-password',
+        ),
+      ),
       wait: const Duration(milliseconds: 600),
-      expect: () => [
-        const AuthLoading(),
-        isA<AuthFailure>(),
-      ],
+      expect: () => [const AuthLoading(), isA<AuthFailure>()],
     );
 
     blocTest<AuthBloc, AuthState>(
@@ -69,44 +63,38 @@ void main() {
       build: () => AuthBloc(authRepository: AuthMockRepository()),
       act: (bloc) => bloc.add(const AuthLogoutRequested()),
       wait: const Duration(milliseconds: 200),
-      expect: () => [
-        const AuthUnauthenticated(),
-      ],
+      expect: () => [const AuthUnauthenticated()],
     );
 
     blocTest<AuthBloc, AuthState>(
       'emits [Loading, Authenticated] for staff login',
       build: () => AuthBloc(authRepository: AuthMockRepository()),
-      act: (bloc) => bloc.add(const AuthLoginRequested(
-        emailOrPhone: 'staff@marinelink.demo',
-        password: 'Staff@123',
-      )),
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(
+          emailOrPhone: 'staff@marinelink.demo',
+          password: 'Staff@123',
+        ),
+      ),
       wait: const Duration(milliseconds: 600),
       expect: () => [
         const AuthLoading(),
-        isA<AuthAuthenticated>().having(
-          (s) => s.user.isStaff,
-          'isStaff',
-          true,
-        ),
+        isA<AuthAuthenticated>().having((s) => s.user.isStaff, 'isStaff', true),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
       'emits [Loading, Authenticated] for user (daily) login',
       build: () => AuthBloc(authRepository: AuthMockRepository()),
-      act: (bloc) => bloc.add(const AuthLoginRequested(
-        emailOrPhone: 'daily-a@marinelink.demo',
-        password: 'Daily@123',
-      )),
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(
+          emailOrPhone: 'daily-a@marinelink.demo',
+          password: 'Daily@123',
+        ),
+      ),
       wait: const Duration(milliseconds: 600),
       expect: () => [
         const AuthLoading(),
-        isA<AuthAuthenticated>().having(
-          (s) => s.user.isUser,
-          'isUser',
-          true,
-        ),
+        isA<AuthAuthenticated>().having((s) => s.user.isUser, 'isUser', true),
       ],
     );
   });

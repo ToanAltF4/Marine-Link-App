@@ -52,7 +52,8 @@ class AuthMockRepository implements AuthRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500)); // simulate latency
 
-    final expectedPassword = _demoPasswords[emailOrPhone.toLowerCase()] ??
+    final expectedPassword =
+        _demoPasswords[emailOrPhone.toLowerCase()] ??
         _demoPasswords[emailOrPhone];
 
     if (expectedPassword == null || expectedPassword != password) {

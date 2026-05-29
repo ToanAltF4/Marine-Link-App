@@ -31,9 +31,7 @@ class ApiResponse<T> {
           ?.map((e) => ApiFieldError.fromJson(e as Map<String, dynamic>))
           .toList(),
       pagination: json['pagination'] != null
-          ? ApiPagination.fromJson(
-              json['pagination'] as Map<String, dynamic>,
-            )
+          ? ApiPagination.fromJson(json['pagination'] as Map<String, dynamic>)
           : null,
     );
   }

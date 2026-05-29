@@ -9,26 +9,28 @@ sealed class Failure {
 
 /// Network connectivity issue or timeout.
 class NetworkFailure extends Failure {
-  const NetworkFailure([String message = 'Không có kết nối mạng. Vui lòng kiểm tra lại.'])
-      : super(message);
+  const NetworkFailure([
+    super.message = 'Không có kết nối mạng. Vui lòng kiểm tra lại.',
+  ]);
 }
 
-/// HTTP 401 — token missing or expired.
+/// HTTP 401: token missing or expired.
 class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure([String message = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'])
-      : super(message);
+  const UnauthorizedFailure([
+    super.message = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.',
+  ]);
 }
 
-/// HTTP 403 — authenticated but not allowed.
+/// HTTP 403: authenticated but not allowed.
 class ForbiddenFailure extends Failure {
-  const ForbiddenFailure([String message = 'Bạn không có quyền thực hiện thao tác này.'])
-      : super(message);
+  const ForbiddenFailure([
+    super.message = 'Bạn không có quyền thực hiện thao tác này.',
+  ]);
 }
 
-/// HTTP 404 — resource not found or hidden.
+/// HTTP 404: resource not found or hidden.
 class NotFoundFailure extends Failure {
-  const NotFoundFailure([String message = 'Không tìm thấy dữ liệu.'])
-      : super(message);
+  const NotFoundFailure([super.message = 'Không tìm thấy dữ liệu.']);
 }
 
 /// HTTP 422 or validation error.
@@ -36,19 +38,17 @@ class ValidationFailure extends Failure {
   const ValidationFailure(super.message);
 }
 
-/// HTTP 409 — conflict (duplicate, invalid state transition).
+/// HTTP 409: conflict (duplicate, invalid state transition).
 class ConflictFailure extends Failure {
   const ConflictFailure(super.message);
 }
 
 /// HTTP 5xx or unknown server error.
 class ServerFailure extends Failure {
-  const ServerFailure([String message = 'Lỗi hệ thống. Vui lòng thử lại sau.'])
-      : super(message);
+  const ServerFailure([super.message = 'Lỗi hệ thống. Vui lòng thử lại sau.']);
 }
 
 /// Unexpected error not covered by the above.
 class UnknownFailure extends Failure {
-  const UnknownFailure([String message = 'Đã có lỗi xảy ra. Vui lòng thử lại.'])
-      : super(message);
+  const UnknownFailure([super.message = 'Đã có lỗi xảy ra. Vui lòng thử lại.']);
 }

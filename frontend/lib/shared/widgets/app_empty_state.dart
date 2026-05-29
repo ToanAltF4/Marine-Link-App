@@ -28,7 +28,7 @@ class AppEmptyState extends StatelessWidget {
             Icon(
               icon ?? Icons.inbox_outlined,
               size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -40,10 +40,7 @@ class AppEmptyState extends StatelessWidget {
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
-              OutlinedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              OutlinedButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),

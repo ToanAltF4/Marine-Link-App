@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../di/service_locator.dart';
 
 /// Named route constants — use these instead of string literals everywhere.
 abstract class AppRoutes {
@@ -182,7 +181,7 @@ class _SplashPageState extends State<_SplashPage> {
             Text(
               'B2B Seafood Ordering',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimary.withOpacity(0.8),
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
               ),
             ),
           ],
