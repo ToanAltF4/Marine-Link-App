@@ -1,6 +1,6 @@
 # MarineLink Supabase Database Design
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v2.docx`, `docs/MarineLink_BE_Architecture.md`, `docs/MarineLink_FE_Architecture.md`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx`, `docs/MarineLink_BE_Architecture.md`, `docs/MarineLink_FE_Architecture.md`
 
 ## 1. Mục tiêu
 

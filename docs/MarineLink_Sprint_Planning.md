@@ -1,11 +1,12 @@
 # Kế hoạch Sprint MarineLink
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v2.docx`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx`
 
 ## Giả định lập kế hoạch
 
 - Nhóm có 3 thành viên theo tài liệu: Phạm Đức Toàn, Ngô Việt Hoàng, Đặng Quốc Tâm.
 - Nền tảng chính: Flutter Android, kết nối REST API bằng JWT.
+- Repository triển khai theo monorepo: `frontend/` cho Flutter, `backend/` cho Spring Boot, `docs/` cho contract/architecture/DB/sprint.
 - Mục tiêu gần nhất là demo được luồng chính trong tài liệu: đăng nhập -> trang chủ -> danh sách sản phẩm -> chi tiết -> giỏ hàng -> checkout -> tạo đơn -> theo dõi đơn -> nhận thông báo hoặc chat hỗ trợ.
 - Độ dài sprint: 1 tuần/sprint.
 - Capacity mặc định: 8 points/người/sprint, tổng 24 points/sprint. Mỗi sprint chỉ commit khoảng 70-80% capacity, tương đương 17-19 points, để còn buffer sửa lỗi, học framework, tích hợp API và chuẩn bị demo.
@@ -28,6 +29,13 @@ Kế hoạch được chia theo 5 nhóm việc để nhóm dễ giao việc và 
 - **DB Supabase/PostgreSQL:** schema, migration, constraint, index, seed data, storage bucket/policy nếu có file upload.
 - **API Contract:** DTO request/response, response envelope, phân trang, status code, rule sở hữu dữ liệu và mapping FE/BE/DB.
 - **QA/Demo/Docs:** unit/integration/E2E test, dữ liệu demo, kịch bản demo, cập nhật tài liệu và kiểm tra bảo mật cơ bản.
+
+Quy ước code chung repo:
+
+- FE chỉ code trong `frontend/`; BE chỉ code trong `backend/`; docs và icon giữ ở root-level folder hiện có.
+- FE/BE cùng dùng `docs/MarineLink_API_Documentation.md` làm contract. Không tự thêm endpoint ở FE nếu BE/API doc chưa có.
+- Sprint task phải ghi rõ phần việc thuộc FE, BE, DB, API contract hay QA để tránh một người sửa lẫn boundary của stack khác.
+- Build output như `build/`, `.dart_tool/`, `target/`, coverage raw và secret local không được commit.
 
 ### Ma trận phạm vi theo epic
 

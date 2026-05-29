@@ -1,6 +1,6 @@
 # MarineLink Backend Architecture
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v2.docx` và `docs/MarineLink_Sprint_Planning.md`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx` và `docs/MarineLink_Sprint_Planning.md`
 
 ## 1. Mục tiêu
 
@@ -25,6 +25,8 @@ Mục tiêu backend:
 | Authorization | Role-based: roles stored in database, không dùng cột role trực tiếp trong `users` |
 | Persistence | Relational database with JPA/Hibernate |
 | ID model | Internal `bigint id` for DB PK/FK/index; external UUIDv4 `public_id` for API |
+| Repo location | Spring Boot code nằm trong `backend/` của monorepo |
+| API contract | BE triển khai đúng `docs/MarineLink_API_Documentation.md` và giữ contract test |
 | Admin scope | Full Admin Dashboard |
 | AI support demo | Rule-based sample responses |
 | Google login | Out of MVP unless OAuth provider, callback flow, and account linking are explicitly added |
@@ -49,76 +51,89 @@ Backend nên là modular monolith thay vì microservices vì scope nhóm 3 ngư�
 ## 4. Package structure đề xuất
 
 ```text
-src/main/java/com/marinelink/
-  MarineLinkApplication.java
-  config/
-    SecurityConfig.java
-    WebConfig.java
-    OpenApiConfig.java
-  common/
-    api/
-      ApiResponse.java
-      PageResponse.java
-      ErrorResponse.java
-    exception/
-      GlobalExceptionHandler.java
-      BusinessException.java
-    security/
-      JwtAuthenticationFilter.java
-      JwtTokenProvider.java
-      CurrentUser.java
-    validation/
-  auth/
-    AuthController.java
-    AuthService.java
-    dto/
-  users/
-    User.java
-    Role.java
-    UserRepository.java
-    UserService.java
-    UserController.java
-    dto/
-  products/
-    Product.java
-    Category.java
-    PriceTier.java
-    ProductRepository.java
-    ProductService.java
-    ProductController.java
-    dto/
-  cart/
-    Cart.java
-    CartItem.java
-    CartController.java
-    CartService.java
-    dto/
-  orders/
-    Order.java
-    OrderItem.java
-    OrderRepository.java
-    OrderService.java
-    OrderController.java
-    dto/
-  notifications/
-    Notification.java
-    NotificationService.java
-    NotificationController.java
-  messaging/
-    ChatMessage.java
-    ChatAttachment.java
-    Complaint.java
-    MessagingService.java
-    MessagingController.java
-  warehouses/
-    Warehouse.java
-    WarehouseService.java
-    WarehouseController.java
-  admin/
-    AdminController.java
-    AdminDashboardService.java
-    dto/
+backend/
+  pom.xml
+  src/main/java/com/marinelink/
+    MarineLinkApplication.java
+    config/
+      SecurityConfig.java
+      WebConfig.java
+      OpenApiConfig.java
+    common/
+      api/
+        ApiResponse.java
+        PageResponse.java
+        ErrorResponse.java
+      exception/
+        GlobalExceptionHandler.java
+        BusinessException.java
+      security/
+        JwtAuthenticationFilter.java
+        JwtTokenProvider.java
+        CurrentUser.java
+      validation/
+    auth/
+      AuthController.java
+      AuthService.java
+      dto/
+    users/
+      User.java
+      Role.java
+      UserRepository.java
+      UserService.java
+      UserController.java
+      dto/
+    products/
+      Product.java
+      Category.java
+      PriceTier.java
+      ProductRepository.java
+      ProductService.java
+      ProductController.java
+      dto/
+    cart/
+      Cart.java
+      CartItem.java
+      CartController.java
+      CartService.java
+      dto/
+    orders/
+      Order.java
+      OrderItem.java
+      OrderRepository.java
+      OrderService.java
+      OrderController.java
+      dto/
+    notifications/
+      Notification.java
+      NotificationService.java
+      NotificationController.java
+    messaging/
+      ChatMessage.java
+      ChatAttachment.java
+      Complaint.java
+      MessagingService.java
+      MessagingController.java
+    warehouses/
+      Warehouse.java
+      WarehouseService.java
+      WarehouseController.java
+    admin/
+      AdminController.java
+      AdminDashboardService.java
+      dto/
+  src/main/resources/
+    application.yml
+    db/migration/
+  src/test/java/com/marinelink/
 ```
+
+Quy ước trong monorepo:
+
+- Không đặt Spring Boot project ở root repo để tránh xung đột với Flutter tooling.
+- Không commit `target/`, `.env`, database password, JWT secret, hoặc Supabase service role key.
+- Backend là source of truth cho authorization và business rule; Flutter không tự kiểm tra quyền thay cho backend.
+- Contract test trong `backend/src/test/` phải xác nhận response envelope, status code và DTO field khớp tài liệu API.
 
 ## 5. API response envelope
 

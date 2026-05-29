@@ -1,6 +1,6 @@
 # MarineLink Frontend Architecture
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v2.docx` và `docs/MarineLink_Sprint_Planning.md`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx` và `docs/MarineLink_Sprint_Planning.md`
 
 ## 1. Mục tiêu
 
@@ -24,6 +24,8 @@ Mục tiêu frontend:
 | Data source giai đoạn sau | Spring Boot REST API |
 | Auth | JWT Bearer token |
 | Role | Resolve từ backend qua `roles` liên kết trực tiếp với `users`; app chỉ dùng role trong JWT/session |
+| Repo location | Flutter code nằm trong `frontend/` của monorepo |
+| API contract | FE chỉ bám `docs/MarineLink_API_Documentation.md`, không tự phát sinh endpoint riêng |
 | Admin scope | Full Admin Dashboard |
 | AI support demo | Sample responses, chưa gọi model thật |
 
@@ -56,49 +58,55 @@ Frontend đi theo hướng feature-first, tách rõ presentation, domain và dat
 ## 5. Cấu trúc thư mục đề xuất
 
 ```text
-lib/
-  main.dart
-  app/
-    app.dart
-    router/
-      app_router.dart
-      route_guard.dart
-    theme/
-      app_theme.dart
-    di/
-      service_locator.dart
-  core/
-    api/
-      api_client.dart
-      api_endpoints.dart
-      api_response.dart
-    errors/
-      app_exception.dart
-      failure.dart
-    storage/
-      secure_token_storage.dart
-      cart_local_storage.dart
-    utils/
-      validators.dart
-      money_formatter.dart
-  features/
-    auth/
-      data/
-      domain/
-      presentation/
-    home/
-    products/
-    cart/
-    checkout/
-    orders/
-    notifications/
-    messaging/
-    profile/
-    warehouse_map/
-    admin/
-  shared/
-    widgets/
-    models/
+frontend/
+  pubspec.yaml
+  analysis_options.yaml
+  lib/
+    main.dart
+    app/
+      app.dart
+      router/
+        app_router.dart
+        route_guard.dart
+      theme/
+        app_theme.dart
+      di/
+        service_locator.dart
+    core/
+      api/
+        api_client.dart
+        api_endpoints.dart
+        api_response.dart
+      errors/
+        app_exception.dart
+        failure.dart
+      storage/
+        secure_token_storage.dart
+        cart_local_storage.dart
+      utils/
+        validators.dart
+        money_formatter.dart
+    features/
+      auth/
+        data/
+        domain/
+        presentation/
+      home/
+      products/
+      cart/
+      checkout/
+      orders/
+      notifications/
+      messaging/
+      profile/
+      warehouse_map/
+      admin/
+    shared/
+      widgets/
+      models/
+  test/
+  integration_test/
+  android/
 ```
 
 Mỗi feature có cấu trúc nhỏ:
@@ -120,6 +128,13 @@ features/products/
     screens/
     widgets/
 ```
+
+Quy ước trong monorepo:
+
+- Không đặt code Flutter ở root repo để tránh lẫn với Spring Boot.
+- Không commit `build/`, `.dart_tool/`, file keystore, token, hoặc output coverage lớn.
+- `frontend/lib/core/api/api_endpoints.dart` chỉ mirror endpoint đã có trong `docs/MarineLink_API_Documentation.md`.
+- `frontend/test/` chứa unit/BLoC/widget test; `frontend/integration_test/` chứa luồng demo chính.
 
 ## 6. Feature modules
 

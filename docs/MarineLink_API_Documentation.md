@@ -1,6 +1,6 @@
 # MarineLink API Documentation
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v2.docx`, `docs/MarineLink_BE_Architecture.md`, `docs/MarineLink_FE_Architecture.md`, `docs/MarineLink_Supabase_DB_Design.md`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx`, `docs/MarineLink_BE_Architecture.md`, `docs/MarineLink_FE_Architecture.md`, `docs/MarineLink_Supabase_DB_Design.md`
 
 ## 1. Mục tiêu
 
@@ -21,6 +21,7 @@ MVP không dùng Supabase REST trực tiếp cho dữ liệu cần phân quyền
 | Money | number, đơn vị VND, dùng `numeric(12,2)` ở database |
 | Pagination | `page`, `size`, `totalElements`, `totalPages` |
 | Google login | Out of MVP; chỉ thêm sau khi có OAuth provider, callback và account linking |
+| Repo contract owner | File này là contract chung cho `frontend/` Flutter và `backend/` Spring Boot |
 
 Header mặc định:
 
@@ -38,6 +39,12 @@ ID rule:
 - Request fields such as `productId`, `orderId`, `roomId`, `notificationId`, `categoryId` are also public UUIDv4 values.
 - Backend resolves public UUIDv4 IDs to internal `bigint id` before joining/querying tables.
 - Never return internal `bigint id` to Flutter.
+
+Monorepo rule:
+
+- Flutter chỉ gọi Spring Boot qua endpoint trong tài liệu này.
+- Spring Boot phải có controller/DTO/test tương ứng trước khi FE đổi mock repository sang remote repository.
+- Khi đổi endpoint, request/response field, role rule hoặc status code, cập nhật tài liệu này trước rồi mới sửa code FE/BE.
 
 ## 3. Roles
 
