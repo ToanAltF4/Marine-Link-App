@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/assets/app_assets.dart';
+import '../../features/auth/domain/user.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
 
 /// Named route constants — use these instead of string literals everywhere.
 abstract class AppRoutes {
@@ -27,8 +31,7 @@ abstract class AppRoutes {
 }
 
 /// Central router configuration using GoRouter.
-/// Role guard is applied via [_roleGuard]; actual AuthBloc-based redirect
-/// will be wired in Sprint 1 when AuthBloc is complete.
+/// Auth screens route users by role after successful login.
 class AppRouter {
   AppRouter._();
 
@@ -42,11 +45,12 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const _PlaceholderPage(title: 'Login'),
+        builder: (context, state) =>
+            LoginScreen(onAuthenticated: (user) => _routeByRole(context, user)),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const _PlaceholderPage(title: 'Register'),
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: AppRoutes.home,
@@ -135,9 +139,15 @@ class AppRouter {
         ],
       ),
     ],
-    // TODO Sprint 1: wire redirect to AuthBloc state
-    // redirect: (context, state) => _roleGuard(context, state),
   );
+
+  static void _routeByRole(BuildContext context, User user) {
+    if (user.isAdmin || user.isStaff) {
+      context.go(AppRoutes.adminDashboard);
+      return;
+    }
+    context.go(AppRoutes.home);
+  }
 }
 
 // ── Temporary screens ─────────────────────────────────────────────────────────
@@ -168,16 +178,16 @@ class _SplashPageState extends State<_SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.anchor, size: 80, color: theme.colorScheme.onPrimary),
-            const SizedBox(height: 16),
+            Image.asset(AppAssets.appIcon, width: 104, height: 104),
+            const SizedBox(height: 18),
             Text(
               'MarineLink',
               style: theme.textTheme.headlineLarge?.copyWith(
                 color: theme.colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               'B2B Seafood Ordering',
               style: theme.textTheme.bodyMedium?.copyWith(

@@ -69,8 +69,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         businessAddress: event.businessAddress,
         taxCode: event.taxCode,
       );
-      // After register, user is PENDING_APPROVAL, not yet logged in
-      emit(AuthUnauthenticated());
+      emit(const AuthRegistrationSuccess());
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }

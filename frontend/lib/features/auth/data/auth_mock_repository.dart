@@ -6,6 +6,9 @@ import '../domain/user.dart';
 ///
 /// Replace with AuthRemoteRepository in Sprint 5 via DI — no UI changes needed.
 class AuthMockRepository implements AuthRepository {
+  User? _currentUser;
+  String? _currentToken;
+
   static const _demoAdmin = User(
     id: '550e8400-e29b-41d4-a716-446655440001',
     fullName: 'MarineLink Admin',
@@ -61,10 +64,10 @@ class AuthMockRepository implements AuthRepository {
     }
 
     final user = _userForCredential(emailOrPhone);
-    return (
-      token: 'mock-jwt-token-${user.roles.first.toLowerCase()}',
-      user: user,
-    );
+    final token = 'mock-jwt-token-${user.roles.first.toLowerCase()}';
+    _currentUser = user;
+    _currentToken = token;
+    return (token: token, user: user);
   }
 
   @override
@@ -100,12 +103,14 @@ class AuthMockRepository implements AuthRepository {
   @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 100));
+    _currentUser = null;
+    _currentToken = null;
   }
 
   @override
   Future<User?> getCurrentUser() async {
-    // In mock mode, no persistent session — return null to show login
-    return null;
+    if (_currentToken == null) return null;
+    return _currentUser;
   }
 
   User _userForCredential(String emailOrPhone) {

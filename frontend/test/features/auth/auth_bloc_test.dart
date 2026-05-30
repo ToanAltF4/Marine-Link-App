@@ -17,6 +17,27 @@ void main() {
   });
 
   group('AuthBloc', () {
+    test('auth events expose stable props', () {
+      expect(
+        const AuthLoginRequested(
+          emailOrPhone: 'daily-a@marinelink.demo',
+          password: 'Daily@123',
+        ).props,
+        ['daily-a@marinelink.demo'],
+      );
+      expect(
+        const AuthRegisterRequested(
+          fullName: 'Nguyen Van A',
+          email: 'daily-new@example.com',
+          phone: '0912345678',
+          password: 'Daily@123',
+        ).props,
+        ['daily-new@example.com', '0912345678'],
+      );
+      expect(const AuthCheckRequested().props, isEmpty);
+      expect(const AuthLogoutRequested().props, isEmpty);
+    });
+
     test('initial state is AuthInitial', () {
       expect(authBloc.state, const AuthInitial());
     });
@@ -46,12 +67,70 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
+      'restores the current authenticated user after successful login',
+      build: () {
+        final repository = AuthMockRepository();
+        return AuthBloc(authRepository: repository);
+      },
+      act: (bloc) async {
+        bloc.add(
+          const AuthLoginRequested(
+            emailOrPhone: 'daily-a@marinelink.demo',
+            password: 'Daily@123',
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+        bloc.add(const AuthCheckRequested());
+      },
+      wait: const Duration(milliseconds: 1200),
+      expect: () => [
+        const AuthLoading(),
+        isA<AuthAuthenticated>().having((s) => s.user.isUser, 'isUser', true),
+        const AuthLoading(),
+        isA<AuthAuthenticated>().having((s) => s.user.isUser, 'isUser', true),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
       'emits [Loading, AuthFailure] on wrong password',
       build: () => AuthBloc(authRepository: AuthMockRepository()),
       act: (bloc) => bloc.add(
         const AuthLoginRequested(
           emailOrPhone: 'admin@marinelink.demo',
           password: 'wrong-password',
+        ),
+      ),
+      wait: const Duration(milliseconds: 600),
+      expect: () => [const AuthLoading(), isA<AuthFailure>()],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits [Loading, RegistrationSuccess] on valid dealer register',
+      build: () => AuthBloc(authRepository: AuthMockRepository()),
+      act: (bloc) => bloc.add(
+        const AuthRegisterRequested(
+          fullName: 'Nguyen Van B',
+          email: 'daily-b@marinelink.demo',
+          phone: '0912345000',
+          password: 'Daily@123',
+          storeName: 'Hai San B',
+          businessAddress: 'Can Tho',
+          taxCode: '0312345678',
+        ),
+      ),
+      wait: const Duration(milliseconds: 600),
+      expect: () => [const AuthLoading(), const AuthRegistrationSuccess()],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits [Loading, AuthFailure] when register email already exists',
+      build: () => AuthBloc(authRepository: AuthMockRepository()),
+      act: (bloc) => bloc.add(
+        const AuthRegisterRequested(
+          fullName: 'MarineLink Admin',
+          email: 'admin@marinelink.demo',
+          phone: '0900000000',
+          password: 'Admin@123',
         ),
       ),
       wait: const Duration(milliseconds: 600),

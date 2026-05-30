@@ -35,6 +35,11 @@ class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
 }
 
+/// Registration was accepted; account waits for approval before login.
+class AuthRegistrationSuccess extends AuthState {
+  const AuthRegistrationSuccess();
+}
+
 /// Login/register failed.
 class AuthFailure extends AuthState {
   final String message;
