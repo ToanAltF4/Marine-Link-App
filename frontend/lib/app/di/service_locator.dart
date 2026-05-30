@@ -2,25 +2,62 @@ import 'package:get_it/get_it.dart';
 import '../../core/api/api_client.dart';
 import '../../core/storage/secure_token_storage.dart';
 
+// Auth
+import '../../features/auth/domain/auth_repository.dart';
+import '../../features/auth/data/auth_mock_repository.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
+
+// Products
+import '../../features/products/domain/product_repository.dart';
+import '../../features/products/data/product_mock_repository.dart';
+import '../../features/products/presentation/bloc/product_bloc.dart';
+
+// Cart
+import '../../features/cart/presentation/cubit/cart_cubit.dart';
+
+// Orders
+import '../../features/orders/domain/order_repository.dart';
+import '../../features/orders/data/order_mock_repository.dart';
+import '../../features/orders/presentation/bloc/order_bloc.dart';
+
 final GetIt sl = GetIt.instance;
 
 /// Register all dependencies for dependency injection.
-/// Call this before [runApp].
+/// Call this before [runApp] in main.dart.
+///
+/// Sprint 5 migration: swap Mock repositories for Remote ones here without
+/// touching any BLoC/Cubit or UI code.
 Future<void> setupServiceLocator() async {
-  // ── Core: Storage ───────────────────────────────────────────────────────────
+  // ── Core: Storage ────────────────────────────────────────────────────────────
   sl.registerLazySingleton<SecureTokenStorage>(() => SecureTokenStorage());
 
-  // ── Core: API Client ────────────────────────────────────────────────────────
+  // ── Core: API Client ─────────────────────────────────────────────────────────
   sl.registerLazySingleton<ApiClient>(
     () => ApiClient(tokenStorage: sl<SecureTokenStorage>()),
   );
 
-  // TODO Sprint 1: Register repositories, BLoC/Cubit instances here.
-  // Example:
-  //   sl.registerLazySingleton<AuthRepository>(
-  //     () => AuthMockRepository(),  // switch to AuthRemoteRepository in Sprint 5
-  //   );
-  //   sl.registerFactory<AuthBloc>(
-  //     () => AuthBloc(authRepository: sl<AuthRepository>()),
-  //   );
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+  // Sprint 5: swap AuthMockRepository → AuthRemoteRepository
+  sl.registerLazySingleton<AuthRepository>(() => AuthMockRepository());
+  sl.registerFactory<AuthBloc>(
+    () => AuthBloc(authRepository: sl<AuthRepository>()),
+  );
+
+  // ── Products ─────────────────────────────────────────────────────────────────
+  // Sprint 5: swap ProductMockRepository → ProductRemoteRepository
+  sl.registerLazySingleton<ProductRepository>(() => ProductMockRepository());
+  sl.registerFactory<ProductBloc>(
+    () => ProductBloc(productRepository: sl<ProductRepository>()),
+  );
+
+  // ── Cart ──────────────────────────────────────────────────────────────────────
+  // CartCubit is a singleton so the cart persists across screens within a session.
+  sl.registerLazySingleton<CartCubit>(() => CartCubit());
+
+  // ── Orders ───────────────────────────────────────────────────────────────────
+  // Sprint 5: swap OrderMockRepository → OrderRemoteRepository
+  sl.registerLazySingleton<OrderRepository>(() => OrderMockRepository());
+  sl.registerFactory<OrderBloc>(
+    () => OrderBloc(orderRepository: sl<OrderRepository>()),
+  );
 }

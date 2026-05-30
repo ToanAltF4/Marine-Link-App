@@ -76,7 +76,7 @@ Quy ước code chung repo:
 
 | Ưu tiên | Nhóm chức năng | Phạm vi chính | API/Data liên quan | Trạng thái |
 |---|---|---|---|---|
-| P0 | Nền tảng dự án | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, cấu trúc BLoC/Cubit | users, roles, products, categories, carts, orders | Chưa làm |
+| P0 | Nền tảng dự án | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, cấu trúc BLoC/Cubit | users, roles, products, categories, carts, orders | Xong |
 | P0 | Xác thực | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles` | Chưa làm |
 | P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Chưa làm |
 | P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | `/api/cart/sync`, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
@@ -107,9 +107,9 @@ Quy ước code chung repo:
 
 | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
 |---|---|---:|---|---|
-| P0 | Khởi tạo cấu trúc Flutter project, routing, theme, shared widgets | 3 pts | Không có | Chưa làm |
-| P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Docx database/API | Chưa làm |
-| P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Nền tảng dự án | Chưa làm |
+| P0 | Khởi tạo cấu trúc Flutter project, routing, theme, shared widgets | 3 pts | Không có | Xong |
+| P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Docx database/API | Xong |
+| P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Nền tảng dự án | Xong |
 | P0 | Màn login: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | API client | Chưa làm |
 | P0 | Màn register: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Chưa làm |
 | P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Chưa làm |
