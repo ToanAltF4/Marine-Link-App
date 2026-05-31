@@ -1,6 +1,6 @@
 # MarineLink Frontend Architecture
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx` và `docs/MarineLink_Sprint_Planning.md`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.md` và `docs/MarineLink_Sprint_Planning.md`
 
 ## 1. Mục tiêu
 
@@ -28,6 +28,18 @@ Mục tiêu frontend:
 | API contract | FE chỉ bám `docs/MarineLink_API_Documentation.md`, không tự phát sinh endpoint riêng |
 | Admin scope | Full Admin Dashboard |
 | AI support demo | Sample responses, chưa gọi model thật |
+
+## 2A. UI source of truth
+
+- UI source of truth là Flutter source code trong `frontend/lib/`.
+- Design tokens (màu, typography, border radius, spacing) được định nghĩa trong `frontend/lib/app/theme/app_theme.dart`.
+- Ảnh demo sản phẩm nằm trong `frontend/assets/product_images/` (tôm khô, mực khô, cá sọc vàng, mực mềm).
+- Screen mapping:
+  - `frontend/lib/features/home/presentation/screens/home_screen.dart`
+  - `frontend/lib/features/products/presentation/screens/product_list_screen.dart`
+  - `frontend/lib/features/products/presentation/screens/product_detail_screen.dart`
+  - `frontend/lib/features/notifications/presentation/screens/notifications_screen.dart`
+- Catalog app đang dùng `ProductMockRepository`; chuyển sang remote repository ở Sprint 5 khi tích hợp API.
 
 ## 3. Tổng quan kiến trúc
 
@@ -141,12 +153,12 @@ Quy ước trong monorepo:
 | Feature | State manager | Scope |
 |---|---|---|
 | Auth | BLoC | Login, register, JWT, role routing, logout |
-| Home | Cubit | Banner, category, featured products, quick search |
-| Products | Cubit | Product list, filter, search, product detail |
+| Home | BLoC | Buyer dashboard hero, category rail, featured products, quick search, notifications entry |
+| Products | BLoC | Product list, filter chips, product detail, price tiers, add-to-cart temporary flow |
 | Cart | Cubit | Add/update/remove item, total calculation, empty cart, sync `carts` + `cart_items` |
 | Checkout | BLoC | Validate receiver info, payment method, create order, clear cart |
 | Orders | BLoC | List/detail, status tracking, role-based status update |
-| Notifications | Cubit | List, unread count, mark as read, navigate to related screen |
+| Notifications | Screen/Cubit | Buyer notifications list now has UI shell; unread state + mark-as-read stay for API integration phase |
 | Messaging | BLoC | Chat history, send message, chat attachments, sample AI/staff response |
 | Profile | Cubit | View/update profile, change password placeholder |
 | Warehouse Map | Cubit | Warehouse markers, open Google Maps, permission state |

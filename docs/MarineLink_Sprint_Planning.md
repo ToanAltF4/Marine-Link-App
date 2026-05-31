@@ -1,6 +1,6 @@
 # Kế hoạch Sprint MarineLink
 
-Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.docx`
+Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.md`
 
 ## Giả định lập kế hoạch
 
@@ -78,7 +78,7 @@ Quy ước code chung repo:
 |---|---|---|---|---|
 | P0 | Nền tảng dự án | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, cấu trúc BLoC/Cubit | users, roles, products, categories, carts, orders | Xong |
 | P0 | Xác thực | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles` | Xong |
-| P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Chưa làm |
+| P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Xong |
 | P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | `/api/cart/sync`, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
 | P0 | Theo dõi đơn hàng | Danh sách đơn, chi tiết đơn, trạng thái đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`, `notifications` | Chưa làm |
 | P1 | Thông báo | Danh sách thông báo, đã đọc/chưa đọc, điều hướng sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read` | Chưa làm |
@@ -88,6 +88,7 @@ Quy ước code chung repo:
 | P0 | Dashboard Admin đầy đủ | Tổng quan, quản lý sản phẩm/người dùng/role/đơn hàng, xử lý trạng thái, hỗ trợ chat | `/api/admin/dashboard`, `/api/admin/products`, `/api/admin/users` | Chưa làm |
 | P1 | Hỗ trợ AI mẫu | Câu trả lời mẫu có ngữ cảnh sản phẩm, giá, tồn kho, đơn hàng cho demo | `chat_messages`, `products`, `orders` | Chưa làm |
 | P2 | Hoàn thiện demo | Empty states, loading states, validation text, dữ liệu mẫu đẹp | Toàn bộ module | Chưa làm |
+
 
 ## Sprint 1: Nền tảng, xác thực, duyệt sản phẩm
 
@@ -112,11 +113,11 @@ Quy ước code chung repo:
 | P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Nền tảng dự án | Xong |
 | P0 | Màn login: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | API client | Xong |
 | P0 | Màn register: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Xong |
-| P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Chưa làm |
-| P1 | Wiring BLoC/Cubit cho auth/product/loading/error | 2 pts | Nền tảng | Chưa làm |
-| P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Product repository | Chưa làm |
-| P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | 3 pts | Product repository | Chưa làm |
-| P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Chưa làm |
+| P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Xong |
+| P1 | Wiring BLoC/Cubit cho auth/product/loading/error | 2 pts | Nền tảng | Xong |
+| P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Product repository | Xong |
+| P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | 3 pts | Product repository | Xong |
+| P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Xong |
 
 **Năng lực dự kiến:** 24 pts
 **Tải sprint:** 19 pts P0 đã commit + 11 pts buffer/stretch backlog. Nên commit P0 trước, chỉ kéo P1/P2 khi P0 ổn.

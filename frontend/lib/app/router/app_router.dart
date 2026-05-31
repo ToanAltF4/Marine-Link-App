@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/assets/app_assets.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/products/presentation/screens/product_detail_screen.dart';
+import '../../features/products/presentation/screens/product_list_screen.dart';
 
-/// Named route constants — use these instead of string literals everywhere.
 abstract class AppRoutes {
   static const splash = '/';
   static const login = '/login';
@@ -23,15 +27,27 @@ abstract class AppRoutes {
   static const profile = '/profile';
   static const warehouseMap = '/warehouses';
 
-  // Admin routes
   static const adminDashboard = '/admin';
   static const adminProducts = '/admin/products';
   static const adminUsers = '/admin/users';
   static const adminOrders = '/admin/orders';
+
+  static String productDetailPath(String id) => '$productList/$id';
+
+  static String productListLocation({String? query, String? categoryId}) {
+    final params = <String, String>{};
+    if (query != null && query.trim().isNotEmpty) {
+      params['q'] = query.trim();
+    }
+    if (categoryId != null && categoryId.isNotEmpty) {
+      params['categoryId'] = categoryId;
+    }
+    return params.isEmpty
+        ? productList
+        : Uri(path: productList, queryParameters: params).toString();
+  }
 }
 
-/// Central router configuration using GoRouter.
-/// Auth screens route users by role after successful login.
 class AppRouter {
   AppRouter._();
 
@@ -54,18 +70,19 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.home,
-        builder: (context, state) => const _PlaceholderPage(title: 'Home'),
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: AppRoutes.productList,
-        builder: (context, state) =>
-            const _PlaceholderPage(title: 'Product List'),
+        builder: (context, state) => ProductListScreen(
+          initialQuery: state.uri.queryParameters['q'],
+          initialCategoryId: state.uri.queryParameters['categoryId'],
+        ),
         routes: [
           GoRoute(
             path: ':id',
-            builder: (context, state) => _PlaceholderPage(
-              title: 'Product Detail: ${state.pathParameters['id']}',
-            ),
+            builder: (context, state) =>
+                ProductDetailScreen(productId: state.pathParameters['id']!),
           ),
         ],
       ),
@@ -91,8 +108,7 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.notifications,
-        builder: (context, state) =>
-            const _PlaceholderPage(title: 'Notifications'),
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: AppRoutes.chat,
@@ -115,7 +131,6 @@ class AppRouter {
         builder: (context, state) =>
             const _PlaceholderPage(title: 'Warehouse Map'),
       ),
-      // ── Admin routes ─────────────────────────────────────────────────────────
       GoRoute(
         path: AppRoutes.adminDashboard,
         builder: (context, state) =>
@@ -150,8 +165,6 @@ class AppRouter {
   }
 }
 
-// ── Temporary screens ─────────────────────────────────────────────────────────
-
 class _SplashPage extends StatefulWidget {
   const _SplashPage();
 
@@ -163,7 +176,6 @@ class _SplashPageState extends State<_SplashPage> {
   @override
   void initState() {
     super.initState();
-    // After short delay, navigate to login (will be replaced by auth check)
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) context.go(AppRoutes.login);
     });
@@ -203,6 +215,7 @@ class _SplashPageState extends State<_SplashPage> {
 
 class _PlaceholderPage extends StatelessWidget {
   final String title;
+
   const _PlaceholderPage({required this.title});
 
   @override
