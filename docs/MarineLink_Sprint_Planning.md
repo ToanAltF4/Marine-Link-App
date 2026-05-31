@@ -106,18 +106,18 @@ Quy ước code chung repo:
 
 ### Backlog sprint
 
-| Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---:|---|---|
-| P0 | Khởi tạo cấu trúc Flutter project, routing, theme, shared widgets | 3 pts | Không có | Xong |
-| P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Docx database/API | Xong |
-| P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Nền tảng dự án | Xong |
-| P0 | Màn login: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | API client | Xong |
-| P0 | Màn register: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Xong |
-| P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Xong |
-| P1 | Wiring BLoC/Cubit cho auth/product/loading/error | 2 pts | Nền tảng | Xong |
-| P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Product repository | Xong |
-| P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | 3 pts | Product repository | Xong |
-| P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Xong |
+| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---:|---|---|
+| S1-01 | P0 | Khởi tạo cấu trúc Flutter project, routing, theme, shared widgets | 3 pts | Không có | Xong |
+| S1-02 | P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Docx database/API | Xong |
+| S1-03 | P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Nền tảng dự án | Xong |
+| S1-04 | P0 | Màn login: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | API client | Xong |
+| S1-05 | P0 | Màn register: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Xong |
+| S1-06 | P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Xong |
+| S1-07 | P1 | Wiring BLoC/Cubit cho auth/product/loading/error | 2 pts | Nền tảng | Xong |
+| S1-08 | P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Product repository | Xong |
+| S1-09 | P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | 3 pts | Product repository | Xong |
+| S1-10 | P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Xong |
 
 **Năng lực dự kiến:** 24 pts
 **Tải sprint:** 19 pts P0 đã commit + 11 pts buffer/stretch backlog. Nên commit P0 trước, chỉ kéo P1/P2 khi P0 ổn.
@@ -135,16 +135,16 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Hoàn thành luồng mua hàng chính từ thêm vào giỏ đến tạo đơn và theo dõi trạng thái đơn.
 
-| Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---:|---|---|
-| P0 | Cart state: thêm/sửa/xóa item, tính tổng tiền, xử lý cart rỗng | 4 pts | Product detail | Chưa làm |
-| P0 | Cart screen: danh sách sản phẩm, tăng/giảm số lượng, xóa item | 3 pts | Cart state | Chưa làm |
-| P0 | Checkout screen: thông tin nhận hàng, phương thức thanh toán, ghi chú | 4 pts | Cart state | Chưa làm |
-| P0 | Luồng tạo order: validate, tạo order, clear cart, màn thành công | 4 pts | Checkout | Chưa làm |
-| P0 | Orders list/detail cho Đại lý: trạng thái chờ duyệt/xác nhận/đang giao/hoàn tất/hủy | 4 pts | Order model/repository | Chưa làm |
-| P1 | Danh sách notification: đã đọc/chưa đọc, mở màn liên quan | 3 pts | Order events | Chưa làm |
-| P1 | Staff/Admin cập nhật trạng thái đơn ở mức tối thiểu | 3 pts | Role routing | Chưa làm |
-| P2 | Sync cart lên server khi có API thật | 3 pts | `/api/cart/sync` | Chưa làm |
+| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---:|---|---|
+| S2-01 | P0 | Cart state: thêm/sửa/xóa item, tính tổng tiền, xử lý cart rỗng | 4 pts | Product detail | Chưa làm |
+| S2-02 | P0 | Cart screen: danh sách sản phẩm, tăng/giảm số lượng, xóa item | 3 pts | Cart state | Chưa làm |
+| S2-03 | P0 | Checkout screen: thông tin nhận hàng, phương thức thanh toán, ghi chú | 4 pts | Cart state | Chưa làm |
+| S2-04 | P0 | Luồng tạo order: validate, tạo order, clear cart, màn thành công | 4 pts | Checkout | Chưa làm |
+| S2-05 | P0 | Orders list/detail cho Đại lý: trạng thái chờ duyệt/xác nhận/đang giao/hoàn tất/hủy | 4 pts | Order model/repository | Chưa làm |
+| S2-06 | P1 | Danh sách notification: đã đọc/chưa đọc, mở màn liên quan | 3 pts | Order events | Chưa làm |
+| S2-07 | P1 | Staff/Admin cập nhật trạng thái đơn ở mức tối thiểu | 3 pts | Role routing | Chưa làm |
+| S2-08 | P2 | Sync cart lên server khi có API thật | 3 pts | `/api/cart/sync` | Chưa làm |
 
 **Tải khuyến nghị:** 19-20 pts P0, kéo P1 nếu còn thời gian.
 
@@ -152,16 +152,16 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Bổ sung các chức năng hỗ trợ sau bán hàng: chat, hồ sơ cá nhân, kho hàng và điều hướng thông báo.
 
-| Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---:|---|---|
-| P0 | Màn profile: xem/sửa số điện thoại, địa chỉ, avatar tạm | 4 pts | Auth state | Chưa làm |
-| P0 | Luồng logout/đổi mật khẩu tạm | 2 pts | Profile | Chưa làm |
-| P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff/AI, timestamp | 5 pts | Chat model/repository | Chưa làm |
-| P0 | Chặn tin nhắn rỗng, loading/error state cho chat | 2 pts | Chat screen | Chưa làm |
-| P1 | AI/sample reply flow cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Product/order data | Chưa làm |
-| P1 | Bản đồ kho: marker, thông tin kho, mở Google Maps | 4 pts | Warehouse data | Chưa làm |
-| P1 | Xử lý quyền vị trí nếu dùng current location | 3 pts | Map plugin | Chưa làm |
-| P2 | Deep link từ notification sang order/product/chat | 3 pts | Notifications | Chưa làm |
+| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---:|---|---|
+| S3-01 | P0 | Màn profile: xem/sửa số điện thoại, địa chỉ, avatar tạm | 4 pts | Auth state | Chưa làm |
+| S3-02 | P0 | Luồng logout/đổi mật khẩu tạm | 2 pts | Profile | Chưa làm |
+| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff/AI, timestamp | 5 pts | Chat model/repository | Chưa làm |
+| S3-04 | P0 | Chặn tin nhắn rỗng, loading/error state cho chat | 2 pts | Chat screen | Chưa làm |
+| S3-05 | P1 | AI/sample reply flow cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Product/order data | Chưa làm |
+| S3-06 | P1 | Bản đồ kho: marker, thông tin kho, mở Google Maps | 4 pts | Warehouse data | Chưa làm |
+| S3-07 | P1 | Xử lý quyền vị trí nếu dùng current location | 3 pts | Map plugin | Chưa làm |
+| S3-08 | P2 | Deep link từ notification sang order/product/chat | 3 pts | Notifications | Chưa làm |
 
 **Tải khuyến nghị:** 18-20 pts, tránh kéo cả AI polish và permission nâng cao nếu map/chat chưa ổn.
 
@@ -169,15 +169,15 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Hoàn thiện khu vực Admin/Staff đầy đủ theo docx để quản lý dashboard, sản phẩm, người dùng, đơn hàng và hỗ trợ chat.
 
-| Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---:|---|---|
-| P0 | Admin/Staff route guard theo role | 3 pts | Auth role | Chưa làm |
-| P0 | Admin dashboard overview: orders, revenue sample, products, users | 4 pts | Admin data | Chưa làm |
-| P0 | Product management: list/create/update/delete, stock/status | 5 pts | Product repository | Chưa làm |
-| P0 | Order status management cho Staff/Admin | 4 pts | Orders | Chưa làm |
-| P0 | User management: danh sách user, duyệt đại lý, phân biệt role | 4 pts | Users API/mock | Chưa làm |
-| P0 | Màn staff phản hồi chat và chuyển complaint cơ bản | 4 pts | Messaging | Chưa làm |
-| P1 | Admin dashboard loading/error/empty states | 3 pts | Admin screens | Chưa làm |
+| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---:|---|---|
+| S4-01 | P0 | Admin/Staff route guard theo role | 3 pts | Auth role | Chưa làm |
+| S4-02 | P0 | Admin dashboard overview: orders, revenue sample, products, users | 4 pts | Admin data | Chưa làm |
+| S4-03 | P0 | Product management: list/create/update/delete, stock/status | 5 pts | Product repository | Chưa làm |
+| S4-04 | P0 | Order status management cho Staff/Admin | 4 pts | Orders | Chưa làm |
+| S4-05 | P0 | User management: danh sách user, duyệt đại lý, phân biệt role | 4 pts | Users API/mock | Chưa làm |
+| S4-06 | P0 | Màn staff phản hồi chat và chuyển complaint cơ bản | 4 pts | Messaging | Chưa làm |
+| S4-07 | P1 | Admin dashboard loading/error/empty states | 3 pts | Admin screens | Chưa làm |
 
 **Tải khuyến nghị:** 24 pts P0. Nếu thiếu thời gian, giảm độ sâu UI polish nhưng không cắt các module Admin chính.
 
@@ -185,15 +185,15 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Đổi mock repository sang Spring Boot REST API, kiểm thử luồng demo end-to-end và ổn định app trước khi trình bày.
 
-| Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---:|---|---|
-| P0 | Pass tích hợp API: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Backend sẵn sàng | Chưa làm |
-| P0 | Tích hợp auth: login/register/JWT storage/role routing với Spring Boot | 4 pts | Auth API | Chưa làm |
-| P0 | Tích hợp product/order: products, cart sync, checkout, orders | 5 pts | Product/order API | Chưa làm |
-| P1 | Tích hợp admin: dashboard, products, users, order status | 5 pts | Admin API | Chưa làm |
-| P0 | Test demo end-to-end: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Full flow | Chưa làm |
-| P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Full app | Chưa làm |
-| P2 | Đổi rule AI sample sang response qua API sau này nếu backend hỗ trợ | 3 pts | AI/API sẵn sàng | Chưa làm |
+| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---:|---|---|
+| S5-01 | P0 | Pass tích hợp API: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Backend sẵn sàng | Chưa làm |
+| S5-02 | P0 | Tích hợp auth: login/register/JWT storage/role routing với Spring Boot | 4 pts | Auth API | Chưa làm |
+| S5-03 | P0 | Tích hợp product/order: products, cart sync, checkout, orders | 5 pts | Product/order API | Chưa làm |
+| S5-04 | P1 | Tích hợp admin: dashboard, products, users, order status | 5 pts | Admin API | Chưa làm |
+| S5-05 | P0 | Test demo end-to-end: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Full flow | Chưa làm |
+| S5-06 | P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Full app | Chưa làm |
+| S5-07 | P2 | Đổi rule AI sample sang response qua API sau này nếu backend hỗ trợ | 3 pts | AI/API sẵn sàng | Chưa làm |
 
 **Tải khuyến nghị:** 20 pts P0. Nếu Spring Boot API chưa sẵn sàng, giữ mock implementation nhưng hoàn thiện kịch bản demo và dữ liệu test. Admin integration và UI polish là phần hardening P1 nếu P0 đã ổn.
 
