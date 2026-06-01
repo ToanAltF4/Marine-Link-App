@@ -17,7 +17,7 @@ import '../../../products/domain/product_repository.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/widgets/product_visuals.dart';
 
-const _compactFeaturedGridMaxWidth = 373.0;
+const _compactFeaturedGridMaxWidth = 348.0;
 const _compactFeaturedCardAspectRatio = 0.685;
 
 class HomeScreen extends StatefulWidget {
@@ -361,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
 
                           return Align(
-                            alignment: Alignment.centerLeft,
+                            alignment: Alignment.center,
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(
                                 maxWidth: _compactFeaturedGridMaxWidth,

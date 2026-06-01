@@ -59,8 +59,9 @@ void main() {
     testWidgets('caps featured card width on wider phone viewports', (
       tester,
     ) async {
+      const viewportWidth = 469.0;
       tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(469, 932);
+      tester.view.physicalSize = const Size(viewportWidth, 932);
       addTearDown(() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
@@ -88,8 +89,20 @@ void main() {
       final cardSize = tester.getSize(
         find.byKey(const Key('featuredProductCard-prod-001')),
       );
-      expect(cardSize.width, lessThanOrEqualTo(181));
+      expect(cardSize.width, lessThanOrEqualTo(168));
       expect(cardSize.height, lessThanOrEqualTo(265));
+
+      final firstCardRect = tester.getRect(
+        find.byKey(const Key('featuredProductCard-prod-001')),
+      );
+      final secondCardRect = tester.getRect(
+        find.byKey(const Key('featuredProductCard-prod-002')),
+      );
+      expect(secondCardRect.left - firstCardRect.right, closeTo(12, 0.1));
+      expect(
+        firstCardRect.left,
+        closeTo(viewportWidth - secondCardRect.right, 1),
+      );
     });
 
     testWidgets('shows featured products and forwards quick search', (
