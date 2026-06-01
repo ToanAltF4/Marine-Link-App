@@ -9,6 +9,9 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/products/presentation/screens/product_detail_screen.dart';
 import '../../features/products/presentation/screens/product_list_screen.dart';
+import '../../shared/widgets/app_back_exit_scope.dart';
+import '../../shared/widgets/buyer_back_to_home_scope.dart';
+import '../../shared/widgets/buyer_bottom_nav.dart';
 
 abstract class AppRoutes {
   static const splash = '/';
@@ -61,12 +64,18 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) =>
-            LoginScreen(onAuthenticated: (user) => _routeByRole(context, user)),
+        builder: (context, state) => AppBackExitScope(
+          child: LoginScreen(
+            onAuthenticated: (user) => _routeByRole(context, user),
+          ),
+        ),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) => AppBackExitScope(
+          onFirstBack: (context) => context.go(AppRoutes.login),
+          child: const RegisterScreen(),
+        ),
       ),
       GoRoute(
         path: AppRoutes.home,
@@ -88,7 +97,10 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.cart,
-        builder: (context, state) => const _PlaceholderPage(title: 'Cart'),
+        builder: (context, state) => const _PlaceholderPage(
+          title: 'Cart',
+          buyerBottomNavTab: BuyerBottomNavTab.cart,
+        ),
       ),
       GoRoute(
         path: AppRoutes.checkout,
@@ -112,7 +124,10 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.chat,
-        builder: (context, state) => const _PlaceholderPage(title: 'Chat'),
+        builder: (context, state) => const _PlaceholderPage(
+          title: 'Chat',
+          buyerBottomNavTab: BuyerBottomNavTab.chat,
+        ),
         routes: [
           GoRoute(
             path: ':roomId',
@@ -124,7 +139,10 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const _PlaceholderPage(title: 'Profile'),
+        builder: (context, state) => const _PlaceholderPage(
+          title: 'Profile',
+          buyerBottomNavTab: BuyerBottomNavTab.profile,
+        ),
       ),
       GoRoute(
         path: AppRoutes.warehouseMap,
@@ -215,13 +233,17 @@ class _SplashPageState extends State<_SplashPage> {
 
 class _PlaceholderPage extends StatelessWidget {
   final String title;
+  final BuyerBottomNavTab? buyerBottomNavTab;
 
-  const _PlaceholderPage({required this.title});
+  const _PlaceholderPage({required this.title, this.buyerBottomNavTab});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(title: Text(title)),
+      bottomNavigationBar: buyerBottomNavTab == null
+          ? null
+          : BuyerBottomNav(currentTab: buyerBottomNavTab),
       body: Center(
         child: Text(
           '$title\n(Sprint 1 implementation pending)',
@@ -229,6 +251,20 @@ class _PlaceholderPage extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),
+    );
+    if (buyerBottomNavTab != null) {
+      return BuyerBackToHomeScope(child: scaffold);
+    }
+    return AppBackExitScope(
+      onFirstBack: (context) {
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.pop();
+          return;
+        }
+        context.go(AppRoutes.home);
+      },
+      child: scaffold,
     );
   }
 }

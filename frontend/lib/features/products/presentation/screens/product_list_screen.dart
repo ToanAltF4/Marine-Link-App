@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
+import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
@@ -16,6 +17,10 @@ import '../bloc/product_bloc.dart';
 import '../widgets/product_visuals.dart';
 
 class ProductListScreen extends StatefulWidget {
+  static const productListScrollKey = PageStorageKey<String>(
+    'productListScrollView',
+  );
+
   final ProductRepository? productRepository;
   final String? initialQuery;
   final String? initialCategoryId;
@@ -67,107 +72,108 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FBFF),
-      bottomNavigationBar: const BuyerBottomNav(
-        currentTab: BuyerBottomNavTab.products,
-      ),
-      body: BlocProvider.value(
-        value: _productBloc,
-        child: SafeArea(
-          bottom: false,
-          child: BlocBuilder<ProductBloc, ProductState>(
-            builder: (context, state) {
-              final baseProducts = state is ProductListLoaded
-                  ? state.products
-                  : const <Product>[];
-              final variantOptions = _selectedCategoryId == null
-                  ? const <String>[]
-                  : _buildVariantOptions(baseProducts);
-              final visibleProducts = state is ProductListLoaded
-                  ? _applyLocalFilters(baseProducts)
-                  : const <Product>[];
+    return BuyerBackToHomeScope(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FBFF),
+        bottomNavigationBar: const BuyerBottomNav(
+          currentTab: BuyerBottomNavTab.products,
+        ),
+        body: BlocProvider.value(
+          value: _productBloc,
+          child: SafeArea(
+            bottom: false,
+            child: BlocBuilder<ProductBloc, ProductState>(
+              builder: (context, state) {
+                final baseProducts = state is ProductListLoaded
+                    ? state.products
+                    : const <Product>[];
+                final variantOptions = _selectedCategoryId == null
+                    ? const <String>[]
+                    : _buildVariantOptions(baseProducts);
+                final visibleProducts = state is ProductListLoaded
+                    ? _applyLocalFilters(baseProducts)
+                    : const <Product>[];
 
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: _handleBack,
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                size: 22,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                _screenTitle(),
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.titleLarge?.copyWith(
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: _handleBack,
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  size: 22,
                                   color: AppColors.primaryDark,
-                                  fontFamily: 'serif',
-                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                            IconButton(
-                              onPressed: _openNotifications,
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(
-                                Icons.notifications_none_rounded,
-                                size: 24,
-                                color: AppColors.primaryDark,
+                              Expanded(
+                                child: Text(
+                                  _screenTitle(),
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: AppColors.primaryDark,
+                                    fontFamily: 'serif',
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          key: const Key('productSearchField'),
-                          controller: _searchController,
-                          onSubmitted: (_) => _requestProducts(),
-                          textInputAction: TextInputAction.search,
-                          decoration: InputDecoration(
-                            hintText: _selectedCategoryId == null
-                                ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
-                                : 'T\u00ecm trong danh m\u1ee5c...',
-                            prefixIcon: const Icon(
-                              Icons.search_rounded,
-                              color: AppColors.textSecondary,
-                            ),
-                            suffixIcon: IconButton(
-                              key: const Key('productSearchButton'),
-                              onPressed: _requestProducts,
-                              icon: const Icon(
-                                Icons.arrow_forward_rounded,
-                                color: AppColors.primaryDark,
+                              IconButton(
+                                onPressed: _openNotifications,
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(
+                                  Icons.notifications_none_rounded,
+                                  size: 24,
+                                  color: AppColors.primaryDark,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            key: const Key('productSearchField'),
+                            controller: _searchController,
+                            onSubmitted: (_) => _requestProducts(),
+                            textInputAction: TextInputAction.search,
+                            decoration: InputDecoration(
+                              hintText: _selectedCategoryId == null
+                                  ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
+                                  : 'T\u00ecm trong danh m\u1ee5c...',
+                              prefixIcon: const Icon(
+                                Icons.search_rounded,
+                                color: AppColors.textSecondary,
+                              ),
+                              suffixIcon: IconButton(
+                                key: const Key('productSearchButton'),
+                                onPressed: _requestProducts,
+                                icon: const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
                             ),
-                            filled: true,
-                            fillColor: Colors.white,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _buildTopFilters(variantOptions),
+                          const SizedBox(height: 10),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: _buildTopFilters(variantOptions),
+                            ),
                           ),
-                        ),
-
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  _buildBody(theme, state, visibleProducts),
-                ],
-              );
-            },
+                    _buildBody(theme, state, visibleProducts),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -241,6 +247,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
     return Expanded(
       child: ListView.separated(
+        key: ProductListScreen.productListScrollKey,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
         itemCount: visibleProducts.length + 1,
         separatorBuilder: (_, index) =>
@@ -441,22 +448,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   void _handleBack() {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-      return;
-    }
-    final router = GoRouter.maybeOf(context);
-    if (router != null) {
-      router.go(AppRoutes.home);
-    }
+    BuyerNavigation.popOrGo(context, AppRoutes.home);
   }
 
   void _openNotifications() {
-    final router = GoRouter.maybeOf(context);
-    if (router != null) {
-      router.go(AppRoutes.notifications);
-    }
+    BuyerNavigation.push(context, AppRoutes.notifications);
   }
 
   void _openProductDetail(String productId) {
@@ -464,10 +460,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       widget.onOpenProductDetail!(productId);
       return;
     }
-    final router = GoRouter.maybeOf(context);
-    if (router != null) {
-      router.go(AppRoutes.productDetailPath(productId));
-    }
+    BuyerNavigation.push(context, AppRoutes.productDetailPath(productId));
   }
 }
 

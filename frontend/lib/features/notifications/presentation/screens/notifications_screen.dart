@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -51,77 +52,79 @@ class NotificationsScreen extends StatelessWidget {
     final unreadItems = _items.where((item) => item.unread).toList();
     final olderItems = _items.where((item) => !item.unread).toList();
 
-    return Scaffold(
-      bottomNavigationBar: const BuyerBottomNav(),
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          children: [
-            Text(
-              'Thong bao',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+    return BuyerBackToHomeScope(
+      child: Scaffold(
+        bottomNavigationBar: const BuyerBottomNav(),
+        body: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            children: [
+              Text(
+                'Thong bao',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Theo doi cap nhat don hang, chat va thay doi gia theo nhu cau mua si.',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.border),
+              const SizedBox(height: 8),
+              Text(
+                'Theo doi cap nhat don hang, chat va thay doi gia theo nhu cau mua si.',
+                style: theme.textTheme.bodyMedium,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _NotificationSummaryCard(
-                      label: 'Chua doc',
-                      value: '${unreadItems.length}',
-                      icon: Icons.mark_chat_unread_outlined,
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _NotificationSummaryCard(
+                        label: 'Chua doc',
+                        value: '${unreadItems.length}',
+                        icon: Icons.mark_chat_unread_outlined,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: _NotificationSummaryCard(
-                      label: 'Da dong bo',
-                      value: 'Realtime',
-                      icon: Icons.sync_rounded,
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: _NotificationSummaryCard(
+                        label: 'Da dong bo',
+                        value: 'Realtime',
+                        icon: Icons.sync_rounded,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 22),
-            Text(
-              'Moi nhat',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 22),
+              Text(
+                'Moi nhat',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            for (final item in unreadItems) ...[
-              _NotificationTile(item: item),
               const SizedBox(height: 12),
-            ],
-            const SizedBox(height: 10),
-            Text(
-              'Truoc do',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+              for (final item in unreadItems) ...[
+                _NotificationTile(item: item),
+                const SizedBox(height: 12),
+              ],
+              const SizedBox(height: 10),
+              Text(
+                'Truoc do',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            for (final item in olderItems) ...[
-              _NotificationTile(item: item),
               const SizedBox(height: 12),
+              for (final item in olderItems) ...[
+                _NotificationTile(item: item),
+                const SizedBox(height: 12),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
