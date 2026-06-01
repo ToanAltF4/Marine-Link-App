@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_router.dart';
 import '../../app/theme/app_theme.dart';
+import '../navigation/buyer_navigation.dart';
 
 enum BuyerBottomNavTab { home, products, cart, chat, profile }
 
@@ -16,16 +16,18 @@ class BuyerBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        constraints: const BoxConstraints(minHeight: 84),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.98),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE4EEF5)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x16052449),
-              blurRadius: 24,
-              offset: Offset(0, -6),
+              blurRadius: 28,
+              offset: Offset(0, 8),
             ),
           ],
         ),
@@ -36,7 +38,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.home_outlined,
               activeIcon: Icons.home_outlined,
-              label: 'Trang\nch\u1ee7',
+              label: 'Trang ch\u1ee7',
               onTap: () => _go(context, AppRoutes.home),
             ),
             _BuyerNavItem(
@@ -44,7 +46,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.sailing_outlined,
               activeIcon: Icons.sailing_outlined,
-              label: 'S\u1ea3n\nph\u1ea9m',
+              label: 'S\u1ea3n ph\u1ea9m',
               onTap: () => _go(context, AppRoutes.productList),
             ),
             _BuyerNavItem(
@@ -52,7 +54,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.shopping_cart_outlined,
               activeIcon: Icons.shopping_cart_outlined,
-              label: 'Gi\u1ecf\nh\u00e0ng',
+              label: 'Gi\u1ecf h\u00e0ng',
               onTap: () => _go(context, AppRoutes.cart),
             ),
             _BuyerNavItem(
@@ -78,10 +80,7 @@ class BuyerBottomNav extends StatelessWidget {
   }
 
   void _go(BuildContext context, String location) {
-    final router = GoRouter.maybeOf(context);
-    if (router != null) {
-      router.go(location);
-    }
+    BuyerNavigation.push(context, location);
   }
 }
 
@@ -105,40 +104,61 @@ class _BuyerNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = currentTab == tab;
+    final iconColor = active
+        ? const Color(0xFF118D96)
+        : AppColors.textSecondary;
+    final labelColor = active ? const Color(0xFF118D96) : AppColors.textPrimary;
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          decoration: BoxDecoration(
-            color: active ? const Color(0xFFD6F0FF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                active ? activeIcon : icon,
-                size: 24,
-                color: active ? const Color(0xFF006A7C) : AppColors.textPrimary,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: active
-                      ? const Color(0xFF006A7C)
-                      : AppColors.textPrimary,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  height: 1.1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 50,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? const Color(0xFFD7F5F8)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Icon(
+                    active ? activeIcon : icon,
+                    size: 23,
+                    color: iconColor,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 14,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      softWrap: false,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: labelColor,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 11.5,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
