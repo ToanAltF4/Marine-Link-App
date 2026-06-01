@@ -141,16 +141,42 @@ Color productStockColor(Product product) {
   return AppColors.stockAvailable;
 }
 
+Color productStockTextColor(Product product) {
+  if (!product.isAvailable) {
+    return const Color(0xFFB91C1C); // Red 700
+  }
+  if (product.stockQuantity <= product.minOrderQuantity * 6) {
+    return const Color(0xFFB45309); // Amber 700
+  }
+  return const Color(0xFF15803D); // Green 700
+}
+
+Color productStockBgColor(Product product) {
+  if (!product.isAvailable) {
+    return const Color(0xFFFEE2E2); // Red 100
+  }
+  if (product.stockQuantity <= product.minOrderQuantity * 6) {
+    return const Color(0xFFFEF3C7); // Amber 100
+  }
+  return const Color(0xFFDCFCE7); // Green 100
+}
+
 String productStockLabel(Product product) {
   if (!product.isAvailable) {
-    return 'S\u1eafp h\u1ebft h\u00e0ng';
+    return 'H\u1ebft h\u00e0ng'; // Hết hàng
   }
-  return 'C\u00f2n h\u00e0ng';
+  if (product.stockQuantity <= product.minOrderQuantity * 6) {
+    return 'S\u1eafp h\u1ebft h\u00e0ng'; // Sắp hết hàng
+  }
+  return 'C\u00f2n h\u00e0ng'; // Còn hàng
 }
 
 String productStockQuantityLabel(Product product) {
   if (!product.isAvailable) {
-    return 'S\u1eafp h\u1ebft h\u00e0ng';
+    return 'H\u1ebft h\u00e0ng'; // Hết hàng
   }
-  return 'C\u00f2n h\u00e0ng: ${product.stockQuantity}${product.unit}';
+  if (product.stockQuantity <= product.minOrderQuantity * 6) {
+    return 'S\u1eafp h\u1ebft: ${product.stockQuantity}${product.unit}'; // Sắp hết: 60kg
+  }
+  return 'C\u00f2n h\u00e0ng: ${product.stockQuantity}${product.unit}'; // Còn hàng: 300kg
 }

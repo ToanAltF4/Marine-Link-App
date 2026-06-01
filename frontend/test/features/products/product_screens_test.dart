@@ -53,7 +53,7 @@ void main() {
       final cardSize = tester.getSize(
         find.byKey(const Key('featuredProductCard-prod-001')),
       );
-      expect(cardSize.height, lessThanOrEqualTo(265));
+      expect(cardSize.height, lessThanOrEqualTo(210));
     });
 
     testWidgets('caps featured card width on wider phone viewports', (
@@ -90,7 +90,7 @@ void main() {
         find.byKey(const Key('featuredProductCard-prod-001')),
       );
       expect(cardSize.width, lessThanOrEqualTo(168));
-      expect(cardSize.height, lessThanOrEqualTo(265));
+      expect(cardSize.height, lessThanOrEqualTo(210));
 
       final firstCardRect = tester.getRect(
         find.byKey(const Key('featuredProductCard-prod-001')),

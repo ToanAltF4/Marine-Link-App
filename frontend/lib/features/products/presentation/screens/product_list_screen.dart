@@ -762,13 +762,13 @@ class _ProductListCard extends StatelessWidget {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: stockColor.withValues(alpha: 0.16),
+                          color: productStockBgColor(product),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           productStockQuantityLabel(product),
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: stockColor,
+                            color: productStockTextColor(product),
                             fontWeight: FontWeight.w700,
                           ),
                         ),

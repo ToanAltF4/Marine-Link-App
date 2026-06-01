@@ -18,7 +18,7 @@ import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/widgets/product_visuals.dart';
 
 const _compactFeaturedGridMaxWidth = 348.0;
-const _compactFeaturedCardAspectRatio = 0.685;
+const _compactFeaturedCardAspectRatio = 0.80;
 
 class HomeScreen extends StatefulWidget {
   final ProductRepository? productRepository;
@@ -772,13 +772,13 @@ class _HotProductCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: stockColor.withValues(alpha: 0.16),
+                      color: productStockBgColor(product),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       productStockLabel(product),
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: stockColor,
+                        color: productStockTextColor(product),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -803,19 +803,19 @@ class _HotProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style:
                           (compact
-                                  ? theme.textTheme.titleSmall
+                                  ? theme.textTheme.titleMedium?.copyWith(fontSize: 14, height: 1.1)
                                   : theme.textTheme.titleLarge)
                               ?.copyWith(
                                 color: AppColors.primaryDark,
                                 fontWeight: FontWeight.w800,
                               ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: compact ? 3 : 6),
                     Row(
                       children: [
                         Icon(
                           Icons.location_on_outlined,
-                          size: compact ? 16 : 18,
+                          size: compact ? 14 : 18,
                           color: AppColors.textSecondary,
                         ),
                         SizedBox(width: compact ? 3 : 4),
@@ -826,7 +826,7 @@ class _HotProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style:
                                 (compact
-                                        ? theme.textTheme.bodySmall
+                                        ? theme.textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.1)
                                         : theme.textTheme.bodyLarge)
                                     ?.copyWith(color: AppColors.textSecondary),
                           ),
@@ -844,7 +844,7 @@ class _HotProductCard extends StatelessWidget {
                             text: MoneyFormatter.format(product.basePrice),
                             style:
                                 (compact
-                                        ? theme.textTheme.titleSmall
+                                        ? theme.textTheme.titleMedium?.copyWith(fontSize: 14, height: 1.1)
                                         : theme.textTheme.titleLarge)
                                     ?.copyWith(
                                       color: const Color(0xFF006A7C),
@@ -855,18 +855,18 @@ class _HotProductCard extends StatelessWidget {
                             text: '/${product.unit}',
                             style:
                                 (compact
-                                        ? theme.textTheme.bodyMedium
+                                        ? theme.textTheme.bodyMedium?.copyWith(fontSize: 11, height: 1.1)
                                         : theme.textTheme.bodyLarge)
                                     ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: compact ? 3 : 6),
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: compact ? 9 : 10,
-                        vertical: compact ? 4 : 5,
+                        vertical: compact ? 3 : 5,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE8F1FF),
@@ -876,7 +876,7 @@ class _HotProductCard extends StatelessWidget {
                         'MOQ: ${product.minOrderQuantity}${product.unit}',
                         style:
                             (compact
-                                    ? theme.textTheme.bodySmall
+                                    ? theme.textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.1)
                                     : theme.textTheme.bodyMedium)
                                 ?.copyWith(color: AppColors.primaryDark),
                       ),
