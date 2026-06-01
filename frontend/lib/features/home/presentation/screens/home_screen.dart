@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/assets/app_assets.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
+import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../products/domain/product.dart';
@@ -40,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late final ProductRepository _productRepository;
   late final ProductBloc _productBloc;
   late final Future<List<_HomeCategorySummary>> _categoriesFuture;
-  DateTime? _lastBackPressTime;
 
   @override
   void initState() {
@@ -64,353 +63,314 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        final now = DateTime.now();
-        final isSecondPress = _lastBackPressTime != null &&
-            now.difference(_lastBackPressTime!) <
-                const Duration(seconds: 2);
-        if (isSecondPress) {
-          await SystemNavigator.pop();
-          return;
-        }
-        _lastBackPressTime = now;
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Nhấn back lần nữa để thoát ứng dụng',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            ),
-          );
-      },
+    return AppBackExitScope(
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FBFF),
-      bottomNavigationBar: const BuyerBottomNav(
-        currentTab: BuyerBottomNavTab.home,
-      ),
-      body: BlocProvider.value(
-        value: _productBloc,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {},
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(
-                        Icons.menu_rounded,
-                        size: 30,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Image.asset(
-                          AppAssets.headerLight,
-                          height: 30,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                    _NotificationButton(onTap: _openNotifications),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-                  children: [
-                    Text(
-                      'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontFamily: 'serif',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD9F3FF),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.storefront_outlined,
-                            size: 16,
-                            color: Color(0xFF006A7C),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '\u0110\u1ea1i l\u00fd',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: const Color(0xFF006A7C),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    TextField(
-                      key: const Key('homeQuickSearchField'),
-                      controller: _searchController,
-                      onSubmitted: (_) => _submitQuickSearch(),
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText:
-                            'T\u00ecm ki\u1ebfm h\u1ea3i s\u1ea3n kh\u00f4...',
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          size: 30,
-                          color: AppColors.textSecondary,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 16,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    _PromoBanner(onTap: _submitQuickSearch),
-                    const SizedBox(height: 22),
-                    Text(
-                      'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontFamily: 'serif',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FutureBuilder<List<_HomeCategorySummary>>(
-                      future: _categoriesFuture,
-                      builder: (context, snapshot) {
-                        final categories =
-                            snapshot.data ?? const <_HomeCategorySummary>[];
-                        if (snapshot.connectionState ==
-                                ConnectionState.waiting &&
-                            categories.isEmpty) {
-                          return const SizedBox(
-                            height: 124,
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        if (categories.isEmpty) {
-                          return const AppEmptyState(
-                            message:
-                                'Ch\u01b0a c\u00f3 danh m\u1ee5c s\u1ea3n ph\u1ea9m.',
-                            icon: Icons.category_outlined,
-                          );
-                        }
-
-                        return SizedBox(
-                          height: 124,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: categories.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              final item = categories[index];
-                              return _CategoryThumbnailCard(
-                                key: Key(
-                                  'homeCategoryChip-${item.category.id}',
-                                ),
-                                summary: item,
-                                onTap: () => _openCategory(item.category.id),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5FF),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF59D4FF)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 28,
+        bottomNavigationBar: const BuyerBottomNav(
+          currentTab: BuyerBottomNavTab.home,
+        ),
+        body: BlocProvider.value(
+          value: _productBloc,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Image.asset(
+                            AppAssets.headerLight,
                             height: 28,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFF006A7C),
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.info_outline_rounded,
-                              size: 20,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      _NotificationButton(onTap: _openNotifications),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+                    children: [
+                      Text(
+                        'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: AppColors.primaryDark,
+                          fontFamily: 'serif',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD9F3FF),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.storefront_outlined,
+                              size: 16,
                               color: Color(0xFF006A7C),
                             ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '\u0110\u1ea1i l\u00fd',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: const Color(0xFF006A7C),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      TextField(
+                        key: const Key('homeQuickSearchField'),
+                        controller: _searchController,
+                        onSubmitted: (_) => _submitQuickSearch(),
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText:
+                              'T\u00ecm ki\u1ebfm h\u1ea3i s\u1ea3n kh\u00f4...',
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            size: 30,
+                            color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 16,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      _PromoBanner(onTap: _submitQuickSearch),
+                      const SizedBox(height: 22),
+                      Text(
+                        'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: AppColors.primaryDark,
+                          fontFamily: 'serif',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      FutureBuilder<List<_HomeCategorySummary>>(
+                        future: _categoriesFuture,
+                        builder: (context, snapshot) {
+                          final categories =
+                              snapshot.data ?? const <_HomeCategorySummary>[];
+                          if (snapshot.connectionState ==
+                                  ConnectionState.waiting &&
+                              categories.isEmpty) {
+                            return const SizedBox(
+                              height: 124,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          if (categories.isEmpty) {
+                            return const AppEmptyState(
+                              message:
+                                  'Ch\u01b0a c\u00f3 danh m\u1ee5c s\u1ea3n ph\u1ea9m.',
+                              icon: Icons.category_outlined,
+                            );
+                          }
+
+                          return SizedBox(
+                            height: 124,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: categories.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                final item = categories[index];
+                                return _CategoryThumbnailCard(
+                                  key: Key(
+                                    'homeCategoryChip-${item.category.id}',
+                                  ),
+                                  summary: item,
+                                  onTap: () => _openCategory(item.category.id),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5FF),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFF59D4FF)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFF006A7C),
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.info_outline_rounded,
+                                size: 20,
+                                color: Color(0xFF006A7C),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Mua t\u1eeb 50kg gi\u1ea3m 5% \u2022 T\u1eeb 100kg gi\u1ea3m 10%',
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Row(
+                        children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Mua t\u1eeb 50kg gi\u1ea3m 5% \u2022 T\u1eeb 100kg gi\u1ea3m 10%',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: AppColors.textPrimary,
-                                    height: 1.45,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: AppColors.primaryDark,
+                                fontFamily: 'serif',
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _openCatalog,
+                            child: Text(
+                              'Xem t\u1ea5t c\u1ea3',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: const Color(0xFF006A7C),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: AppColors.primaryDark,
-                              fontFamily: 'serif',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _openCatalog,
-                          child: Text(
-                            'Xem t\u1ea5t c\u1ea3',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: const Color(0xFF006A7C),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    BlocBuilder<ProductBloc, ProductState>(
-                      builder: (context, state) {
-                        if (state is ProductInitial ||
-                            state is ProductListLoading) {
-                          return const SizedBox(
-                            height: 360,
-                            child: AppLoadingIndicator(
-                              message:
-                                  '\u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
-                            ),
-                          );
-                        }
-                        if (state is ProductListError) {
-                          return SizedBox(
-                            height: 320,
-                            child: AppErrorState(
-                              message: state.message,
-                              onRetry: () => _productBloc.add(
-                                const ProductListRequested(
-                                  featured: true,
-                                  status: 'ACTIVE',
-                                  size: 4,
+                      const SizedBox(height: 12),
+                      BlocBuilder<ProductBloc, ProductState>(
+                        builder: (context, state) {
+                          if (state is ProductInitial ||
+                              state is ProductListLoading) {
+                            return const SizedBox(
+                              height: 360,
+                              child: AppLoadingIndicator(
+                                message:
+                                    '\u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                              ),
+                            );
+                          }
+                          if (state is ProductListError) {
+                            return SizedBox(
+                              height: 320,
+                              child: AppErrorState(
+                                message: state.message,
+                                onRetry: () => _productBloc.add(
+                                  const ProductListRequested(
+                                    featured: true,
+                                    status: 'ACTIVE',
+                                    size: 4,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        }
-                        if (state is ProductListEmpty) {
-                          return const SizedBox(
-                            height: 220,
-                            child: AppEmptyState(
-                              message:
-                                  'Ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m n\u1ed5i b\u1eadt.',
-                              icon: Icons.inventory_2_outlined,
-                            ),
-                          );
-                        }
-
-                        final loaded = state as ProductListLoaded;
-                        final screenWidth = MediaQuery.sizeOf(context).width;
-                        final cardAspectRatio = screenWidth < 560 ? 0.52 : 0.58;
-
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: loaded.products.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 14,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: cardAspectRatio,
-                              ),
-                          itemBuilder: (context, index) {
-                            final product = loaded.products[index];
-                            return _HotProductCard(
-                              product: product,
-                              onTap: () => _openProductDetail(product.id),
                             );
-                          },
-                        );
-                      },
-                    ),
-                  ],
+                          }
+                          if (state is ProductListEmpty) {
+                            return const SizedBox(
+                              height: 220,
+                              child: AppEmptyState(
+                                message:
+                                    'Ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m n\u1ed5i b\u1eadt.',
+                                icon: Icons.inventory_2_outlined,
+                              ),
+                            );
+                          }
+
+                          final loaded = state as ProductListLoaded;
+                          final screenWidth = MediaQuery.sizeOf(context).width;
+                          final cardAspectRatio = screenWidth < 560
+                              ? 0.60
+                              : 0.74;
+
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: loaded.products.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 14,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: cardAspectRatio,
+                                ),
+                            itemBuilder: (context, index) {
+                              final product = loaded.products[index];
+                              return _HotProductCard(
+                                product: product,
+                                onTap: () => _openProductDetail(product.id),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
-
-
-
 
   Future<List<_HomeCategorySummary>> _loadCategories() async {
     final response = await _productRepository.getProducts(
@@ -467,17 +427,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (!mounted) return;
-    context.go(AppRoutes.productListLocation(query: query));
+    BuyerNavigation.push(context, AppRoutes.productListLocation(query: query));
   }
 
   void _openCatalog() {
     if (!mounted) return;
-    context.go(AppRoutes.productList);
+    BuyerNavigation.push(context, AppRoutes.productList);
   }
 
   void _openNotifications() {
     if (!mounted) return;
-    context.go(AppRoutes.notifications);
+    BuyerNavigation.push(context, AppRoutes.notifications);
   }
 
   void _openCategory(String categoryId) {
@@ -486,7 +446,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (!mounted) return;
-    context.go(AppRoutes.productListLocation(categoryId: categoryId));
+    BuyerNavigation.push(
+      context,
+      AppRoutes.productListLocation(categoryId: categoryId),
+    );
   }
 
   void _openProductDetail(String productId) {
@@ -495,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (!mounted) return;
-    context.go(AppRoutes.productDetailPath(productId));
+    BuyerNavigation.push(context, AppRoutes.productDetailPath(productId));
   }
 }
 
@@ -553,12 +516,13 @@ class _PromoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.sizeOf(context).width < 560;
 
     return Stack(
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF0D4C97), Color(0xFF087B87)],
@@ -574,7 +538,7 @@ class _PromoBanner extends StatelessWidget {
               ),
             ],
           ),
-          child: const SizedBox(height: 180),
+          child: SizedBox(height: compact ? 148 : 160),
         ),
         Positioned.fill(
           child: IgnorePointer(
@@ -583,14 +547,14 @@ class _PromoBanner extends StatelessWidget {
         ),
         Positioned.fill(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFA726),
@@ -598,27 +562,35 @@ class _PromoBanner extends StatelessWidget {
                   ),
                   child: Text(
                     '\u01afu \u0111\u00e3i',
-                    style: theme.textTheme.labelMedium?.copyWith(
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: compact ? 6 : 10),
                 Text(
                   'Flash Sale Th\u00e1ng 5',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style:
+                      (compact
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.titleLarge)
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: compact ? 4 : 6),
                 Text(
                   'Gi\u1ea3m \u0111\u1ebfn 10% cho \u0111\u01a1n h\u00e0ng t\u1eeb 100kg',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.94),
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style:
+                      (compact
+                              ? theme.textTheme.bodyMedium
+                              : theme.textTheme.bodyLarge)
+                          ?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            fontWeight: FontWeight.w500,
+                          ),
                 ),
                 const Spacer(),
                 Align(
@@ -629,9 +601,9 @@ class _PromoBanner extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFE8F4FF),
                       foregroundColor: AppColors.primaryDark,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 14,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 14 : 18,
+                        vertical: compact ? 8 : 10,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
@@ -739,8 +711,8 @@ class _HotProductCard extends StatelessWidget {
     final stockColor = productStockColor(product);
     final imageProvider = productImageProvider(product);
     final compact = MediaQuery.sizeOf(context).width < 560;
-    final imageHeight = compact ? 120.0 : 152.0;
-    final contentPadding = compact ? 12.0 : 14.0;
+    final imageHeight = compact ? 120.0 : 160.0;
+    final contentPadding = compact ? 10.0 : 14.0;
 
     return InkWell(
       key: Key('featuredProductCard-${product.id}'),
@@ -814,7 +786,7 @@ class _HotProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style:
                           (compact
-                                  ? theme.textTheme.titleMedium
+                                  ? theme.textTheme.titleSmall
                                   : theme.textTheme.titleLarge)
                               ?.copyWith(
                                 color: AppColors.primaryDark,
@@ -824,12 +796,12 @@ class _HotProductCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_outlined,
-                          size: 18,
+                          size: compact ? 16 : 18,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: compact ? 3 : 4),
                         Expanded(
                           child: Text(
                             displayOrigin(product.origin),
@@ -837,14 +809,14 @@ class _HotProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style:
                                 (compact
-                                        ? theme.textTheme.bodyMedium
+                                        ? theme.textTheme.bodySmall
                                         : theme.textTheme.bodyLarge)
                                     ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const Spacer(),
                     RichText(
                       text: TextSpan(
                         style: theme.textTheme.bodyLarge?.copyWith(
@@ -855,7 +827,7 @@ class _HotProductCard extends StatelessWidget {
                             text: MoneyFormatter.format(product.basePrice),
                             style:
                                 (compact
-                                        ? theme.textTheme.titleMedium
+                                        ? theme.textTheme.titleSmall
                                         : theme.textTheme.titleLarge)
                                     ?.copyWith(
                                       color: const Color(0xFF006A7C),
@@ -864,18 +836,20 @@ class _HotProductCard extends StatelessWidget {
                           ),
                           TextSpan(
                             text: '/${product.unit}',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                            style:
+                                (compact
+                                        ? theme.textTheme.bodyMedium
+                                        : theme.textTheme.bodyLarge)
+                                    ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 9 : 10,
+                        vertical: compact ? 4 : 5,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE8F1FF),
@@ -883,9 +857,11 @@ class _HotProductCard extends StatelessWidget {
                       ),
                       child: Text(
                         'MOQ: ${product.minOrderQuantity}${product.unit}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primaryDark,
-                        ),
+                        style:
+                            (compact
+                                    ? theme.textTheme.bodySmall
+                                    : theme.textTheme.bodyMedium)
+                                ?.copyWith(color: AppColors.primaryDark),
                       ),
                     ),
                   ],
