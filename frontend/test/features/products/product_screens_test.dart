@@ -4,11 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/router/app_router.dart';
+import 'package:marinelink/app/theme/app_theme.dart';
 import 'package:marinelink/features/cart/presentation/cubit/cart_cubit.dart';
+import 'package:marinelink/features/home/presentation/screens/home_screen.dart';
 import 'package:marinelink/features/products/data/product_mock_repository.dart';
 import 'package:marinelink/features/products/presentation/screens/product_detail_screen.dart';
 import 'package:marinelink/features/products/presentation/screens/product_list_screen.dart';
-import 'package:marinelink/features/home/presentation/screens/home_screen.dart';
 import 'package:marinelink/shared/navigation/app_back_exit_controller.dart';
 import 'package:marinelink/shared/widgets/buyer_back_to_home_scope.dart';
 import 'package:marinelink/shared/widgets/buyer_bottom_nav.dart';
@@ -30,6 +31,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: AppTheme.light(),
           home: BlocProvider(
             create: (_) => CartCubit(),
             child: HomeScreen(productRepository: ProductMockRepository()),
@@ -51,7 +53,43 @@ void main() {
       final cardSize = tester.getSize(
         find.byKey(const Key('featuredProductCard-prod-001')),
       );
-      expect(cardSize.height, lessThanOrEqualTo(300));
+      expect(cardSize.height, lessThanOrEqualTo(265));
+    });
+
+    testWidgets('caps featured card width on wider phone viewports', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(469, 932);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: HomeScreen(productRepository: ProductMockRepository()),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('featuredProductCard-prod-001')),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final cardSize = tester.getSize(
+        find.byKey(const Key('featuredProductCard-prod-001')),
+      );
+      expect(cardSize.width, lessThanOrEqualTo(181));
+      expect(cardSize.height, lessThanOrEqualTo(265));
     });
 
     testWidgets('shows featured products and forwards quick search', (

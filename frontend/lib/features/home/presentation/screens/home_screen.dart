@@ -17,6 +17,9 @@ import '../../../products/domain/product_repository.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/widgets/product_visuals.dart';
 
+const _compactFeaturedGridMaxWidth = 373.0;
+const _compactFeaturedCardAspectRatio = 0.685;
+
 class HomeScreen extends StatefulWidget {
   final ProductRepository? productRepository;
   final ValueChanged<String>? onQuickSearch;
@@ -77,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
                   child: Row(
                     children: [
                       Expanded(
@@ -85,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           alignment: Alignment.centerLeft,
                           child: Image.asset(
                             AppAssets.headerLight,
-                            height: 28,
+                            height: 42,
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -169,11 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 22),
                       Text(
                         'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: AppColors.primaryDark,
-                          fontFamily: 'serif',
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: _sectionTitleStyle(theme),
                       ),
                       const SizedBox(height: 12),
                       FutureBuilder<List<_HomeCategorySummary>>(
@@ -276,11 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Text(
                               'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                color: AppColors.primaryDark,
-                                fontFamily: 'serif',
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: _sectionTitleStyle(theme),
                             ),
                           ),
                           TextButton(
@@ -336,11 +331,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           final loaded = state as ProductListLoaded;
                           final screenWidth = MediaQuery.sizeOf(context).width;
-                          final cardAspectRatio = screenWidth < 560
-                              ? 0.60
+                          final compactGrid = screenWidth < 560;
+                          final cardAspectRatio = compactGrid
+                              ? _compactFeaturedCardAspectRatio
                               : 0.74;
 
-                          return GridView.builder(
+                          final productGrid = GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: loaded.products.length,
@@ -358,6 +354,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onTap: () => _openProductDetail(product.id),
                               );
                             },
+                          );
+
+                          if (!compactGrid) {
+                            return productGrid;
+                          }
+
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: _compactFeaturedGridMaxWidth,
+                              ),
+                              child: productGrid,
+                            ),
                           );
                         },
                       ),
@@ -538,7 +548,7 @@ class _PromoBanner extends StatelessWidget {
               ),
             ],
           ),
-          child: SizedBox(height: compact ? 148 : 160),
+          child: SizedBox(height: compact ? 136 : 160),
         ),
         Positioned.fill(
           child: IgnorePointer(
@@ -601,9 +611,16 @@ class _PromoBanner extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFE8F4FF),
                       foregroundColor: AppColors.primaryDark,
+                      minimumSize: Size(0, compact ? 32 : 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: compact
+                          ? theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            )
+                          : null,
                       padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 14 : 18,
-                        vertical: compact ? 8 : 10,
+                        horizontal: compact ? 12 : 18,
+                        vertical: compact ? 6 : 10,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
@@ -711,8 +728,8 @@ class _HotProductCard extends StatelessWidget {
     final stockColor = productStockColor(product);
     final imageProvider = productImageProvider(product);
     final compact = MediaQuery.sizeOf(context).width < 560;
-    final imageHeight = compact ? 120.0 : 160.0;
-    final contentPadding = compact ? 10.0 : 14.0;
+    final imageHeight = compact ? 108.0 : 160.0;
+    final contentPadding = compact ? 9.0 : 14.0;
 
     return InkWell(
       key: Key('featuredProductCard-${product.id}'),
@@ -782,7 +799,7 @@ class _HotProductCard extends StatelessWidget {
                   children: [
                     Text(
                       displayProductName(product),
-                      maxLines: 2,
+                      maxLines: compact ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       style:
                           (compact
@@ -873,6 +890,15 @@ class _HotProductCard extends StatelessWidget {
       ),
     );
   }
+}
+
+TextStyle? _sectionTitleStyle(ThemeData theme) {
+  return theme.textTheme.titleLarge?.copyWith(
+    color: AppColors.primaryDark,
+    fontSize: 20,
+    height: 26 / 20,
+    fontWeight: FontWeight.w600,
+  );
 }
 
 class _DotPatternPainter extends CustomPainter {
