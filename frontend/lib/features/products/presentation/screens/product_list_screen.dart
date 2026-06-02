@@ -699,7 +699,6 @@ class _ProductListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final stockColor = productStockColor(product);
     final imageProvider = productImageProvider(product);
     final fallbackVisual = productVisualStyle(product);
 

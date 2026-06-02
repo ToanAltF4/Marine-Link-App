@@ -725,7 +725,6 @@ class _HotProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final stockColor = productStockColor(product);
     final imageProvider = productImageProvider(product);
     final compact = MediaQuery.sizeOf(context).width < 560;
     final imageHeight = compact ? 108.0 : 160.0;
@@ -803,7 +802,10 @@ class _HotProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style:
                           (compact
-                                  ? theme.textTheme.titleMedium?.copyWith(fontSize: 14, height: 1.1)
+                                  ? theme.textTheme.titleMedium?.copyWith(
+                                      fontSize: 14,
+                                      height: 1.1,
+                                    )
                                   : theme.textTheme.titleLarge)
                               ?.copyWith(
                                 color: AppColors.primaryDark,
@@ -826,7 +828,10 @@ class _HotProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style:
                                 (compact
-                                        ? theme.textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.1)
+                                        ? theme.textTheme.bodySmall?.copyWith(
+                                            fontSize: 11,
+                                            height: 1.1,
+                                          )
                                         : theme.textTheme.bodyLarge)
                                     ?.copyWith(color: AppColors.textSecondary),
                           ),
@@ -844,7 +849,10 @@ class _HotProductCard extends StatelessWidget {
                             text: MoneyFormatter.format(product.basePrice),
                             style:
                                 (compact
-                                        ? theme.textTheme.titleMedium?.copyWith(fontSize: 14, height: 1.1)
+                                        ? theme.textTheme.titleMedium?.copyWith(
+                                            fontSize: 14,
+                                            height: 1.1,
+                                          )
                                         : theme.textTheme.titleLarge)
                                     ?.copyWith(
                                       color: const Color(0xFF006A7C),
@@ -855,7 +863,10 @@ class _HotProductCard extends StatelessWidget {
                             text: '/${product.unit}',
                             style:
                                 (compact
-                                        ? theme.textTheme.bodyMedium?.copyWith(fontSize: 11, height: 1.1)
+                                        ? theme.textTheme.bodyMedium?.copyWith(
+                                            fontSize: 11,
+                                            height: 1.1,
+                                          )
                                         : theme.textTheme.bodyLarge)
                                     ?.copyWith(color: AppColors.textSecondary),
                           ),
@@ -876,7 +887,10 @@ class _HotProductCard extends StatelessWidget {
                         'MOQ: ${product.minOrderQuantity}${product.unit}',
                         style:
                             (compact
-                                    ? theme.textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.1)
+                                    ? theme.textTheme.bodySmall?.copyWith(
+                                        fontSize: 11,
+                                        height: 1.1,
+                                      )
                                     : theme.textTheme.bodyMedium)
                                 ?.copyWith(color: AppColors.primaryDark),
                       ),

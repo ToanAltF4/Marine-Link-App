@@ -124,7 +124,7 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: true,
       category: const Category(id: 'cat-001', name: 'Muc kho'),
       description:
-          'Muc kho loai 1 size dong deu, phu hop kenh dai ly va nha hang can don si.',
+          'M\u1ef1c kh\u00f4 lo\u1ea1i 1, size l\u1edbn (6-8 con/kg), ph\u01a1i \u0111\u1ee7 n\u1eafng, th\u1ecbt ng\u1ecdt v\u00e0 th\u01a1m. \u0110\u00f3ng g\u00f3i h\u00fat ch\u00e2n kh\u00f4ng 1kg/t\u00fai.',
       images: const [
         ProductImage(
           id: 'img-001-a',
@@ -144,7 +144,7 @@ class ProductMockRepository implements ProductRepository {
           id: 'tier-001-b',
           minQuantity: 50,
           maxQuantity: 99,
-          unitPrice: 430000,
+          unitPrice: 427500,
         ),
         PriceTier(
           id: 'tier-001-c',

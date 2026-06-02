@@ -325,6 +325,64 @@ void main() {
   });
 
   group('ProductDetailScreen', () {
+    testWidgets('renders the reference product detail layout', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductDetailScreen(
+              productId: 'prod-001',
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byKey(const Key('productDetailLogo')), findsOneWidget);
+      expect(find.byKey(const Key('productDetailHeroImage')), findsOneWidget);
+      expect(
+        find.byKey(const Key('productDetailWholesaleCard')),
+        findsOneWidget,
+      );
+      expect(find.text('M\u1ef1c kh\u00f4 lo\u1ea1i 1'), findsOneWidget);
+      expect(find.text('Gi\u00e1 s\u1ec9 t\u1eeb:'), findsOneWidget);
+      expect(find.text('450.000\u0111/kg'), findsWidgets);
+      expect(find.text('B\u1ea3ng gi\u00e1 s\u1ec9'), findsOneWidget);
+      expect(
+        find.byKey(const Key('productDetailPackagingSpec')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('productDetailFlatBottomNav')),
+        findsOneWidget,
+      );
+
+      final heroRect = tester.getRect(
+        find.byKey(const Key('productDetailHeroImage')),
+      );
+      final cardRect = tester.getRect(
+        find.byKey(const Key('productDetailWholesaleCard')),
+      );
+      final navRect = tester.getRect(
+        find.byKey(const Key('productDetailFlatBottomNav')),
+      );
+
+      expect(heroRect.top, greaterThanOrEqualTo(56));
+      expect(cardRect.top, greaterThan(heroRect.bottom));
+      expect(navRect.bottom, closeTo(844, 1));
+    });
+
     testWidgets('shows price tiers and adds item to cart', (tester) async {
       final cartCubit = CartCubit();
 
