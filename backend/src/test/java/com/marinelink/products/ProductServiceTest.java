@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,8 +123,8 @@ class ProductServiceTest {
                 .unitPrice(new BigDecimal("420000"))
                 .build();
 
-        product.setImages(List.of(image));
-        product.setPriceTiers(List.of(firstTier, secondTier));
+        product.setImages(Set.of(image));
+        product.setPriceTiers(Set.of(firstTier, secondTier));
         return product;
     }
 }
