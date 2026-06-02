@@ -40,7 +40,7 @@ Ngô Việt Hoàng – SE172524
 
 **9. Quản lý đơn hàng (Orders)**
 
-**10. Chat & Hỗ trợ AI (Messaging)**
+**10. Chat & Hỗ trợ (Messaging)**
 
 **11. Thông báo (Notifications)**
 
@@ -75,7 +75,7 @@ Mô tả cấu trúc cơ sở dữ liệu và API phục vụ ứng dụng Marin
 | order\_items | Chi tiết từng sản phẩm trong đơn, có snapshot giá. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 orders, n-1 products |
 | order\_status\_history | Lịch sử thay đổi trạng thái đơn hàng. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 orders, n-1 users qua changed\_by |
 | chat\_rooms | Phòng chat giữa đại lý và Staff. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, n-1 users qua assigned\_staff\_id, 1-n chat\_messages |
-| chat\_messages | Lịch sử chat của User, Staff và AI sample. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 chat\_rooms, n-1 users qua sender\_id, 1-n chat\_attachments, 1-n complaints |
+| chat\_messages | Lịch sử chat giữa Đại lý và Nhân viên hỗ trợ. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 chat\_rooms, n-1 users qua sender\_id, 1-n chat\_attachments, 1-n complaints |
 | chat\_attachments | Metadata file đính kèm của tin nhắn chat. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 chat\_messages, n-1 users qua uploaded\_by |
 | complaints | Khiếu nại từ đại lý, phát sinh từ đơn hàng hoặc chat message. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, n-1 orders, n-1 chat\_rooms, n-1 chat\_messages |
 | notifications | Thông báo push/in-app cho người dùng. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, có thể liên kết orders/products/chat\_rooms |
@@ -142,7 +142,7 @@ Các thao tác đọc, ghi, cập nhật và xóa dữ liệu được gom theo 
 | Giỏ hàng | Local storage + POST /api/cart/sync | Thêm/sửa/xóa item local trước khi sync; backend lưu carts/cart\_items | carts, cart\_items, products, price\_tiers |
 | Checkout | - | POST /api/orders | carts, cart\_items, orders, order\_items, users, products |
 | Orders | GET /api/orders | PUT /api/orders/{id}/status | orders, order\_items, order\_status\_history, notifications |
-| Chat & Hỗ trợ AI | GET /api/chat/{roomId} | POST /api/chat/send | chat\_rooms, chat\_messages, chat\_attachments, complaints |
+| Chat & Hỗ trợ | GET /api/chat/{roomId} | POST /api/chat/send | chat\_rooms, chat\_messages, chat\_attachments, complaints |
 | Thông báo | GET /api/notifications | PUT /api/notifications/{id}/read | notifications |
 | Bản đồ kho hàng | GET /api/warehouses | - | warehouses |
 | Hồ sơ cá nhân | GET /api/users/me | PUT /api/users/me, POST /api/auth/logout | users, roles |
@@ -594,13 +594,13 @@ Có thông báo khi trạng thái thay đổi.
 
 ![Quan ly don hang (Orders)](data:image/png;base64...)
 
-## 10. Chat & Hỗ trợ AI (Messaging)
+## 10. Chat & Hỗ trợ (Messaging)
 
 Chức năng này cho phép đại lý nhắn tin với MarineLink để hỏi về sản phẩm, giá, tồn kho hoặc tình trạng đơn hàng.
 
 **Mục đích**
 
-Tạo kênh hỗ trợ nhanh trong ứng dụng, giúp đại lý nhận phản hồi kịp thời và giảm thao tác liên hệ bên ngoài.
+Tạo kênh hỗ trợ nhanh trong ứng dụng, giúp đại lý nhận phản hồi kịp thời từ nhân viên hỗ trợ và giảm thao tác liên hệ bên ngoài.
 
 **Mô tả xử lý**
 
@@ -608,9 +608,9 @@ Người dùng mở màn hình chat và nhập nội dung cần hỏi.
 
 Tin nhắn được hiển thị trong khung hội thoại và lưu lại thành lịch sử chat.
 
-Nhân viên phản hồi trực tiếp. AI hỗ trợ gợi ý câu trả lời hoặc phản hồi các câu hỏi đơn giản trong phạm vi dữ liệu của MarineLink.
+Nhân viên hỗ trợ phản hồi trực tiếp các câu hỏi của đại lý.
 
-Ứng dụng phân biệt tin nhắn của người dùng, nhân viên và phản hồi tự động.
+Ứng dụng phân biệt tin nhắn của người dùng và nhân viên.
 
 Ứng dụng chặn tin nhắn rỗng trước khi gửi.
 
@@ -628,7 +628,7 @@ Tin nhắn hiển thị trên màn hình.
 
 Lịch sử chat được lưu lại.
 
-Người dùng nhận phản hồi từ nhân viên hoặc phản hồi mẫu/AI.
+Người dùng nhận phản hồi trực tiếp từ nhân viên hỗ trợ.
 
 Tiêu chí hoàn thành
 
@@ -646,11 +646,11 @@ Có hiển thị thời gian gửi.
 
 Có xử lý tin nhắn rỗng.
 
-Có phản hồi mẫu hoặc hỗ trợ AI theo luồng chat.
+Nhân viên hỗ trợ phản hồi đúng trọng tâm câu hỏi.
 
 **Giao diện minh họa**
 
-![Chat & Ho tro AI (Messaging)](data:image/png;base64...)
+![Chat & Ho tro (Messaging)](data:image/png;base64...)
 
 ## 11. Thông báo (Notifications)
 

@@ -27,7 +27,7 @@ Mục tiêu frontend:
 | Repo location | Flutter code nằm trong `frontend/` của monorepo |
 | API contract | FE chỉ bám `docs/MarineLink_API_Documentation.md`, không tự phát sinh endpoint riêng |
 | Admin scope | Full Admin Dashboard |
-| AI support demo | Sample responses, chưa gọi model thật |
+| Chat support demo | Chat trực tiếp với Nhân viên hỗ trợ |
 
 ## 2A. UI source of truth
 
@@ -159,7 +159,7 @@ Quy ước trong monorepo:
 | Checkout | BLoC | Validate receiver info, payment method, create order, clear cart |
 | Orders | BLoC | List/detail, status tracking, role-based status update |
 | Notifications | Screen/Cubit | Buyer notifications list now has UI shell; unread state + mark-as-read stay for API integration phase |
-| Messaging | BLoC | Chat history, send message, chat attachments, sample AI/staff response |
+| Messaging | BLoC | Chat history, send message, chat attachments, staff response |
 | Profile | Cubit | View/update profile, change password placeholder |
 | Warehouse Map | Cubit | Warehouse markers, open Google Maps, permission state |
 | Admin | BLoC | Dashboard, products CRUD, users, orders, staff chat |

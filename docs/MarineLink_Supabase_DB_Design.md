@@ -89,7 +89,7 @@ create type order_status as enum ('PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED
 create type payment_method as enum ('COD', 'BANK_TRANSFER');
 create type payment_status as enum ('UNPAID', 'PENDING', 'PAID', 'FAILED', 'REFUNDED');
 create type notification_type as enum ('PROMOTION', 'PRODUCT', 'ORDER', 'CHAT', 'SYSTEM');
-create type chat_sender_type as enum ('USER', 'STAFF', 'AI_SAMPLE');
+create type chat_sender_type as enum ('USER', 'STAFF');
 create type complaint_status as enum ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED');
 ```
 
@@ -386,15 +386,15 @@ Indexes:
 
 ### 8.3 `chat_messages`
 
-Lịch sử chat giữa đại lý, Staff và sample AI response.
+Lịch sử chat giữa Đại lý và Nhân viên hỗ trợ.
 
 | Column | Type | Constraint | Note |
 |---|---|---|---|
 | id | bigint | PK, generated identity, internal only | Message ID nội bộ |
 | public_id | uuid | unique, default `gen_random_uuid()` | Public ID trả qua API |
 | room_id | bigint | FK -> chat_rooms.id, not null | Phòng chat |
-| sender_id | bigint | FK -> users.id, nullable | Null nếu AI_SAMPLE |
-| sender_type | chat_sender_type | not null | USER/STAFF/AI_SAMPLE |
+| sender_id | bigint | FK -> users.id, not null | Người gửi tin nhắn |
+| sender_type | chat_sender_type | not null | USER/STAFF |
 | content | text | not null | Nội dung |
 | created_at | timestamptz | not null, default now() | Audit |
 

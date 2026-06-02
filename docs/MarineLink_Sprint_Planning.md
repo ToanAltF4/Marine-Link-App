@@ -13,7 +13,7 @@ Nguồn: `docs/MarineLink_Main_Functions_Specification_v3.md`
 - Backend/API: dùng mock data trước, sau đó tích hợp Spring Boot REST API theo endpoint trong docx.
 - Quản lý state: dùng BLoC/Cubit. Cubit dùng cho màn hình đơn giản, BLoC dùng cho flow phức tạp như authentication, checkout, orders và admin.
 - Phạm vi Admin: Dashboard Admin đầy đủ là scope bắt buộc, không phải stretch.
-- Hỗ trợ AI: dùng sample responses trong giai đoạn demo, chưa cần gọi model thật.
+- Chat & Hỗ trợ: Đại lý nhắn tin và nhân viên hỗ trợ trực tiếp phản hồi.
 - Trạng thái trong các bảng kế hoạch dùng các giá trị: `Chưa làm`, `Đang làm`, `Xong`, `Thất bại`, `Bị chặn`.
 
 ## Mục tiêu release
@@ -47,7 +47,7 @@ Quy ước code chung repo:
 | Luồng mua hàng | Cart state, màn giỏ hàng, form checkout, màn đặt hàng thành công | `/api/cart/sync`, `/api/orders`, tính lại giá, validate tồn kho/min quantity | `carts`, `cart_items`, `orders`, `order_items`, rule sinh order code | Test luồng checkout thành công, case quantity sai/cart rỗng |
 | Theo dõi đơn hàng | Danh sách/chi tiết đơn, status badge, timeline đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status` cho Staff/Admin | `order_status_history`, index đơn/trạng thái, liên kết notification | E2E luồng đặt hàng, test đổi trạng thái không hợp lệ |
 | Thông báo | Danh sách thông báo, trạng thái đã đọc/chưa đọc, mở sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read`, tạo event từ order/chat | `notifications`, cột liên kết order/product/chat, index unread | Verify rule chỉ chủ sở hữu được mark read, dữ liệu demo notification |
-| Chat/AI mẫu | UI chat, ô nhập tin nhắn, placeholder attachment, hiển thị AI sample | `/api/chat/send`, `/api/chat/{roomId}`, sample response service, validate metadata attachment | `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Test chặn tin nhắn rỗng, kịch bản AI sample |
+| Chat/Hỗ trợ | UI chat, ô nhập tin nhắn, placeholder attachment, hiển thị tin nhắn nhân viên | `/api/chat/send`, `/api/chat/{roomId}`, dịch vụ phản hồi chat, validate metadata attachment | `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Test chặn tin nhắn rỗng, kịch bản chat hỗ trợ |
 | Hồ sơ cá nhân | Xem/sửa profile, phần tạm cho đổi mật khẩu và avatar | `/api/users/me`, validate cập nhật profile, cleanup logout nếu cần | Các field profile và index trong `users` đã bao phủ | Test validation profile và ownership |
 | Bản đồ kho | Danh sách kho/marker bản đồ, mở Google Maps, xử lý permission nếu cần | `/api/warehouses`, filter kho đang hoạt động | `warehouses`, field tọa độ, active index, seed 2 kho | Fallback khi permission/plugin bản đồ chưa sẵn sàng |
 | Dashboard Admin đầy đủ | Dashboard admin, UI CRUD sản phẩm, quản lý user/role, UI đơn/trạng thái, staff chat view | `/api/admin/dashboard`, `/api/admin/products`, `/api/admin/users`, role guard, rule service admin | Query admin trên users/products/orders/complaints/chat, rule soft delete/status | Smoke test admin bằng tài khoản ADMIN/STAFF/USER |
@@ -59,7 +59,7 @@ Quy ước code chung repo:
 |---|---|---|---|---|
 | Sprint 1 | Nền tảng app, màn auth, home/product list/detail bằng mock repository | API envelope, khung contract auth/product, DTO tương thích mock | Migration nền cho roles/users/catalog, seed products/categories | Smoke test Flutter, checklist validation auth/product |
 | Sprint 2 | Cart, checkout, orders list/detail, điểm vào notification | Cart sync, tạo order, API query/status đơn, tạo notification | Migration cart/order/order item/status history/notification | E2E luồng mua hàng, test cart/order không hợp lệ |
-| Sprint 3 | Profile, chat, warehouse map, điều hướng từ notification | API profile, chat send/history, warehouses, rule AI sample response | Field liên quan profile/chat, warehouses, complaints/attachments nếu dùng | Test fallback chat/profile/map, cập nhật dữ liệu demo |
+| Sprint 3 | Profile, chat, warehouse map, điều hướng từ notification | API profile, chat send/history, warehouses, dịch vụ phản hồi chat | Field liên quan profile/chat, warehouses, complaints/attachments nếu dùng | Test fallback chat/profile/map, cập nhật dữ liệu demo |
 | Sprint 4 | Màn Full Admin/Staff Dashboard và các luồng quản lý | Service dashboard/product/user/order/chat cho admin và role guard | Index phục vụ query admin, constraint soft-delete/status, seed case admin | Smoke test role admin, regression phân quyền |
 | Sprint 5 | Đổi mock repository sang REST thật và polish trạng thái UI | Hoàn tất tích hợp endpoint, harden xử lý lỗi, ổn định auth/session | Seed data cuối, verify migrations/indexes, checklist backup env | Chạy thử full demo, `flutter test --coverage`, backend `mvn clean verify` nếu backend đã scaffold |
 
@@ -82,11 +82,11 @@ Quy ước code chung repo:
 | P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | `/api/cart/sync`, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
 | P0 | Theo dõi đơn hàng | Danh sách đơn, chi tiết đơn, trạng thái đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`, `notifications` | Chưa làm |
 | P1 | Thông báo | Danh sách thông báo, đã đọc/chưa đọc, điều hướng sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read` | Chưa làm |
-| P1 | Chat/hỗ trợ | Chat với Staff/AI, lịch sử chat, file đính kèm, chặn tin nhắn rỗng | `/api/chat/send`, `/api/chat/{roomId}`, `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Chưa làm |
+| P1 | Chat/hỗ trợ | Chat với Nhân viên, lịch sử chat, file đính kèm, chặn tin nhắn rỗng | `/api/chat/send`, `/api/chat/{roomId}`, `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Chưa làm |
 | P1 | Hồ sơ cá nhân | Xem/sửa hồ sơ, đổi mật khẩu, logout | `/api/users/me`, `/api/auth/logout`, `users` | Chưa làm |
 | P1 | Bản đồ kho | Bản đồ kho hàng, marker, mở Google Maps, xử lý quyền vị trí | `/api/warehouses`, `warehouses` | Chưa làm |
 | P0 | Dashboard Admin đầy đủ | Tổng quan, quản lý sản phẩm/người dùng/role/đơn hàng, xử lý trạng thái, hỗ trợ chat | `/api/admin/dashboard`, `/api/admin/products`, `/api/admin/users` | Chưa làm |
-| P1 | Hỗ trợ AI mẫu | Câu trả lời mẫu có ngữ cảnh sản phẩm, giá, tồn kho, đơn hàng cho demo | `chat_messages`, `products`, `orders` | Chưa làm |
+| P1 | Phản hồi từ nhân viên | Hỗ trợ phản hồi nhanh từ nhân viên hỗ trợ có ngữ cảnh sản phẩm, giá, tồn kho | `chat_messages`, `products`, `orders` | Chưa làm |
 | P2 | Hoàn thiện demo | Empty states, loading states, validation text, dữ liệu mẫu đẹp | Toàn bộ module | Chưa làm |
 
 
@@ -156,14 +156,14 @@ Quy ước code chung repo:
 |---|---|---|---:|---|---|
 | S3-01 | P0 | Màn profile: xem/sửa số điện thoại, địa chỉ, avatar tạm | 4 pts | Auth state | Chưa làm |
 | S3-02 | P0 | Luồng logout/đổi mật khẩu tạm | 2 pts | Profile | Chưa làm |
-| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff/AI, timestamp | 5 pts | Chat model/repository | Chưa làm |
+| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff, timestamp | 5 pts | Chat model/repository | Chưa làm |
 | S3-04 | P0 | Chặn tin nhắn rỗng, loading/error state cho chat | 2 pts | Chat screen | Chưa làm |
-| S3-05 | P1 | AI/sample reply flow cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Product/order data | Chưa làm |
+| S3-05 | P1 | Phản hồi trực tiếp của nhân viên cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Product/order data | Chưa làm |
 | S3-06 | P1 | Bản đồ kho: marker, thông tin kho, mở Google Maps | 4 pts | Warehouse data | Chưa làm |
 | S3-07 | P1 | Xử lý quyền vị trí nếu dùng current location | 3 pts | Map plugin | Chưa làm |
 | S3-08 | P2 | Deep link từ notification sang order/product/chat | 3 pts | Notifications | Chưa làm |
 
-**Tải khuyến nghị:** 18-20 pts, tránh kéo cả AI polish và permission nâng cao nếu map/chat chưa ổn.
+**Tải khuyến nghị:** 18-20 pts, tránh kéo cả phần tích hợp phức tạp và permission nâng cao nếu map/chat chưa ổn.
 
 ## Sprint 4: Dashboard Admin đầy đủ
 
@@ -193,7 +193,7 @@ Quy ước code chung repo:
 | S5-04 | P1 | Tích hợp admin: dashboard, products, users, order status | 5 pts | Admin API | Chưa làm |
 | S5-05 | P0 | Test demo end-to-end: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Full flow | Chưa làm |
 | S5-06 | P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Full app | Chưa làm |
-| S5-07 | P2 | Đổi rule AI sample sang response qua API sau này nếu backend hỗ trợ | 3 pts | AI/API sẵn sàng | Chưa làm |
+| S5-07 | P2 | Đổi luồng chat sang API hoàn chỉnh sau này nếu backend hỗ trợ | 3 pts | API sẵn sàng | Chưa làm |
 
 **Tải khuyến nghị:** 20 pts P0. Nếu Spring Boot API chưa sẵn sàng, giữ mock implementation nhưng hoàn thiện kịch bản demo và dữ liệu test. Admin integration và UI polish là phần hardening P1 nếu P0 đã ổn.
 
@@ -202,11 +202,11 @@ Quy ước code chung repo:
 | Rủi ro | Ảnh hưởng | Cách xử lý |
 |---|---|---|
 | API/backend chưa sẵn sàng | Flutter team bị chặn ở auth, products, orders | Dùng repository interface + mock data ngay từ Sprint 1; đổi implementation sang REST sau |
-| Scope quá rộng cho 3 người | Không demo được luồng chính | Ưu tiên P0 theo flow mua hàng và Dashboard Admin đầy đủ; AI thật và map nâng cao để sau demo |
+| Scope quá rộng cho 3 người | Không demo được luồng chính | Ưu tiên P0 theo flow mua hàng và Dashboard Admin đầy đủ; các tính năng nâng cao để sau demo |
 | Quản lý state không thống nhất | Dễ lỗi cart/order/auth khi tích hợp | Dùng BLoC/Cubit từ đầu: Cubit cho screen đơn giản, BLoC cho auth/checkout/orders/admin |
 | Role Admin/Staff/User phức tạp | Sai route hoặc lộ màn quản trị | Route guard theo role, test riêng login từng role |
 | Map/permission tốn thời gian | Chậm tiến độ core commerce flow | Map chỉ cần marker + open Google Maps cho MVP; current location là stretch |
-| Hỗ trợ AI không có backend/LLM | Không hoàn thành đúng kỳ vọng | Dùng sample responses theo rule cho demo phase; AI thật là scope sau |
+| Hệ thống chat chưa tích hợp Socket | Giới hạn realtime | Sử dụng HTTP pooling hoặc REST API cơ bản để gửi nhận tin nhắn |
 
 ## Definition of Done (định nghĩa hoàn thành)
 
@@ -241,4 +241,4 @@ Quy ước code chung repo:
 | Backend/API | Mock data trước, sau đó tích hợp Spring Boot REST API |
 | Quản lý state | BLoC/Cubit: Cubit cho màn hình đơn giản, BLoC cho flow phức tạp |
 | Phạm vi Admin | Dashboard Admin đầy đủ |
-| Hỗ trợ AI | Sample responses cho demo phase |
+| Hỗ trợ chat | Hỗ trợ chat trực tiếp với nhân viên |
