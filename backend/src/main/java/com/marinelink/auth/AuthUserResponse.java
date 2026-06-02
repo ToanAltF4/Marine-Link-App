@@ -17,7 +17,7 @@ public record AuthUserResponse(
         String taxCode,
         String avatarUrl
 ) {
-    static AuthUserResponse from(User user) {
+    public static AuthUserResponse from(User user) {
         return new AuthUserResponse(
                 user.getPublicId(),
                 user.getFullName(),

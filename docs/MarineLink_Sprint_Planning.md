@@ -43,7 +43,7 @@ Quy ước code chung repo:
 |---|---|---|---|---|
 | Nền tảng dự án | Cấu trúc app, điều hướng, theme, shared widgets, API client interface, base BLoC/Cubit | API envelope, exception handler, cấu trúc module, health check, khung auth filter | Migration nền tảng, enum types, `roles`, `users`, seed role demo | Chạy app, smoke test điều hướng/API client, cập nhật ghi chú setup |
 | Xác thực | Màn login/register, lưu token, điều hướng theo role, trạng thái logout | `/api/auth/login`, `/api/auth/register`, hash password, cấp/verify JWT, kế hoạch rate limit | `users`, `roles`, unique email/phone, tài khoản demo admin/staff/user | Unit test auth, case login thất bại, kiểm tra không commit secret |
-| Duyệt sản phẩm | Home, danh mục, danh sách/chi tiết sản phẩm, search/filter, UI price tier | `/api/products`, `/api/products/{id}`, filter, phân trang, product DTO | `categories`, `products`, `product_images`, `price_tiers`, index sản phẩm, seed catalog | Dữ liệu test product list/detail, trạng thái empty/loading/error |
+| Duyệt sản phẩm | Home, danh mục, danh sách/chi tiết sản phẩm, search, filter nhanh, bottom sheet lọc, sort giá, UI price tier | `/api/products`, `/api/products/{id}`, filter, phân trang, product DTO | `categories`, `products`, `product_images`, `price_tiers`, index sản phẩm, seed catalog | Dữ liệu test product list/detail, trạng thái empty/loading/error |
 | Luồng mua hàng | Cart state, màn giỏ hàng, form checkout, màn đặt hàng thành công | `/api/cart/sync`, `/api/orders`, tính lại giá, validate tồn kho/min quantity | `carts`, `cart_items`, `orders`, `order_items`, rule sinh order code | Test luồng checkout thành công, case quantity sai/cart rỗng |
 | Theo dõi đơn hàng | Danh sách/chi tiết đơn, status badge, timeline đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status` cho Staff/Admin | `order_status_history`, index đơn/trạng thái, liên kết notification | E2E luồng đặt hàng, test đổi trạng thái không hợp lệ |
 | Thông báo | Danh sách thông báo, trạng thái đã đọc/chưa đọc, mở sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read`, tạo event từ order/chat | `notifications`, cột liên kết order/product/chat, index unread | Verify rule chỉ chủ sở hữu được mark read, dữ liệu demo notification |
@@ -78,7 +78,7 @@ Quy ước code chung repo:
 |---|---|---|---|---|
 | P0 | Nền tảng dự án | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, cấu trúc BLoC/Cubit | users, roles, products, categories, carts, orders | Xong |
 | P0 | Xác thực | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles` | Xong |
-| P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Xong |
+| P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter/sort, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Xong |
 | P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | `/api/cart/sync`, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
 | P0 | Theo dõi đơn hàng | Danh sách đơn, chi tiết đơn, trạng thái đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`, `notifications` | Chưa làm |
 | P1 | Thông báo | Danh sách thông báo, đã đọc/chưa đọc, điều hướng sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read` | Chưa làm |
@@ -115,7 +115,7 @@ Quy ước code chung repo:
 | S1-05 | P0 | Màn register: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Xong |
 | S1-06 | P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Xong |
 | S1-07 | P1 | Wiring BLoC/Cubit cho auth/product/loading/error | 2 pts | Nền tảng | Xong |
-| S1-08 | P1 | Product list: image/name/origin/price/min quantity/stock, search/filter, empty state | 4 pts | Product repository | Xong |
+| S1-08 | P1 | Product list: image/name/origin/price/min quantity/stock, search, category chips, stock filter, price sort, empty state/reset filter | 4 pts | Product repository | Xong |
 | S1-09 | P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | 3 pts | Product repository | Xong |
 | S1-10 | P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Xong |
 
@@ -128,7 +128,7 @@ Quy ước code chung repo:
 - Login/register có validation và phản hồi lỗi rõ ràng.
 - Sau login, user role Đại lý vào được Home.
 - Home -> Product List -> Product Detail hoạt động đúng.
-- Product list có search/filter và empty state.
+- Product list có search, lọc danh mục, lọc tồn kho, sort giá, empty state và xóa lọc.
 - Code có cấu trúc đủ để mở rộng cart/order ở Sprint 2.
 
 ## Sprint 2: Giỏ hàng, checkout, đơn hàng, thông báo
@@ -187,9 +187,9 @@ Quy ước code chung repo:
 
 | Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
 |---|---|---|---:|---|---|
-| S5-01 | P0 | Pass tích hợp API: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Backend sẵn sàng | Chưa làm |
-| S5-02 | P0 | Tích hợp auth: login/register/JWT storage/role routing với Spring Boot | 4 pts | Auth API | Chưa làm |
-| S5-03 | P0 | Tích hợp product/order: products, cart sync, checkout, orders | 5 pts | Product/order API | Chưa làm |
+| S5-01 | P0 | Pass tích hợp API: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Backend sẵn sàng | Đang làm - Auth/Product remote đã có |
+| S5-02 | P0 | Tích hợp auth: login/register/JWT storage/role routing với Spring Boot | 4 pts | Auth API | Xong phần login/register/me |
+| S5-03 | P0 | Tích hợp product/order: products, cart sync, checkout, orders | 5 pts | Product/order API | Đang làm - Product remote xong, cart/order chưa |
 | S5-04 | P1 | Tích hợp admin: dashboard, products, users, order status | 5 pts | Admin API | Chưa làm |
 | S5-05 | P0 | Test demo end-to-end: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Full flow | Chưa làm |
 | S5-06 | P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Full app | Chưa làm |
@@ -225,7 +225,7 @@ Quy ước code chung repo:
 
 1. Đăng nhập bằng tài khoản Đại lý.
 2. Vào Home, xem category và sản phẩm nổi bật.
-3. Tìm/lọc sản phẩm trong Product List.
+3. Tìm sản phẩm trong Product List, lọc `Sắp hết`, sort giá và xóa lọc.
 4. Mở Product Detail, xem giá sỉ và số lượng tối thiểu.
 5. Thêm sản phẩm vào Cart, chỉnh số lượng.
 6. Checkout, nhập địa chỉ, chọn thanh toán, tạo order.

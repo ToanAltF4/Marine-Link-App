@@ -154,7 +154,7 @@ Quy ước trong monorepo:
 |---|---|---|
 | Auth | BLoC | Login, register, JWT, role routing, logout |
 | Home | BLoC | Buyer dashboard hero, category rail, featured products, quick search, notifications entry |
-| Products | BLoC | Product list, filter chips, product detail, price tiers, add-to-cart temporary flow |
+| Products | BLoC | Product list, quick filter chips, advanced filter bottom sheet, product detail, price tiers, add-to-cart temporary flow |
 | Cart | Cubit | Add/update/remove item, total calculation, empty cart, sync `carts` + `cart_items` |
 | Checkout | BLoC | Validate receiver info, payment method, create order, clear cart |
 | Orders | BLoC | List/detail, status tracking, role-based status update |
@@ -184,6 +184,17 @@ sequenceDiagram
     Repository-->>Cubit: List<Product>
     Cubit-->>Screen: ProductListLoaded
 ```
+
+Product List filter state:
+
+| Field | FE usage | API mapping |
+|---|---|---|
+| `query` | Search field; submit hoặc bấm search button để tải lại list | `q` |
+| `categoryId` | Chip danh mục ở hàng filter nhanh | `categoryId` |
+| `stockFilter` | `Tất cả`, `Còn hàng`, `Sắp hết`; `Sắp hết` tính từ `stockQuantity <= minOrderQuantity * 6` | MVP lọc local trên response `ACTIVE`; backend mở rộng nếu cần |
+| `sort` | Bottom sheet hoặc sort chip: mặc định, giá tăng, giá giảm | `sort=price` hoặc `sort=-price` |
+
+Không đưa filter khoảng giá, MOQ hoặc xuất xứ vào UI production trước khi `docs/MarineLink_API_Documentation.md` và `docs/marinelink_openapi.json` có contract tương ứng.
 
 ### 7.2 Write flow
 
@@ -229,7 +240,8 @@ Giai đoạn Spring Boot:
 - `CartRemoteRepository` gọi `/api/cart/sync` để đồng bộ `carts` + `cart_items`.
 - `OrderRemoteRepository` gọi `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`.
 - `MessagingRemoteRepository` gọi `/api/chat/send`, `/api/chat/{roomId}` và xử lý metadata `chat_attachments`.
-- DI quyết định dùng mock hay remote qua config.
+- DI quyết định dùng mock hay remote qua `--dart-define=USE_REMOTE_REPOSITORIES=true`.
+- Khi test Android emulator với backend local, dùng thêm `--dart-define=API_BASE_URL=http://10.0.2.2:8080`; desktop/browser dùng `http://localhost:8080`.
 
 ## 9. Endpoint frontend cần dùng
 
@@ -345,7 +357,7 @@ Luồng test demo bắt buộc:
 
 1. Login User.
 2. View home.
-3. Search product.
+3. Search/filter product, including stock filter and price sort.
 4. View product detail.
 5. Add to cart.
 6. Checkout and create order.
@@ -361,7 +373,7 @@ Luồng test demo bắt buộc:
 - [ ] Core API client and response envelope implemented.
 - [ ] Mock repositories implemented for all P0 flows.
 - [ ] AuthBloc with role guard implemented.
-- [ ] Product browsing flow implemented.
+- [ ] Product browsing flow implemented with search, category chips, stock filter, price sort, empty state, and reset filter action.
 - [ ] Cart and checkout flow implemented.
 - [ ] Orders and notifications implemented.
 - [ ] Messaging with sample responses and chat attachment metadata implemented.

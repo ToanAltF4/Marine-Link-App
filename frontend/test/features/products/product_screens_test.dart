@@ -322,6 +322,51 @@ void main() {
 
       expect(find.byKey(const Key('productListEmptyState')), findsOneWidget);
     });
+
+    testWidgets('applies stock filter from the product filter sheet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductListScreen(
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byKey(const Key('productCard-prod-001')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('productFilterSheet')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('productFilterStockLow')));
+      await tester.tap(find.byKey(const Key('productFilterApplyButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 mặt hàng'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('productCard-prod-004')),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byKey(const Key('productCard-prod-004')), findsOneWidget);
+      expect(find.text('Sắp hết'), findsWidgets);
+
+      await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('productFilterResetButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('productCard-prod-001')), findsOneWidget);
+    });
   });
 
   group('ProductDetailScreen', () {

@@ -145,7 +145,7 @@
           { "name": "categoryId", "in": "query", "schema": { "type": "string" }, "description": "UUID format category ID" },
           { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "OUT_OF_STOCK", "DISABLED"] } },
           { "name": "featured", "in": "query", "schema": { "type": "boolean" } },
-          { "name": "sort", "in": "query", "schema": { "type": "string" }, "description": "e.g., name, price, -createdAt" }
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest", "price_asc", "price_desc", "name_asc", "name_desc"] }, "description": "Whitelisted product sort key" }
         ],
         "responses": {
           "200": {

@@ -452,6 +452,8 @@ class ProductMockRepository implements ProductRepository {
       filtered = filtered.where((p) => p.status == requestedStatus).toList();
     }
 
+    filtered = _sortProducts(filtered, sort);
+
     final total = filtered.length;
     final start = page * size;
     final end = (start + size).clamp(0, total);
@@ -488,5 +490,26 @@ class ProductMockRepository implements ProductRepository {
       message: 'OK',
       data: detail,
     );
+  }
+
+  List<Product> _sortProducts(List<Product> products, String? sort) {
+    final sorted = List<Product>.from(products);
+    switch (sort) {
+      case 'price':
+        sorted.sort((left, right) => left.basePrice.compareTo(right.basePrice));
+        break;
+      case '-price':
+        sorted.sort((left, right) => right.basePrice.compareTo(left.basePrice));
+        break;
+      case 'name':
+        sorted.sort((left, right) => left.name.compareTo(right.name));
+        break;
+      case '-name':
+        sorted.sort((left, right) => right.name.compareTo(left.name));
+        break;
+      default:
+        return products;
+    }
+    return sorted;
   }
 }

@@ -304,7 +304,9 @@ Authorization rules:
 
 ### Products
 
-- Product list hỗ trợ category, keyword, price range, stock status, sort.
+- Product list MVP hỗ trợ `q`, `categoryId`, `status`, `featured`, `sort` theo `GET /api/products`.
+- Backend phải validate `sort` bằng whitelist (`name`, `-name`, `price`, `-price`, `-createdAt`, `-featured`) trước khi build query.
+- Stock status nâng cao như `Sắp hết`, price range, MOQ và origin filter là mở rộng sau; khi bật phải cập nhật API doc, OpenAPI, repository query, DB index và contract test.
 - Product detail trả price tiers.
 - Admin có thể create/update/delete hoặc disable product.
 - Không xóa cứng sản phẩm nếu đã có order item; dùng soft delete/status.
@@ -420,7 +422,7 @@ Critical test cases:
 
 - Login success/failure.
 - Register duplicate email/phone.
-- Product list filter by category and keyword.
+- Product list filter by category/keyword/status and sort by whitelisted price/name/date fields.
 - Checkout rejects empty cart and invalid quantity.
 - Create order stores price snapshot.
 - User cannot update order status.
@@ -456,6 +458,8 @@ app:
 
 Trong giai đoạn demo có thể dùng `ddl-auto: update`, nhưng trước khi nộp hoặc deploy nên chuyển sang migration tool như Flyway/Liquibase hoặc script SQL có kiểm soát.
 
+Trạng thái hiện tại: backend đang dùng Flyway và Supabase schema đã apply V001-V011. V010 seed 21 sản phẩm đồ khô với ảnh Supabase Storage bucket `product-images`; V011 seed 3 tài khoản demo bằng BCrypt hash.
+
 ## 16. Implementation phases
 
 | Phase | Scope |
@@ -473,7 +477,7 @@ Trong giai đoạn demo có thể dùng `ddl-auto: update`, nhưng trước khi 
 - [ ] JWT auth and role guard working.
 - [ ] All request DTOs validate inputs.
 - [ ] Error response follows envelope format.
-- [ ] Product browsing endpoints support search/filter/sort.
+- [ ] Product browsing endpoints support search/category/status/featured/sort and reject unsupported sort fields.
 - [ ] Order creation and status transition are transactional.
 - [ ] Notifications are generated for order status changes.
 - [ ] Chat stores messages, attachments, and returns sample responses for demo.
