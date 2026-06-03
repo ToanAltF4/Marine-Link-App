@@ -18,6 +18,102 @@
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
+    },
+    "schemas": {
+      "ApiCartResponse": {
+        "type": "object",
+        "required": ["success", "message", "data"],
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Cart loaded" },
+          "data": { "$ref": "#/components/schemas/CartResponse" }
+        }
+      },
+      "CartResponse": {
+        "type": "object",
+        "required": ["cartId", "isEmpty", "items", "totalItemCount", "totalSelectedItemCount", "subtotalAmount"],
+        "properties": {
+          "cartId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440008" },
+          "isEmpty": { "type": "boolean", "example": false },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CartItemResponse" }
+          },
+          "totalItemCount": { "type": "integer", "example": 10 },
+          "totalSelectedItemCount": { "type": "integer", "example": 10 },
+          "subtotalAmount": { "type": "number", "format": "double", "example": 4200000 }
+        }
+      },
+      "CartItemResponse": {
+        "type": "object",
+        "required": ["productId", "productName", "productImageUrl", "unit", "quantity", "selected", "unitPrice", "lineTotal"],
+        "properties": {
+          "productId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440003" },
+          "productName": { "type": "string", "example": "Muc kho loai 1" },
+          "productImageUrl": { "type": "string", "example": "https://example.com/products/muc-kho.png" },
+          "unit": { "type": "string", "example": "kg" },
+          "quantity": { "type": "integer", "minimum": 1, "example": 10 },
+          "selected": { "type": "boolean", "example": true },
+          "selectedPriceTierId": { "type": "string", "format": "uuid", "nullable": true, "example": "550e8400-e29b-41d4-a716-446655440007" },
+          "unitPrice": { "type": "number", "format": "double", "example": 420000 },
+          "lineTotal": { "type": "number", "format": "double", "example": 4200000 }
+        }
+      },
+      "CartItemCreateRequest": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440003" },
+          "quantity": { "type": "integer", "minimum": 1, "example": 2 },
+          "selected": { "type": "boolean", "default": true, "example": true }
+        }
+      },
+      "CartItemUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "quantity": { "type": "integer", "minimum": 1, "example": 5 },
+          "selected": { "type": "boolean", "example": true }
+        },
+        "minProperties": 1
+      },
+      "CartSyncRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CartItemCreateRequest" }
+          }
+        }
+      },
+      "AdminProductRequest": {
+        "type": "object",
+        "required": ["name", "categoryId", "basePrice", "unit", "minOrderQuantity", "stockQuantity", "status"],
+        "properties": {
+          "name": { "type": "string", "example": "Muc kho loai 1" },
+          "categoryId": { "type": "string", "format": "uuid" },
+          "basePrice": { "type": "number", "format": "double", "example": 450000 },
+          "unit": { "type": "string", "example": "kg" },
+          "minOrderQuantity": { "type": "integer", "minimum": 1, "example": 2 },
+          "stockQuantity": { "type": "integer", "minimum": 0, "example": 120 },
+          "status": { "type": "string", "enum": ["ACTIVE", "OUT_OF_STOCK", "DISABLED"], "example": "ACTIVE" }
+        }
+      },
+      "AdminUserUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["ACTIVE", "PENDING_APPROVAL", "DISABLED"], "example": "ACTIVE" },
+          "fullName": { "type": "string", "example": "Nguyen Van A" },
+          "phone": { "type": "string", "example": "0912345678" }
+        }
+      },
+      "AdminUserRoleUpdateRequest": {
+        "type": "object",
+        "required": ["roleCode"],
+        "properties": {
+          "roleCode": { "type": "string", "enum": ["ADMIN", "STAFF", "USER"], "example": "USER" }
+        }
+      }
     }
   },
   "paths": {
@@ -168,38 +264,136 @@
         }
       }
     },
-    "/api/cart/sync": {
+    "/api/cart": {
+      "get": {
+        "tags": ["Commerce"],
+        "summary": "Get active cart for the current user",
+        "description": "Primary server-side cart read endpoint. Backend is the source of truth for logged-in users.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Active cart returned with recalculated totals",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiCartResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cart/items": {
       "post": {
         "tags": ["Commerce"],
-        "summary": "Sync active cart from Flutter client",
+        "summary": "Add or increment a cart item",
+        "description": "Primary server-side cart write endpoint for adding items. Backend recalculates price tiers and totals.",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "required": ["productId", "quantity", "selected"],
-                      "properties": {
-                        "productId": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440111" },
-                        "quantity": { "type": "integer", "example": 10 },
-                        "selected": { "type": "boolean", "example": true }
-                      }
-                    }
-                  }
-                }
-              }
+              "schema": { "$ref": "#/components/schemas/CartItemCreateRequest" }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Cart synced"
+            "description": "Cart item added and cart totals recalculated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiCartResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Commerce"],
+        "summary": "Clear all cart items",
+        "description": "Primary server-side cart write endpoint for clearing the active cart.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Cart cleared and empty cart returned",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiCartResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cart/items/{productId}": {
+      "patch": {
+        "tags": ["Commerce"],
+        "summary": "Update quantity or selected state for a cart item",
+        "description": "Primary server-side cart write endpoint for quantity and selected-state changes. Backend recalculates price tiers and selected totals.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" }, "example": "550e8400-e29b-41d4-a716-446655440111" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CartItemUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cart item updated and cart totals recalculated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiCartResponse" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Commerce"],
+        "summary": "Remove a cart item",
+        "description": "Primary server-side cart write endpoint for removing one item from the active cart.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" }, "example": "550e8400-e29b-41d4-a716-446655440111" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cart item removed and cart totals recalculated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiCartResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cart/sync": {
+      "post": {
+        "tags": ["Commerce"],
+        "summary": "Merge or sync local cart into server cart",
+        "description": "Auxiliary endpoint for merging a local/offline/pre-login cart into the logged-in user's server-side cart. Do not use this as the primary add/update/remove cart flow.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CartSyncRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cart synced",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiCartResponse" }
+              }
+            }
           }
         }
       }
@@ -235,7 +429,8 @@
       },
       "get": {
         "tags": ["Commerce"],
-        "summary": "List orders for the user",
+        "summary": "List orders by role scope",
+        "description": "USER sees only own orders. STAFF and ADMIN can see orders according to backend role filters.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 0 } },
@@ -402,6 +597,157 @@
         "responses": {
           "200": {
             "description": "Overview KPIs"
+          }
+        }
+      }
+    },
+    "/api/admin/products": {
+      "get": {
+        "tags": ["Admin Portal"],
+        "summary": "List products for admin management",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Admin product list"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin Portal"],
+        "summary": "Create product",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created"
+          }
+        }
+      }
+    },
+    "/api/admin/products/{id}": {
+      "get": {
+        "tags": ["Admin Portal"],
+        "summary": "Get product detail for admin management",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin product detail"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin Portal"],
+        "summary": "Update product",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin Portal"],
+        "summary": "Soft delete or disable product",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product disabled"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": ["Admin Portal"],
+        "summary": "List users for admin management",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Admin user list"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "get": {
+        "tags": ["Admin Portal"],
+        "summary": "Get user detail for admin management",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin user detail"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin Portal"],
+        "summary": "Update user status or admin-editable profile fields",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUserUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/role": {
+      "put": {
+        "tags": ["Admin Portal"],
+        "summary": "Replace the user's single role",
+        "description": "MVP role model is one user to one role through users.role_id.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminUserRoleUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User role updated"
           }
         }
       }

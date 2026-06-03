@@ -155,7 +155,7 @@ Quy ước trong monorepo:
 | Auth | BLoC | Login, register, JWT, role routing, logout |
 | Home | BLoC | Buyer dashboard hero, category rail, featured products, quick search, notifications entry |
 | Products | BLoC | Product list, quick filter chips, advanced filter bottom sheet, product detail, price tiers, add-to-cart temporary flow |
-| Cart | Cubit | Add/update/remove item, total calculation, empty cart, sync `carts` + `cart_items` |
+| Cart | Cubit | Add/update/remove/clear item, selected items, total calculation, empty cart; khi dùng remote thì server Cart API là source of truth, Cubit là UI cache |
 | Checkout | BLoC | Validate receiver info, payment method, create order, clear cart |
 | Orders | BLoC | List/detail, status tracking, role-based status update |
 | Notifications | Screen/Cubit | Buyer notifications list now has UI shell; unread state + mark-as-read stay for API integration phase |
@@ -192,7 +192,7 @@ Product List filter state:
 | `query` | Search field; submit hoặc bấm search button để tải lại list | `q` |
 | `categoryId` | Chip danh mục ở hàng filter nhanh | `categoryId` |
 | `stockFilter` | `Tất cả`, `Còn hàng`, `Sắp hết`; `Sắp hết` tính từ `stockQuantity <= minOrderQuantity * 6` | MVP lọc local trên response `ACTIVE`; backend mở rộng nếu cần |
-| `sort` | Bottom sheet hoặc sort chip: mặc định, giá tăng, giá giảm | `sort=price` hoặc `sort=-price` |
+| `sort` | Bottom sheet hoặc sort chip: mặc định, mới nhất, tên A-Z/Z-A, giá tăng/giảm | `newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc` |
 
 Không đưa filter khoảng giá, MOQ hoặc xuất xứ vào UI production trước khi `docs/MarineLink_API_Documentation.md` và `docs/marinelink_openapi.json` có contract tương ứng.
 
@@ -237,7 +237,8 @@ Giai đoạn Spring Boot:
 
 - `ProductRemoteRepository` gọi `/api/products` và `/api/products/{id}`.
 - `AuthRemoteRepository` gọi `/api/auth/login`, `/api/auth/register`.
-- `CartRemoteRepository` gọi `/api/cart/sync` để đồng bộ `carts` + `cart_items`.
+- `CartRemoteRepository` gọi Cart API thật để load/add/update/remove/clear cart item. Sau login, server cart là source of truth để đổi thiết bị vẫn thấy giỏ hàng.
+- `/api/cart/sync` chỉ là endpoint phụ để merge cart local/offline/pre-login lên `carts` + `cart_items`; không dùng làm luồng add/update/remove chính.
 - `OrderRemoteRepository` gọi `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`.
 - `MessagingRemoteRepository` gọi `/api/chat/send`, `/api/chat/{roomId}` và xử lý metadata `chat_attachments`.
 - DI quyết định dùng mock hay remote qua `--dart-define=USE_REMOTE_REPOSITORIES=true`.
@@ -252,9 +253,14 @@ Giai đoạn Spring Boot:
 | Auth logout | `/api/auth/logout` | POST | Authenticated |
 | Products | `/api/products` | GET | All roles |
 | Product detail | `/api/products/{id}` | GET | All roles |
-| Cart sync | `/api/cart/sync` | POST | User |
+| Cart load | `/api/cart` | GET | User |
+| Cart add item | `/api/cart/items` | POST | User |
+| Cart update item | `/api/cart/items/{productId}` | PATCH | User |
+| Cart remove item | `/api/cart/items/{productId}` | DELETE | User |
+| Cart clear | `/api/cart/items` | DELETE | User |
+| Cart sync local/offline | `/api/cart/sync` | POST | User |
 | Create order | `/api/orders` | POST | User |
-| Orders | `/api/orders` | GET | All roles |
+| Orders | `/api/orders` | GET | User own orders; Staff/Admin scoped by role |
 | Order detail | `/api/orders/{id}` | GET | Owner, Staff, Admin |
 | Update order status | `/api/orders/{id}/status` | PUT | Admin, Staff |
 | Chat send | `/api/chat/send` | POST | All roles |
@@ -319,7 +325,7 @@ Các BLoC phù hợp cho flow có nhiều event:
 - Form login/register/checkout/profile phải validate tại client.
 - Lỗi API hiển thị bằng text dễ hiểu, không show stack trace.
 - Product card phải có ảnh, tên, xuất xứ, giá, số lượng tối thiểu, trạng thái tồn kho.
-- Cart phải cập nhật tổng tiền ngay khi thay đổi số lượng.
+- Cart state phải cập nhật tổng tiền ngay khi thay đổi số lượng, tính lại price tier, xử lý selected items và cart rỗng.
 - Admin UI ưu tiên bảng/list dễ quét, không dùng layout marketing.
 - Demo data cần đủ thực tế: mực khô, tôm khô, cá khô, nước mắm, giá sỉ, tồn kho.
 
@@ -374,7 +380,9 @@ Luồng test demo bắt buộc:
 - [ ] Mock repositories implemented for all P0 flows.
 - [ ] AuthBloc with role guard implemented.
 - [ ] Product browsing flow implemented with search, category chips, stock filter, price sort, empty state, and reset filter action.
-- [ ] Cart and checkout flow implemented.
+- [x] Cart local state implemented with CartCubit add/update/remove/clear, totals, selected items, and empty cart handling.
+- [ ] Cart screen implemented.
+- [ ] Checkout flow implemented.
 - [ ] Orders and notifications implemented.
 - [ ] Messaging with sample responses and chat attachment metadata implemented.
 - [ ] Full Admin Dashboard implemented.

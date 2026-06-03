@@ -239,7 +239,7 @@ Indexes:
 
 ### 7.2 `cart_items`
 
-Phục vụ `/api/cart/sync`. Flutter có thể giữ cart local để thao tác nhanh, backend dùng `carts` + `cart_items` để đồng bộ trước checkout.
+Phục vụ Cart API server-side. Sau login, backend dùng `carts` + `cart_items` làm source of truth để đổi thiết bị vẫn thấy giỏ hàng. `/api/cart/sync` chỉ là endpoint phụ để merge cart local/offline/pre-login vào active cart.
 
 | Column | Type | Constraint | Note |
 |---|---|---|---|
@@ -931,7 +931,7 @@ Không commit password thật. Seed user demo chỉ dùng password hash cho mậ
 | `PUT /api/users/me` | `users` |
 | `GET /api/products` | `products`, `categories`, `price_tiers` |
 | `GET /api/products/{id}` | `products`, `categories`, `price_tiers`, `product_images` |
-| `POST /api/cart/sync` | `carts`, `cart_items`, `products`, `price_tiers` |
+| Cart APIs: `GET /api/cart`, `/api/cart/items`, `/api/cart/sync` | `carts`, `cart_items`, `products`, `price_tiers` |
 | `POST /api/orders` | `orders`, `order_items`, `products`, `notifications` |
 | `GET /api/orders` | `orders`, `order_items`, `products` |
 | `GET /api/orders/{id}` | `orders`, `order_items`, `products`, `order_status_history` |
@@ -965,7 +965,7 @@ Không commit password thật. Seed user demo chỉ dùng password hash cho mậ
 | Supabase Auth vs Spring Boot Auth | Keep Spring Boot Auth for MVP because architecture already uses JWT backend |
 | Role model | Liên kết trực tiếp `users` với `roles` qua cột `role_id` |
 | Internal ID vs public ID | Use `bigint id` internally for fast joins/indexes and UUIDv4 `public_id` externally to avoid exposing sequential IDs |
-| Cart persistence | Keep Flutter local cart for UX, sync to `carts` + `cart_items` before checkout |
+| Cart persistence | Sau login, `carts` + `cart_items` là source of truth; Flutter chỉ giữ UI cache/optimistic state; `/api/cart/sync` chỉ merge local/offline/pre-login cart |
 | Product deletion | Use soft delete/status, do not hard delete ordered products |
 | AI responses | Store as `chat_messages.sender_type = AI_SAMPLE` |
 | RLS | Optional defense layer; service layer remains source of authorization in MVP |
