@@ -35,9 +35,9 @@ class OrderQuantityCard extends StatelessWidget {
         children: [
           Text(
             '\u0110\u1eb7t h\u00e0ng',
-            style: theme.textTheme.titleLarge?.copyWith(
+            style: theme.textTheme.titleMedium?.copyWith(
               color: AppColors.primaryDark,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 12),
@@ -51,7 +51,7 @@ class OrderQuantityCard extends StatelessWidget {
                       '$quantity ${detail.unit}',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -78,7 +78,7 @@ class OrderQuantityCard extends StatelessWidget {
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),
@@ -100,7 +100,7 @@ class _QuantityButton extends StatelessWidget {
       onPressed: onTap,
       style: IconButton.styleFrom(
         minimumSize: const Size(44, 44),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       icon: Icon(icon),
     );

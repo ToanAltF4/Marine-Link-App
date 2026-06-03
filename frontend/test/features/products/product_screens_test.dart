@@ -462,6 +462,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byKey(const Key('productDetailLogo')), findsOneWidget);
+      final detailTitle = tester.widget<Text>(
+        find.byKey(const Key('productDetailLogo')),
+      );
+      expect(detailTitle.style?.fontFamily, 'serif');
       expect(find.byKey(const Key('productDetailHeroImage')), findsOneWidget);
       expect(
         find.byKey(const Key('productDetailWholesaleCard')),
@@ -475,10 +479,7 @@ void main() {
         find.byKey(const Key('productDetailPackagingSpec')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const Key('productDetailFlatBottomNav')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('productDetailBottomNav')), findsOneWidget);
 
       final heroRect = tester.getRect(
         find.byKey(const Key('productDetailHeroImage')),
@@ -487,7 +488,7 @@ void main() {
         find.byKey(const Key('productDetailWholesaleCard')),
       );
       final navRect = tester.getRect(
-        find.byKey(const Key('productDetailFlatBottomNav')),
+        find.byKey(const Key('productDetailBottomNav')),
       );
 
       expect(heroRect.top, greaterThanOrEqualTo(56));

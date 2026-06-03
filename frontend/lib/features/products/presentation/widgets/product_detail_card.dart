@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 const _productDetailCardShadow = BoxShadow(
-  color: Color(0x0F052449),
+  color: Color(0x12052449),
   blurRadius: 18,
   offset: Offset(0, 8),
 );
@@ -16,11 +16,12 @@ class ProductDetailCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE4EEF5)),
         boxShadow: const [_productDetailCardShadow],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: child,
       ),
     );

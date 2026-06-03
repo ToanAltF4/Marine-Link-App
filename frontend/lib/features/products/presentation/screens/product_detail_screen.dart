@@ -3,15 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
+import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
+import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 import '../bloc/product_bloc.dart';
-import '../widgets/product_detail_bottom_nav.dart';
 import '../widgets/product_detail_header.dart';
 import '../widgets/product_detail_hero.dart';
 import '../widgets/product_detail_info_card.dart';
@@ -19,7 +20,7 @@ import '../widgets/product_detail_order_card.dart';
 import '../widgets/product_detail_pricing_card.dart';
 import '../widgets/product_visuals.dart';
 
-const _detailBackground = Color(0xFFF4F7FC);
+const _detailBackground = AppColors.background;
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -176,7 +177,7 @@ class _ProductDetailContent extends StatelessWidget {
               ),
               ProductHeroImage(detail: detail),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
                 child: Column(
                   children: [
                     WholesalePricingCard(detail: detail),
@@ -205,7 +206,10 @@ class _ProductDetailContent extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const ProductDetailFlatBottomNav(),
+      bottomNavigationBar: const BuyerBottomNav(
+        key: Key('productDetailBottomNav'),
+        currentTab: BuyerBottomNavTab.products,
+      ),
     );
   }
 }

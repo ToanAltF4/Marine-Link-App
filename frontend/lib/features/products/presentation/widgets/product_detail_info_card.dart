@@ -20,17 +20,17 @@ class ProductInformationCard extends StatelessWidget {
         children: [
           Text(
             'Th\u00f4ng tin chi ti\u1ebft',
-            style: theme.textTheme.titleLarge?.copyWith(
+            style: theme.textTheme.titleMedium?.copyWith(
               color: AppColors.primaryDark,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 10),
           Text(
             detail.description ??
                 'S\u1ea3n ph\u1ea9m \u0111ang \u0111\u01b0\u1ee3c b\u1ed5 sung m\u00f4 t\u1ea3 chi ti\u1ebft.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              height: 1.45,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              height: 20 / 13,
               color: AppColors.textPrimary,
             ),
           ),
@@ -54,8 +54,9 @@ class _PackagingSpec extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF2FF),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surfaceSky,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD8E7EF)),
       ),
       child: Row(
         children: [
@@ -71,16 +72,16 @@ class _PackagingSpec extends StatelessWidget {
               children: [
                 Text(
                   'Quy c\u00e1ch \u0111\u00f3ng g\u00f3i',
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.labelLarge?.copyWith(
                     color: AppColors.primaryDark,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'T\u00fai 1kg / Th\u00f9ng 20kg',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: AppColors.primaryDark,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],

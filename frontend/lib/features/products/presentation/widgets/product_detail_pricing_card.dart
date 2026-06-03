@@ -25,7 +25,7 @@ class WholesalePricingCard extends StatelessWidget {
             displayProductName(detail),
             style: theme.textTheme.titleLarge?.copyWith(
               color: AppColors.primaryDark,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 4),
@@ -40,8 +40,8 @@ class WholesalePricingCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   displayOrigin(detail.origin),
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textPrimary,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -50,7 +50,7 @@ class WholesalePricingCard extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Gi\u00e1 s\u1ec9 t\u1eeb:',
-            style: theme.textTheme.bodyLarge?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textPrimary,
             ),
           ),
@@ -67,7 +67,7 @@ class WholesalePricingCard extends StatelessWidget {
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: AppColors.primary,
                       fontSize: 22,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -85,9 +85,9 @@ class WholesalePricingCard extends StatelessWidget {
                   ),
                   child: Text(
                     'D\u1eb7t t\u1ed1i thi\u1ec3u ${detail.minOrderQuantity}${detail.unit}',
-                    style: theme.textTheme.labelLarge?.copyWith(
+                    style: theme.textTheme.labelMedium?.copyWith(
                       color: const Color(0xFF007C89),
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -99,9 +99,9 @@ class WholesalePricingCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             'B\u1ea3ng gi\u00e1 s\u1ec9',
-            style: theme.textTheme.titleLarge?.copyWith(
+            style: theme.textTheme.titleMedium?.copyWith(
               color: AppColors.primaryDark,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
@@ -137,9 +137,9 @@ class _WholesalePriceRow extends StatelessWidget {
           Expanded(
             child: Text(
               row.rangeLabel,
-              style: theme.textTheme.bodyLarge?.copyWith(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.primaryDark,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -154,11 +154,11 @@ class _WholesalePriceRow extends StatelessWidget {
                     row.priceLabel,
                     textAlign: TextAlign.end,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: row.isContact
                           ? const Color(0xFF007C89)
                           : AppColors.primaryDark,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
