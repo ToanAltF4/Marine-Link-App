@@ -22,6 +22,11 @@ import '../../features/orders/domain/order_repository.dart';
 import '../../features/orders/data/order_mock_repository.dart';
 import '../../features/orders/presentation/bloc/order_bloc.dart';
 
+// Checkout
+import '../../features/checkout/domain/checkout_repository.dart';
+import '../../features/checkout/data/order_checkout_repository.dart';
+import '../../features/checkout/presentation/bloc/checkout_bloc.dart';
+
 final GetIt sl = GetIt.instance;
 
 const bool _useRemoteRepositories = bool.fromEnvironment(
@@ -77,5 +82,13 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<OrderRepository>(() => OrderMockRepository());
   sl.registerFactory<OrderBloc>(
     () => OrderBloc(orderRepository: sl<OrderRepository>()),
+  );
+
+  // Checkout uses OrderRepository as the POST /api/orders adapter.
+  sl.registerLazySingleton<CheckoutRepository>(
+    () => OrderCheckoutRepository(orderRepository: sl<OrderRepository>()),
+  );
+  sl.registerFactory<CheckoutBloc>(
+    () => CheckoutBloc(checkoutRepository: sl<CheckoutRepository>()),
   );
 }

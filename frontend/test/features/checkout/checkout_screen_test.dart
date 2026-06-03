@@ -22,7 +22,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Gi\u1ecf h\u00e0ng \u0111ang tr\u1ed1ng'), findsOneWidget);
+      expect(
+        find.text('Gi\u1ecf h\u00e0ng \u0111ang tr\u1ed1ng'),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('checkoutSubmitButton')), findsNothing);
     });
 
@@ -44,15 +47,21 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text('Ng\u01b0\u1eddi nh\u1eadn kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng'),
+        find.text(
+          'Ng\u01b0\u1eddi nh\u1eadn kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng',
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('S\u1ed1 \u0111i\u1ec7n tho\u1ea1i kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng'),
+        find.text(
+          'S\u1ed1 \u0111i\u1ec7n tho\u1ea1i kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng',
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('\u0110\u1ecba ch\u1ec9 kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng'),
+        find.text(
+          '\u0110\u1ecba ch\u1ec9 kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng',
+        ),
         findsOneWidget,
       );
     });
@@ -94,7 +103,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 80));
 
       expect(find.byKey(const Key('checkoutSuccessPanel')), findsOneWidget);
-      expect(find.textContaining('ML-TEST-0001'), findsOneWidget);
+      expect(find.text('M\u00e3 \u0111\u01a1n ML-TEST-0001'), findsOneWidget);
       expect(cartCubit.state.cart.isEmpty, isTrue);
     });
   });

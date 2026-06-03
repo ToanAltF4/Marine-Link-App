@@ -5,6 +5,7 @@ import '../../core/assets/app_assets.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/products/presentation/screens/product_detail_screen.dart';
@@ -104,7 +105,7 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.checkout,
-        builder: (context, state) => const _PlaceholderPage(title: 'Checkout'),
+        builder: (context, state) => const CheckoutScreen(),
       ),
       GoRoute(
         path: AppRoutes.orders,
