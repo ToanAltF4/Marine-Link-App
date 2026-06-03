@@ -101,7 +101,7 @@ Error response:
 
 | Code | Dùng khi |
 |---:|---|
-| 200 | GET/PUT thành công |
+| 200 | GET/PUT/PATCH/DELETE thành công |
 | 201 | POST tạo resource thành công |
 | 204 | Logout hoặc delete/soft delete thành công và không cần body |
 | 400 | Request sai format hoặc thiếu field bắt buộc |
@@ -130,7 +130,7 @@ Product list:
 | `categoryId` | uuid | Lọc theo category |
 | `status` | `ACTIVE`, `OUT_OF_STOCK`, `DISABLED` | Public MVP mặc định gửi `ACTIVE`; chỉ expose `OUT_OF_STOCK` nếu business cho phép |
 | `featured` | boolean | Home featured products |
-| `sort` | string | Whitelist: `name`, `-name`, `price`, `-price`, `-createdAt`, `-featured` |
+| `sort` | string | Whitelist: `newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc` |
 
 Product list MVP dùng `q`, `categoryId`, `status`, `featured`, `sort`. UI có thể lọc `Còn hàng`/`Sắp hết` từ `status`, `stockQuantity`, `minOrderQuantity` của response hiện tại. Các query params mở rộng như `minPrice`, `maxPrice`, `minOrderQuantity`, `origin` chưa thuộc contract MVP; nếu thêm phải cập nhật tài liệu này, `marinelink_openapi.json`, backend query, DB index và test contract.
 
@@ -153,9 +153,14 @@ Orders:
 | PUT | `/api/users/me` | Authenticated |
 | GET | `/api/products` | All roles |
 | GET | `/api/products/{id}` | All roles |
+| GET | `/api/cart` | USER |
+| POST | `/api/cart/items` | USER |
+| PATCH | `/api/cart/items/{productId}` | USER |
+| DELETE | `/api/cart/items/{productId}` | USER |
+| DELETE | `/api/cart/items` | USER |
 | POST | `/api/cart/sync` | USER |
 | POST | `/api/orders` | USER |
-| GET | `/api/orders` | All roles |
+| GET | `/api/orders` | USER own orders, STAFF, ADMIN |
 | GET | `/api/orders/{id}` | Owner, STAFF, ADMIN |
 | PUT | `/api/orders/{id}/status` | STAFF, ADMIN |
 | POST | `/api/chat/send` | All roles |
@@ -172,7 +177,7 @@ Orders:
 | GET | `/api/admin/users` | ADMIN |
 | GET | `/api/admin/users/{id}` | ADMIN |
 | PUT | `/api/admin/users/{id}` | ADMIN |
-| PUT | `/api/admin/users/{id}/roles` | ADMIN |
+| PUT | `/api/admin/users/{id}/role` | ADMIN |
 
 ## 8. Auth APIs
 
@@ -403,9 +408,93 @@ Response `200`:
 
 ## 11. Cart API
 
+Cart API lưu active cart theo user hiện tại. Khi user đã đăng nhập, backend là source of truth để đổi thiết bị vẫn thấy giỏ hàng. FE vẫn có thể dùng `CartCubit` làm UI cache/optimistic state, nhưng thao tác cart chính phải gọi `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/{productId}`, `DELETE /api/cart/items/{productId}` và `DELETE /api/cart/items`.
+
+`POST /api/cart/sync` là endpoint phụ, chỉ dùng để merge/sync cart local trước login, offline fallback hoặc migration demo; không dùng làm luồng cart chính hằng ngày.
+
+Cart response chuẩn:
+
+```json
+{
+  "success": true,
+  "message": "Cart loaded",
+  "data": {
+    "cartId": "550e8400-e29b-41d4-a716-446655440008",
+    "isEmpty": false,
+    "items": [
+      {
+        "productId": "550e8400-e29b-41d4-a716-446655440003",
+        "productName": "Muc kho loai 1",
+        "productImageUrl": "https://example.com/products/muc-kho.png",
+        "unit": "kg",
+        "quantity": 10,
+        "selected": true,
+        "selectedPriceTierId": "550e8400-e29b-41d4-a716-446655440007",
+        "unitPrice": 420000,
+        "lineTotal": 4200000
+      }
+    ],
+    "totalItemCount": 10,
+    "totalSelectedItemCount": 10,
+    "subtotalAmount": 4200000
+  }
+}
+```
+
+Với cart rỗng, `items` là `[]`, `isEmpty` là `true`, `totalItemCount`, `totalSelectedItemCount`, `subtotalAmount` đều bằng `0`.
+
+### GET `/api/cart`
+
+Lấy active cart của user hiện tại. Nếu user chưa có cart, backend tạo hoặc trả cart rỗng tùy implementation, nhưng response phải giữ shape `Cart response chuẩn`.
+
+### POST `/api/cart/items`
+
+Thêm item vào cart. Nếu product đã có trong cart, backend cộng dồn số lượng rồi tính lại price tier.
+
+Request:
+
+```json
+{
+  "productId": "550e8400-e29b-41d4-a716-446655440003",
+  "quantity": 2,
+  "selected": true
+}
+```
+
+Response `200`: `Cart response chuẩn`.
+
+### PATCH `/api/cart/items/{productId}`
+
+Cập nhật số lượng hoặc trạng thái selected của một item. FE dùng endpoint này cho tăng/giảm số lượng và chọn/bỏ chọn item.
+
+Request:
+
+```json
+{
+  "quantity": 5,
+  "selected": true
+}
+```
+
+Response `200`: `Cart response chuẩn`.
+
+### DELETE `/api/cart/items/{productId}`
+
+Xóa một item khỏi cart.
+
+Response `200`: `Cart response chuẩn`.
+
+### DELETE `/api/cart/items`
+
+Clear toàn bộ cart của user hiện tại.
+
+Response `200`: `Cart response chuẩn` với cart rỗng.
+
 ### POST `/api/cart/sync`
 
-Đồng bộ cart local của Flutter lên backend trước checkout.
+Endpoint phụ để đồng bộ cart local của Flutter lên backend. Dùng khi user thêm sản phẩm trước login rồi đăng nhập, hoặc app có cache/offline cart cần merge vào server cart.
+
+Luồng chính sau khi user đã đăng nhập vẫn là Cart API theo từng thao tác: load, add, update selected/quantity, remove và clear.
 
 Request:
 
@@ -429,17 +518,22 @@ Response `200`:
   "message": "Cart synced",
   "data": {
     "cartId": "550e8400-e29b-41d4-a716-446655440008",
+    "isEmpty": false,
     "items": [
       {
         "productId": "550e8400-e29b-41d4-a716-446655440003",
         "productName": "Muc kho loai 1",
+        "productImageUrl": "https://example.com/products/muc-kho.png",
+        "unit": "kg",
         "quantity": 10,
+        "selected": true,
         "selectedPriceTierId": "550e8400-e29b-41d4-a716-446655440007",
         "unitPrice": 420000,
-        "lineTotal": 4200000,
-        "selected": true
+        "lineTotal": 4200000
       }
     ],
+    "totalItemCount": 10,
+    "totalSelectedItemCount": 10,
     "subtotalAmount": 4200000
   }
 }
@@ -449,6 +543,9 @@ Rules:
 
 - Backend không tin tổng tiền client gửi lên.
 - Backend tính lại price tier theo `quantity`.
+- Backend tính `lineTotal`, `totalItemCount`, `totalSelectedItemCount`, `subtotalAmount`; client không gửi các field này.
+- `subtotalAmount` chỉ tính các item có `selected = true`; item không selected vẫn còn trong cart nhưng không tính vào checkout total.
+- Cart API chính và `/api/cart/sync` đều trả về cùng một shape cart để FE cập nhật state thống nhất.
 - Reject nếu product không tồn tại, disabled, hết hàng, hoặc quantity dưới `minOrderQuantity`.
 - Mỗi user có một active cart trong MVP.
 
@@ -456,7 +553,7 @@ Rules:
 
 ### POST `/api/orders`
 
-Tạo đơn hàng từ cart đã sync hoặc request checkout.
+Tạo đơn hàng từ active server-side cart của user hiện tại. Nếu FE có cart local/offline/pre-login thì gọi `POST /api/cart/sync` để merge trước; order endpoint không nhận line items và không tin tổng tiền client trong MVP.
 
 Request:
 
@@ -493,11 +590,11 @@ Response `201`:
 
 Rules:
 
-- Cart không rỗng.
+- Active server-side cart không rỗng và có ít nhất một item `selected = true`.
 - Product còn hàng và quantity hợp lệ.
 - Snapshot `productName`, `unit`, `unitPrice` vào `order_items`.
 - Tạo notification khi order được tạo hoặc đổi trạng thái.
-- Clear `cart_items` sau khi checkout thành công nếu business chọn flow đó.
+- Clear `cart_items` trong cùng transaction sau khi checkout thành công.
 
 ### GET `/api/orders`
 
@@ -833,7 +930,7 @@ The architecture docs summarize this area as `CRUD /api/admin/users`. Implement 
 | GET | `/api/admin/users` | List/filter users |
 | GET | `/api/admin/users/{id}` | User detail |
 | PUT | `/api/admin/users/{id}` | Update user status/profile admin fields |
-| PUT | `/api/admin/users/{id}/roles` | Replace or update user roles |
+| PUT | `/api/admin/users/{id}/role` | Replace the user's single role |
 
 Update user request:
 
@@ -846,13 +943,15 @@ Update user request:
 }
 ```
 
-Update roles request:
+Update role request:
 
 ```json
 {
-  "roles": ["USER"]
+  "roleCode": "USER"
 }
 ```
+
+MVP giữ một user chỉ thuộc một role thông qua `users.role_id -> roles.id`. Các response auth vẫn có thể trả `roles: ["USER"]` để tương thích JWT/client guard, nhưng admin update role dùng một `roleCode`, không dùng mảng role.
 
 Rules:
 
@@ -871,7 +970,7 @@ Rules:
 | `PUT /api/users/me` | `users` |
 | `GET /api/products` | `products`, `categories`, `price_tiers` |
 | `GET /api/products/{id}` | `products`, `categories`, `price_tiers`, `product_images` |
-| `POST /api/cart/sync` | `carts`, `cart_items`, `products`, `price_tiers` |
+| Cart APIs: `GET /api/cart`, `/api/cart/items`, `/api/cart/sync` | `carts`, `cart_items`, `products`, `price_tiers` |
 | `POST /api/orders` | `orders`, `order_items`, `products`, `notifications` |
 | `GET /api/orders` | `orders`, `order_items`, `products` |
 | `GET /api/orders/{id}` | `orders`, `order_items`, `products`, `order_status_history` |
@@ -901,7 +1000,7 @@ Rules:
 - Register duplicate email/phone.
 - Product list supports pagination/search/category/status/featured/sort.
 - Product detail returns images and price tiers.
-- Cart sync recalculates price server-side.
+- Cart APIs recalculate price, selected totals, and empty-cart state server-side.
 - Checkout rejects empty cart and invalid quantity.
 - Create order stores price snapshot.
 - User cannot read another user's order.

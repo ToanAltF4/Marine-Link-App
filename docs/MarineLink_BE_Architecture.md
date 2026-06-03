@@ -232,9 +232,14 @@ ChatSenderType:
 | PUT | `/api/users/me` | Cập nhật hồ sơ | Authenticated |
 | GET | `/api/products` | Danh sách, search, filter, sort | All roles |
 | GET | `/api/products/{id}` | Chi tiết sản phẩm + price tiers | All roles |
-| POST | `/api/cart/sync` | Đồng bộ giỏ hàng | User |
+| GET | `/api/cart` | Lấy active cart server-side | User |
+| POST | `/api/cart/items` | Thêm/cộng dồn item vào active cart | User |
+| PATCH | `/api/cart/items/{productId}` | Cập nhật quantity/selected của item | User |
+| DELETE | `/api/cart/items/{productId}` | Xóa một item khỏi cart | User |
+| DELETE | `/api/cart/items` | Clear active cart | User |
+| POST | `/api/cart/sync` | Endpoint phụ để merge local/offline/pre-login cart | User |
 | POST | `/api/orders` | Tạo đơn hàng | User |
-| GET | `/api/orders` | Danh sách đơn theo role/trạng thái | All roles |
+| GET | `/api/orders` | USER chỉ thấy đơn của mình; Staff/Admin xem theo quyền | User, Staff, Admin |
 | GET | `/api/orders/{id}` | Chi tiết đơn | Owner, Staff, Admin |
 | PUT | `/api/orders/{id}/status` | Cập nhật trạng thái đơn | Staff, Admin |
 | POST | `/api/chat/send` | Gửi tin nhắn | All roles |
@@ -305,7 +310,7 @@ Authorization rules:
 ### Products
 
 - Product list MVP hỗ trợ `q`, `categoryId`, `status`, `featured`, `sort` theo `GET /api/products`.
-- Backend phải validate `sort` bằng whitelist (`name`, `-name`, `price`, `-price`, `-createdAt`, `-featured`) trước khi build query.
+- Backend phải validate `sort` bằng whitelist (`newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc`) trước khi build query.
 - Stock status nâng cao như `Sắp hết`, price range, MOQ và origin filter là mở rộng sau; khi bật phải cập nhật API doc, OpenAPI, repository query, DB index và contract test.
 - Product detail trả price tiers.
 - Admin có thể create/update/delete hoặc disable product.
@@ -313,8 +318,11 @@ Authorization rules:
 
 ### Cart
 
-- Frontend có thể giữ cart local để thao tác nhanh.
-- `/api/cart/sync` đồng bộ vào `carts` + `cart_items`, validate product tồn tại, còn hàng, min quantity và price tier.
+- Sau login, backend là source of truth cho cart để user đổi thiết bị vẫn thấy giỏ hàng.
+- `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/{productId}`, `DELETE /api/cart/items/{productId}` và `DELETE /api/cart/items` là luồng chính cho load/add/update/remove/clear.
+- `/api/cart/sync` chỉ là endpoint phụ để merge cart local/offline/pre-login vào `carts` + `cart_items`; không dùng làm luồng add/update/remove chính.
+- Mọi Cart API đều validate product tồn tại, còn hàng, min quantity và price tier.
+- Backend không tin tổng tiền client gửi lên; service phải tính lại `unitPrice`, `lineTotal`, `totalItemCount`, `totalSelectedItemCount`, `subtotalAmount` và empty-cart state.
 - Backend giữ một cart active cho mỗi user; checkout thành công thì xóa hoặc clear `cart_items`.
 
 ### Orders

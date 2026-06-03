@@ -91,10 +91,15 @@ Mô tả cấu trúc cơ sở dữ liệu và API phục vụ ứng dụng Marin
 | POST | /api/auth/register | Đăng ký đại lý và gán role USER mặc định. | Công khai |
 | GET | /api/products | Lấy danh sách sản phẩm, tìm kiếm, lọc, sắp xếp. | Tất cả role |
 | GET | /api/products/{id} | Chi tiết sản phẩm + ảnh + giá sỉ. | Tất cả role |
-| POST | /api/cart/sync | Đồng bộ giỏ hàng từ local storage lên carts/cart\_items. | Đại lý |
+| GET | /api/cart | Lấy active cart server-side của đại lý. | Đại lý |
+| POST | /api/cart/items | Thêm/cộng dồn sản phẩm vào giỏ hàng server-side. | Đại lý |
+| PATCH | /api/cart/items/{productId} | Cập nhật số lượng hoặc selected state của cart item. | Đại lý |
+| DELETE | /api/cart/items/{productId} | Xóa một sản phẩm khỏi giỏ hàng. | Đại lý |
+| DELETE | /api/cart/items | Clear toàn bộ giỏ hàng. | Đại lý |
+| POST | /api/cart/sync | Endpoint phụ để merge cart local/offline/pre-login lên carts/cart\_items. | Đại lý |
 | GET | /api/orders/{id} | Chi tiết đơn hàng, items và lịch sử trạng thái. | Owner, Staff, Admin |
 | POST | /api/orders | Tạo đơn hàng mới từ cart\_items. | Đại lý |
-| GET | /api/orders | Danh sách đơn hàng theo role/trạng thái. | Tất cả role |
+| GET | /api/orders | Danh sách đơn hàng theo role/trạng thái; Đại lý chỉ thấy đơn của mình. | Đại lý, Staff, Admin |
 | PUT | /api/orders/{id}/status | Cập nhật trạng thái đơn hàng và ghi order\_status\_history. | Admin, Staff |
 | POST | /api/chat/send | Gửi tin nhắn chat, có thể kèm metadata file đính kèm. | Tất cả role |
 | PUT | /api/notifications/{id}/read | Đánh dấu thông báo đã đọc. | Owner |
@@ -139,7 +144,7 @@ Các thao tác đọc, ghi, cập nhật và xóa dữ liệu được gom theo 
 | Trang chủ | GET /api/products, GET /api/notifications | - | categories, products, product\_images, price\_tiers, notifications |
 | Danh sách sản phẩm | GET /api/products | - | products, categories, product\_images, price\_tiers |
 | Chi tiết sản phẩm | GET /api/products/{id} | - | products, product\_images, price\_tiers |
-| Giỏ hàng | Local storage + POST /api/cart/sync | Thêm/sửa/xóa item local trước khi sync; backend lưu carts/cart\_items | carts, cart\_items, products, price\_tiers |
+| Giỏ hàng | Server-side Cart API + local UI cache | Sau login, backend là source of truth cho giỏ hàng; FE dùng local state/cache để thao tác nhanh; `/api/cart/sync` chỉ dùng merge local/offline/pre-login | carts, cart\_items, products, price\_tiers |
 | Checkout | - | POST /api/orders | carts, cart\_items, orders, order\_items, users, products |
 | Orders | GET /api/orders | PUT /api/orders/{id}/status | orders, order\_items, order\_status\_history, notifications |
 | Chat & Hỗ trợ | GET /api/chat/{roomId} | POST /api/chat/send | chat\_rooms, chat\_messages, chat\_attachments, complaints |

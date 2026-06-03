@@ -44,7 +44,7 @@ Quy ước code chung repo:
 | Nền tảng dự án | Cấu trúc app, điều hướng, theme, shared widgets, API client interface, base BLoC/Cubit | API envelope, exception handler, cấu trúc module, health check, khung auth filter | Migration nền tảng, enum types, `roles`, `users`, seed role demo | Chạy app, smoke test điều hướng/API client, cập nhật ghi chú setup |
 | Xác thực | Màn login/register, lưu token, điều hướng theo role, trạng thái logout | `/api/auth/login`, `/api/auth/register`, hash password, cấp/verify JWT, kế hoạch rate limit | `users`, `roles`, unique email/phone, tài khoản demo admin/staff/user | Unit test auth, case login thất bại, kiểm tra không commit secret |
 | Duyệt sản phẩm | Home, danh mục, danh sách/chi tiết sản phẩm, search, filter nhanh, bottom sheet lọc, sort giá, UI price tier | `/api/products`, `/api/products/{id}`, filter, phân trang, product DTO | `categories`, `products`, `product_images`, `price_tiers`, index sản phẩm, seed catalog | Dữ liệu test product list/detail, trạng thái empty/loading/error |
-| Luồng mua hàng | Cart state, màn giỏ hàng, form checkout, màn đặt hàng thành công | `/api/cart/sync`, `/api/orders`, tính lại giá, validate tồn kho/min quantity | `carts`, `cart_items`, `orders`, `order_items`, rule sinh order code | Test luồng checkout thành công, case quantity sai/cart rỗng |
+| Luồng mua hàng | Cart state, màn giỏ hàng, form checkout, màn đặt hàng thành công | Cart API chính (`/api/cart`, `/api/cart/items`) + `/api/cart/sync` phụ để merge local/offline, `/api/orders`, tính lại giá, validate tồn kho/min quantity | `carts`, `cart_items`, `orders`, `order_items`, rule sinh order code | Test luồng checkout thành công, case quantity sai/cart rỗng |
 | Theo dõi đơn hàng | Danh sách/chi tiết đơn, status badge, timeline đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status` cho Staff/Admin | `order_status_history`, index đơn/trạng thái, liên kết notification | E2E luồng đặt hàng, test đổi trạng thái không hợp lệ |
 | Thông báo | Danh sách thông báo, trạng thái đã đọc/chưa đọc, mở sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read`, tạo event từ order/chat | `notifications`, cột liên kết order/product/chat, index unread | Verify rule chỉ chủ sở hữu được mark read, dữ liệu demo notification |
 | Chat/Hỗ trợ | UI chat, ô nhập tin nhắn, placeholder attachment, hiển thị tin nhắn nhân viên | `/api/chat/send`, `/api/chat/{roomId}`, dịch vụ phản hồi chat, validate metadata attachment | `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Test chặn tin nhắn rỗng, kịch bản chat hỗ trợ |
@@ -58,7 +58,7 @@ Quy ước code chung repo:
 | Sprint | FE Flutter | BE Spring Boot/API | DB Supabase/PostgreSQL | QA/Demo/Docs |
 |---|---|---|---|---|
 | Sprint 1 | Nền tảng app, màn auth, home/product list/detail bằng mock repository | API envelope, khung contract auth/product, DTO tương thích mock | Migration nền cho roles/users/catalog, seed products/categories | Smoke test Flutter, checklist validation auth/product |
-| Sprint 2 | Cart, checkout, orders list/detail, điểm vào notification | Cart sync, tạo order, API query/status đơn, tạo notification | Migration cart/order/order item/status history/notification | E2E luồng mua hàng, test cart/order không hợp lệ |
+| Sprint 2 | Cart, checkout, orders list/detail, điểm vào notification | Cart API add/update/remove/clear là luồng chính, `/api/cart/sync` chỉ để merge local/offline, tạo order, API query/status đơn, tạo notification | Migration cart/order/order item/status history/notification | E2E luồng mua hàng, test cart/order không hợp lệ |
 | Sprint 3 | Profile, chat, warehouse map, điều hướng từ notification | API profile, chat send/history, warehouses, dịch vụ phản hồi chat | Field liên quan profile/chat, warehouses, complaints/attachments nếu dùng | Test fallback chat/profile/map, cập nhật dữ liệu demo |
 | Sprint 4 | Màn Full Admin/Staff Dashboard và các luồng quản lý | Service dashboard/product/user/order/chat cho admin và role guard | Index phục vụ query admin, constraint soft-delete/status, seed case admin | Smoke test role admin, regression phân quyền |
 | Sprint 5 | Đổi mock repository sang REST thật và polish trạng thái UI | Hoàn tất tích hợp endpoint, harden xử lý lỗi, ổn định auth/session | Seed data cuối, verify migrations/indexes, checklist backup env | Chạy thử full demo, `flutter test --coverage`, backend `mvn clean verify` nếu backend đã scaffold |
@@ -79,7 +79,7 @@ Quy ước code chung repo:
 | P0 | Nền tảng dự án | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, cấu trúc BLoC/Cubit | users, roles, products, categories, carts, orders | Xong |
 | P0 | Xác thực | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles` | Xong |
 | P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter/sort, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Xong |
-| P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | `/api/cart/sync`, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
+| P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | Cart API chính (`/api/cart`, `/api/cart/items`) + `/api/cart/sync` phụ, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
 | P0 | Theo dõi đơn hàng | Danh sách đơn, chi tiết đơn, trạng thái đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`, `notifications` | Chưa làm |
 | P1 | Thông báo | Danh sách thông báo, đã đọc/chưa đọc, điều hướng sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read` | Chưa làm |
 | P1 | Chat/hỗ trợ | Chat với Nhân viên, lịch sử chat, file đính kèm, chặn tin nhắn rỗng | `/api/chat/send`, `/api/chat/{roomId}`, `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Chưa làm |
@@ -106,18 +106,18 @@ Quy ước code chung repo:
 
 ### Backlog sprint
 
-| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---|---:|---|---|
-| S1-01 | P0 | Khởi tạo cấu trúc Flutter project, routing, theme, shared widgets | 3 pts | Không có | Xong |
-| S1-02 | P0 | Tạo models cho User, Product, Category, PriceTier và API response envelope | 3 pts | Docx database/API | Xong |
-| S1-03 | P0 | Tạo API client/mock repository, JWT storage interface, error handling cơ bản | 3 pts | Nền tảng dự án | Xong |
-| S1-04 | P0 | Màn login: validation, gọi auth service, lưu trạng thái đăng nhập, route theo role | 4 pts | API client | Xong |
-| S1-05 | P0 | Màn register: form đại lý, validate email/phone/password/tax code, success/error state | 3 pts | Auth models | Xong |
-| S1-06 | P0 | Màn home: banner, categories, featured products, quick search entry | 3 pts | Product mock data | Xong |
-| S1-07 | P1 | Wiring BLoC/Cubit cho auth/product/loading/error | 2 pts | Nền tảng | Xong |
-| S1-08 | P1 | Product list: image/name/origin/price/min quantity/stock, search, category chips, stock filter, price sort, empty state/reset filter | 4 pts | Product repository | Xong |
-| S1-09 | P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | 3 pts | Product repository | Xong |
-| S1-10 | P2 | Seed data sản phẩm hải sản phục vụ demo | 2 pts | Product models | Xong |
+| Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---:|---|---|
+| S1-01 | P0 | Khởi tạo Flutter project trong `frontend/`, routing, theme, shared widgets, app shell | Không đổi | Không đổi | 3 pts | Không có | Xong |
+| S1-02 | P0 | Tạo domain models `User`, `Product`, `Category`, `PriceTier`, API response envelope phía Flutter | Chuẩn hóa response envelope/DTO contract cho auth/product | Đối chiếu `users`, `roles`, `products`, `categories`, `price_tiers` với docx | 3 pts | Docx database/API | Xong |
+| S1-03 | P0 | Tạo API client, mock repositories, JWT storage interface, error mapping cơ bản | Không đổi ngoài contract auth/product hiện có | Không đổi | 3 pts | Nền tảng dự án | Xong |
+| S1-04 | P0 | Màn login, form validation, gọi auth repository, lưu token, route theo role | Implement/verify `/api/auth/login`, JWT issuing, `/api/auth/me` nếu dùng remote | `users`, `roles`, unique email/phone, seed user demo | 4 pts | API client | Xong |
+| S1-05 | P0 | Màn register đại lý, validate email/phone/password/tax code, success/error state | Implement/verify `/api/auth/register`, hash password, validate duplicate email/phone | `users`, `roles`, constraint unique, role USER mặc định | 3 pts | Auth models | Xong |
+| S1-06 | P0 | Home screen: banner, categories, featured products, quick search entry | Cung cấp product/category mock hoặc endpoint list nếu remote sẵn | Seed categories/products featured phục vụ demo | 3 pts | Product mock data | Xong |
+| S1-07 | P1 | Wiring BLoC/Cubit cho auth/product/loading/error | Không đổi | Không đổi | 2 pts | Nền tảng | Xong |
+| S1-08 | P1 | Product list: image/name/origin/price/min quantity/stock, search, category chips, stock filter, price sort, empty/reset state | Implement/verify `/api/products` filter/search/sort/pagination contract | Index product/category/status/price phục vụ query, seed catalog | 4 pts | Product repository | Xong |
+| S1-09 | P1 | Product detail: price tiers, min quantity, stock validation, add-to-cart tạm | Implement/verify `/api/products/{id}` detail response gồm images/priceTiers | `product_images`, `price_tiers`, stock/min quantity seed | 3 pts | Product repository | Xong |
+| S1-10 | P2 | Hiển thị asset/mock data sản phẩm hải sản trong UI demo | Không đổi | Seed sản phẩm hải sản, category, price tiers, tồn kho | 2 pts | Product models | Xong |
 
 **Năng lực dự kiến:** 24 pts
 **Tải sprint:** 19 pts P0 đã commit + 11 pts buffer/stretch backlog. Nên commit P0 trước, chỉ kéo P1/P2 khi P0 ổn.
@@ -135,16 +135,18 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Hoàn thành luồng mua hàng chính từ thêm vào giỏ đến tạo đơn và theo dõi trạng thái đơn.
 
-| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---|---:|---|---|
-| S2-01 | P0 | Cart state: thêm/sửa/xóa item, tính tổng tiền, xử lý cart rỗng | 4 pts | Product detail | Chưa làm |
-| S2-02 | P0 | Cart screen: danh sách sản phẩm, tăng/giảm số lượng, xóa item | 3 pts | Cart state | Chưa làm |
-| S2-03 | P0 | Checkout screen: thông tin nhận hàng, phương thức thanh toán, ghi chú | 4 pts | Cart state | Chưa làm |
-| S2-04 | P0 | Luồng tạo order: validate, tạo order, clear cart, màn thành công | 4 pts | Checkout | Chưa làm |
-| S2-05 | P0 | Orders list/detail cho Đại lý: trạng thái chờ duyệt/xác nhận/đang giao/hoàn tất/hủy | 4 pts | Order model/repository | Chưa làm |
-| S2-06 | P1 | Danh sách notification: đã đọc/chưa đọc, mở màn liên quan | 3 pts | Order events | Chưa làm |
-| S2-07 | P1 | Staff/Admin cập nhật trạng thái đơn ở mức tối thiểu | 3 pts | Role routing | Chưa làm |
-| S2-08 | P2 | Sync cart lên server khi có API thật | 3 pts | `/api/cart/sync` | Chưa làm |
+| Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---:|---|---|
+| S2-01 | P0 | `CartCubit` + domain `Cart/CartItem`: add/update/remove/clear, selected items, tổng tiền, tổng số lượng, cart rỗng, unit test | Không đổi, chưa sync server | Không đổi | 4 pts | Product detail | Xong FE local |
+| S2-02 | P0 | Cart screen: list item, tăng/giảm số lượng, xóa item, empty state, tổng tiền, nút checkout disabled khi rỗng | Không đổi | Không đổi | 3 pts | Cart state | Chưa làm |
+| S2-03 | P0 | Checkout screen: form người nhận, số điện thoại, địa chỉ, payment method, ghi chú, validation client | Contract draft cho request checkout/order nếu chưa đủ rõ | Không đổi | 4 pts | Cart state | Chưa làm |
+| S2-04 | P0 | Checkout Bloc/repository: validate active server-side cart, gọi API tạo order, clear cart UI cache, màn success/error | `POST /api/orders`: tạo order từ active server-side cart, tính lại giá, validate stock/min quantity, trả order code | `orders`, `order_items`, `order_status_history`, rule sinh order code, transaction clear cart items | 4 pts | Checkout | Chưa làm |
+| S2-05 | P0 | Orders list/detail cho Đại lý: status badge, timeline, empty/loading/error | `GET /api/orders`, `GET /api/orders/{id}` chỉ trả đơn của user hiện tại | Index `orders(user_id, created_at)`, `order_status_history(order_id, created_at)` | 4 pts | Order model/repository | Chưa làm |
+| S2-06 | P1 | Notification list: đã đọc/chưa đọc, mở order/product/chat liên quan | `GET /api/notifications`, `PUT /api/notifications/{id}/read`, tạo notification từ order event | `notifications` với owner/link target, index unread | 3 pts | Order events | Chưa làm |
+| S2-07 | P1 | Staff/Admin UI tối thiểu để đổi status đơn, guard theo role | `PUT /api/orders/{id}/status`, validate transition, role STAFF/ADMIN | Ghi `order_status_history`, cập nhật timestamp trạng thái trên `orders` | 3 pts | Role routing | Chưa làm |
+| S2-08 | P0 | Cart remote repository gọi Cart API thật: load cart, add/update/remove/clear item, update selected; `/api/cart/sync` chỉ dùng merge local/offline/pre-login | Cart API BE: `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/{productId}`, `DELETE /api/cart/items/{productId}`, `DELETE /api/cart/items` là luồng chính; `POST /api/cart/sync` là endpoint phụ; BE tính lại totals và price tier | `carts`, `cart_items`, FK `price_tier_id`, unique `(cart_id, product_id)`, active cart theo user | 5 pts | Cart state + cart DB migration | Chưa làm |
+
+Ghi chú S2-01: FE đã có `CartCubit` và domain `Cart/CartItem` cho add/update/remove/clear, selected items, tổng tiền, tổng số lượng, empty cart và tính lại price tier khi đổi số lượng. BE Cart API chưa có controller/service/repository; các endpoint load/add/update/remove/clear là luồng chính ở S2-08, còn `/api/cart/sync` chỉ dùng cho merge local/offline/pre-login.
 
 **Tải khuyến nghị:** 19-20 pts P0, kéo P1 nếu còn thời gian.
 
@@ -152,16 +154,16 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Bổ sung các chức năng hỗ trợ sau bán hàng: chat, hồ sơ cá nhân, kho hàng và điều hướng thông báo.
 
-| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---|---:|---|---|
-| S3-01 | P0 | Màn profile: xem/sửa số điện thoại, địa chỉ, avatar tạm | 4 pts | Auth state | Chưa làm |
-| S3-02 | P0 | Luồng logout/đổi mật khẩu tạm | 2 pts | Profile | Chưa làm |
-| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff, timestamp | 5 pts | Chat model/repository | Chưa làm |
-| S3-04 | P0 | Chặn tin nhắn rỗng, loading/error state cho chat | 2 pts | Chat screen | Chưa làm |
-| S3-05 | P1 | Phản hồi trực tiếp của nhân viên cho câu hỏi đơn giản về sản phẩm, giá, tồn kho, đơn hàng | 4 pts | Product/order data | Chưa làm |
-| S3-06 | P1 | Bản đồ kho: marker, thông tin kho, mở Google Maps | 4 pts | Warehouse data | Chưa làm |
-| S3-07 | P1 | Xử lý quyền vị trí nếu dùng current location | 3 pts | Map plugin | Chưa làm |
-| S3-08 | P2 | Deep link từ notification sang order/product/chat | 3 pts | Notifications | Chưa làm |
+| Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---:|---|---|
+| S3-01 | P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar tạm, validation, loading/error | `GET /api/users/me`, `PUT /api/users/me`, validate ownership và field profile | Cột profile trong `users`, index email/phone giữ unique | 4 pts | Auth state | Chưa làm |
+| S3-02 | P0 | Logout flow, clear token/session local, đổi mật khẩu tạm nếu có UI | `POST /api/auth/logout` nếu cần, `POST /api/auth/change-password` hoặc giữ mock nếu chưa có | Không đổi, trừ khi lưu token/session server-side | 2 pts | Profile | Chưa làm |
+| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff, timestamp, scroll state | `POST /api/chat/send`, `GET /api/chat/{roomId}`, tạo/lấy room theo user | `chat_rooms`, `chat_messages`, `chat_attachments` nếu có metadata file | 5 pts | Chat model/repository | Chưa làm |
+| S3-04 | P0 | Client validation chặn tin nhắn rỗng, loading/error/retry cho chat | Server validation chặn content rỗng, response lỗi dễ hiểu | Check constraint/rule message content nếu áp dụng | 2 pts | Chat screen | Chưa làm |
+| S3-05 | P1 | Staff reply UI hoặc quick reply view có ngữ cảnh sản phẩm/đơn | API staff reply, lookup product/order context theo quyền | Query `chat_messages`, `products`, `orders`, liên kết `complaints` nếu tạo ticket | 4 pts | Product/order data | Chưa làm |
+| S3-06 | P1 | Warehouse map/list: marker, thông tin kho, mở Google Maps | `GET /api/warehouses`, filter kho active | `warehouses`, tọa độ lat/lng, seed kho demo, active index | 4 pts | Warehouse data | Chưa làm |
+| S3-07 | P1 | Permission flow vị trí hiện tại nếu dùng, fallback khi bị từ chối | Không đổi | Không đổi | 3 pts | Map plugin | Chưa làm |
+| S3-08 | P2 | Deep link/router từ notification sang order/product/chat, preserve back stack | Notification payload contract có `targetType`, `targetId`, ownership check | `notifications` lưu target type/id và read state | 3 pts | Notifications | Chưa làm |
 
 **Tải khuyến nghị:** 18-20 pts, tránh kéo cả phần tích hợp phức tạp và permission nâng cao nếu map/chat chưa ổn.
 
@@ -169,15 +171,15 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Hoàn thiện khu vực Admin/Staff đầy đủ theo docx để quản lý dashboard, sản phẩm, người dùng, đơn hàng và hỗ trợ chat.
 
-| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---|---:|---|---|
-| S4-01 | P0 | Admin/Staff route guard theo role | 3 pts | Auth role | Chưa làm |
-| S4-02 | P0 | Admin dashboard overview: orders, revenue sample, products, users | 4 pts | Admin data | Chưa làm |
-| S4-03 | P0 | Product management: list/create/update/delete, stock/status | 5 pts | Product repository | Chưa làm |
-| S4-04 | P0 | Order status management cho Staff/Admin | 4 pts | Orders | Chưa làm |
-| S4-05 | P0 | User management: danh sách user, duyệt đại lý, phân biệt role | 4 pts | Users API/mock | Chưa làm |
-| S4-06 | P0 | Màn staff phản hồi chat và chuyển complaint cơ bản | 4 pts | Messaging | Chưa làm |
-| S4-07 | P1 | Admin dashboard loading/error/empty states | 3 pts | Admin screens | Chưa làm |
+| Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---:|---|---|
+| S4-01 | P0 | Admin/Staff route guard theo role, layout shell admin, fallback unauthorized | Role guard middleware/filter cho ADMIN/STAFF, `/api/auth/me` trả role chính xác | `users.role_id -> roles.id`; MVP giữ 1 user 1 role, không dùng `user_roles` | 3 pts | Auth role | Chưa làm |
+| S4-02 | P0 | Admin dashboard overview: cards orders/revenue/products/users, charts/list tối thiểu | `GET /api/admin/dashboard` tổng hợp metrics, chỉ ADMIN/STAFF | Query aggregate từ `orders`, `order_items`, `products`, `users` | 4 pts | Admin data | Chưa làm |
+| S4-03 | P0 | Product management UI: list/create/update/delete, stock/status, image field | `/api/admin/products` CRUD, validate product/category/price tiers, role guard | `products`, `product_images`, `price_tiers`, soft delete/status, indexes | 5 pts | Product repository | Chưa làm |
+| S4-04 | P0 | Order status management UI cho Staff/Admin, status filter, action buttons | `PUT /api/orders/{id}/status`, transition rules, audit changed_by | `orders`, `order_status_history`, notification event khi status đổi | 4 pts | Orders | Chưa làm |
+| S4-05 | P0 | User management UI: danh sách user, duyệt đại lý, phân biệt role/status | `/api/admin/users`, update status/role, validate không tự khóa admin | `users`, `roles`, status index, role mapping | 4 pts | Users API/mock | Chưa làm |
+| S4-06 | P0 | Staff chat view, reply thread, chuyển complaint cơ bản | Staff chat endpoints, create complaint/ticket từ chat message | `chat_rooms`, `chat_messages`, `complaints`, FK `chat_message_id` | 4 pts | Messaging | Chưa làm |
+| S4-07 | P1 | Loading/error/empty states cho toàn bộ admin screens, responsive Android | Chuẩn hóa error envelope admin endpoints | Không đổi | 3 pts | Admin screens | Chưa làm |
 
 **Tải khuyến nghị:** 24 pts P0. Nếu thiếu thời gian, giảm độ sâu UI polish nhưng không cắt các module Admin chính.
 
@@ -185,15 +187,15 @@ Quy ước code chung repo:
 
 **Mục tiêu sprint:** Đổi mock repository sang Spring Boot REST API, kiểm thử luồng demo end-to-end và ổn định app trước khi trình bày.
 
-| Mã | Ưu tiên | Hạng mục | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---|---:|---|---|
-| S5-01 | P0 | Pass tích hợp API: đổi mock repository sang Spring Boot REST endpoints chính | 6 pts | Backend sẵn sàng | Đang làm - Auth/Product remote đã có |
-| S5-02 | P0 | Tích hợp auth: login/register/JWT storage/role routing với Spring Boot | 4 pts | Auth API | Xong phần login/register/me |
-| S5-03 | P0 | Tích hợp product/order: products, cart sync, checkout, orders | 5 pts | Product/order API | Đang làm - Product remote xong, cart/order chưa |
-| S5-04 | P1 | Tích hợp admin: dashboard, products, users, order status | 5 pts | Admin API | Chưa làm |
-| S5-05 | P0 | Test demo end-to-end: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | 5 pts | Full flow | Chưa làm |
-| S5-06 | P1 | UI polish, loading/error/empty states, fix responsive Android screens | 4 pts | Full app | Chưa làm |
-| S5-07 | P2 | Đổi luồng chat sang API hoàn chỉnh sau này nếu backend hỗ trợ | 3 pts | API sẵn sàng | Chưa làm |
+| Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
+|---|---|---|---|---|---:|---|---|
+| S5-01 | P0 | Đổi repository mock sang remote theo feature flag/config, map DTO lỗi/loading cho auth/product/cart/order chính | Đảm bảo endpoint chính chạy ổn, response envelope thống nhất, CORS/JWT filter đúng | Verify migration đã apply, seed demo đủ cho full flow | 6 pts | Backend sẵn sàng | Đang làm - Auth/Product remote đã có |
+| S5-02 | P0 | Auth remote: login/register/me/logout, secure token storage, route theo role từ API thật | Harden auth endpoints, `/api/auth/me`, token expiry/unauthorized response | Verify users/roles demo admin/staff/user, unique constraints | 4 pts | Auth API | Xong phần login/register/me |
+| S5-03 | P0 | Product remote đã có; bổ sung Cart API remote, checkout/order repository, orders list/detail | Implement/complete Cart API chính (`GET /api/cart`, item add/update/remove/clear), giữ `/api/cart/sync` cho merge local/offline, `/api/orders`, `/api/orders/{id}`, validate cart/order server-side | Verify `carts`, `cart_items`, `orders`, `order_items`, status history, price tier FK | 5 pts | Product/order API | Đang làm - Product remote xong, cart/order chưa |
+| S5-04 | P1 | Admin remote repositories/screens cho dashboard, products, users, order status | Implement/complete admin endpoints và role guard | Verify indexes/seed phục vụ dashboard/admin list | 5 pts | Admin API | Chưa làm |
+| S5-05 | P0 | E2E/manual demo path: login -> browse -> cart -> checkout -> order -> notification/chat -> admin update | Backend smoke/full-flow test, fix endpoint contract mismatch | Reset/seed demo data trước khi chạy demo | 5 pts | Full flow | Chưa làm |
+| S5-06 | P1 | UI polish toàn app: loading/error/empty states, responsive Android, text tiếng Việt nhất quán | Chuẩn hóa error message và timeout handling từ API | Không đổi, trừ khi cần seed thêm case empty/error | 4 pts | Full app | Chưa làm |
+| S5-07 | P2 | Đổi chat mock sang remote hoàn chỉnh, retry/offline fallback nếu cần | Complete chat send/history/staff reply API sau khi backend hỗ trợ | Verify `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | 3 pts | API sẵn sàng | Chưa làm |
 
 **Tải khuyến nghị:** 20 pts P0. Nếu Spring Boot API chưa sẵn sàng, giữ mock implementation nhưng hoàn thiện kịch bản demo và dữ liệu test. Admin integration và UI polish là phần hardening P1 nếu P0 đã ổn.
 
