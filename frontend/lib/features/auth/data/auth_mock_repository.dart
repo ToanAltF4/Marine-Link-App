@@ -2,7 +2,7 @@ import '../domain/auth_repository.dart';
 import '../domain/user.dart';
 
 /// Mock AuthRepository for Sprint 1.
-/// Returns hard-coded demo users matching the seed data in migration 009.
+/// Returns hard-coded demo users matching the documented demo accounts.
 ///
 /// Replace with AuthRemoteRepository in Sprint 5 via DI — no UI changes needed.
 class AuthMockRepository implements AuthRepository {

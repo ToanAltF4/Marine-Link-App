@@ -128,9 +128,11 @@ Product list:
 |---|---|---|
 | `q` | string | Search theo name/origin/description |
 | `categoryId` | uuid | Lọc theo category |
-| `status` | `ACTIVE`, `OUT_OF_STOCK`, `DISABLED` | Public chỉ nên thấy active/out-of-stock nếu business cho phép |
+| `status` | `ACTIVE`, `OUT_OF_STOCK`, `DISABLED` | Public MVP mặc định gửi `ACTIVE`; chỉ expose `OUT_OF_STOCK` nếu business cho phép |
 | `featured` | boolean | Home featured products |
-| `sort` | string | Ví dụ `name`, `price`, `-createdAt`, `-featured` |
+| `sort` | string | Whitelist: `name`, `-name`, `price`, `-price`, `-createdAt`, `-featured` |
+
+Product list MVP dùng `q`, `categoryId`, `status`, `featured`, `sort`. UI có thể lọc `Còn hàng`/`Sắp hết` từ `status`, `stockQuantity`, `minOrderQuantity` của response hiện tại. Các query params mở rộng như `minPrice`, `maxPrice`, `minOrderQuantity`, `origin` chưa thuộc contract MVP; nếu thêm phải cập nhật tài liệu này, `marinelink_openapi.json`, backend query, DB index và test contract.
 
 Orders:
 
@@ -312,6 +314,10 @@ Rules:
 ### GET `/api/products`
 
 Query params: `page`, `size`, `q`, `categoryId`, `status`, `featured`, `sort`.
+
+Frontend Product List gửi `status=ACTIVE` cho catalog đại lý trong MVP. `sort=price_asc` là giá tăng dần, `sort=price_desc` là giá giảm dần; backend cũng hỗ trợ `newest`, `name_asc`, `name_desc`. Backend phải validate `sort` theo whitelist để tránh truyền trực tiếp field tùy ý vào query.
+
+Demo data hiện tại được seed bởi `V010__seed_dried_seafood_catalog.sql`: 21 sản phẩm đồ khô, mỗi sản phẩm có ảnh public trong Supabase Storage bucket `product-images`.
 
 Response `200`:
 
@@ -893,7 +899,7 @@ Rules:
 
 - Login success/failure.
 - Register duplicate email/phone.
-- Product list supports pagination/filter/search.
+- Product list supports pagination/search/category/status/featured/sort.
 - Product detail returns images and price tiers.
 - Cart sync recalculates price server-side.
 - Checkout rejects empty cart and invalid quantity.

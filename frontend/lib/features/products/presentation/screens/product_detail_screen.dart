@@ -4,16 +4,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
+import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 import '../bloc/product_bloc.dart';
+import '../widgets/product_detail_header.dart';
+import '../widgets/product_detail_hero.dart';
+import '../widgets/product_detail_info_card.dart';
+import '../widgets/product_detail_order_card.dart';
+import '../widgets/product_detail_pricing_card.dart';
 import '../widgets/product_visuals.dart';
+
+const _detailBackground = AppColors.background;
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -65,13 +72,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             builder: (context, state) {
               if (state is ProductInitial || state is ProductDetailLoading) {
                 return const Scaffold(
+                  backgroundColor: _detailBackground,
                   body: AppLoadingIndicator(
-                    message: 'Dang tai chi tiet san pham',
+                    message:
+                        '\u0110ang t\u1ea3i chi ti\u1ebft s\u1ea3n ph\u1ea9m',
                   ),
                 );
               }
               if (state is ProductDetailError) {
                 return Scaffold(
+                  backgroundColor: _detailBackground,
                   body: AppErrorState(
                     message: state.message,
                     onRetry: () => _productBloc.add(
@@ -81,372 +91,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 );
               }
 
-              final detail = (state as ProductDetailLoaded).product;
-              final effectivePrice = detail.priceFor(_quantity);
-              final outOfStock = detail.stockQuantity <= 0;
-              final visual = productVisualStyle(detail);
-              final stockColor = productStockColor(detail);
-
-              return AppBackExitScope(
-                onFirstBack: (context) =>
-                    BuyerNavigation.popOrGo(context, AppRoutes.productList),
-                child: Scaffold(
-                  body: SafeArea(
-                    bottom: false,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                      children: [
-                        Row(
-                          children: [
-                            _HeaderIconButton(
-                              icon: Icons.arrow_back_rounded,
-                              onTap: () => _goBackFromDetail(context),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Chi tiet san pham',
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            _HeaderIconButton(
-                              icon: Icons.notifications_none_rounded,
-                              onTap: () => BuyerNavigation.push(
-                                context,
-                                AppRoutes.notifications,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(22),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [visual.startColor, visual.endColor],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(32),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.16,
-                                      ),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      detail.category?.name ?? 'Catalog',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.12,
-                                      ),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      productStockLabel(detail),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Center(
-                                child: Container(
-                                  width: 156,
-                                  height: 156,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(32),
-                                  ),
-                                  child: Icon(
-                                    visual.icon,
-                                    size: 72,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 22),
-                              Text(
-                                detail.name,
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                detail.origin ?? 'Nguon hang dang cap nhat',
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.82,
-                                      ),
-                                    ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                '${MoneyFormatter.format(detail.basePrice)}/${detail.unit}',
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _DetailStatCard(
-                                title: 'MOQ',
-                                value:
-                                    '${detail.minOrderQuantity}${detail.unit}',
-                                icon: Icons.shopping_bag_outlined,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _DetailStatCard(
-                                title: 'Ton kho',
-                                value: '${detail.stockQuantity}${detail.unit}',
-                                icon: Icons.inventory_2_outlined,
-                                accentColor: stockColor,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _DetailStatCard(
-                                title: 'Ap dung',
-                                value:
-                                    '${MoneyFormatter.format(effectivePrice)}/${detail.unit}',
-                                icon: Icons.stacked_line_chart_rounded,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Thong tin nguon hang',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                detail.description ??
-                                    'San pham dang duoc bo sung mo ta chi tiet cho kenh B2B.',
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                              const SizedBox(height: 14),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  _DetailBadge(
-                                    icon: Icons.category_outlined,
-                                    label: detail.category?.name ?? 'Khac',
-                                  ),
-                                  _DetailBadge(
-                                    icon: Icons.place_outlined,
-                                    label: detail.origin ?? 'Chua ro nguon goc',
-                                  ),
-                                  const _DetailBadge(
-                                    icon: Icons.verified_user_outlined,
-                                    label: 'B2B sourcing',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        Text(
-                          'Gia theo muc so luong',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Gia se duoc doi theo so luong dat trong don hien tai.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 14),
-                        for (final tier in detail.priceTiers) ...[
-                          _PriceTierTile(
-                            key: Key('priceTier-${tier.id}'),
-                            tier: tier,
-                            unit: detail.unit,
-                            selected: tier.matches(_quantity),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        const SizedBox(height: 22),
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'So luong dat',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  _QuantityButton(
-                                    icon: Icons.remove_rounded,
-                                    onTap: _quantity > detail.minOrderQuantity
-                                        ? () => setState(() => _quantity -= 1)
-                                        : null,
-                                  ),
-                                  Expanded(
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          '$_quantity ${detail.unit}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'MOQ toi thieu ${detail.minOrderQuantity}${detail.unit}',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  _QuantityButton(
-                                    icon: Icons.add_rounded,
-                                    onTap: _quantity < detail.stockQuantity
-                                        ? () => setState(() => _quantity += 1)
-                                        : null,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 110),
-                      ],
-                    ),
-                  ),
-                  bottomNavigationBar: SafeArea(
-                    top: false,
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        border: Border(
-                          top: BorderSide(color: AppColors.border),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Gia ap dung',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${MoneyFormatter.format(effectivePrice)}/${detail.unit}',
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: FilledButton.icon(
-                              key: const Key('addToCartButton'),
-                              onPressed: outOfStock
-                                  ? null
-                                  : () => _addToCart(detail),
-                              icon: const Icon(
-                                Icons.add_shopping_cart_outlined,
-                              ),
-                              label: Text(
-                                outOfStock ? 'Tam het hang' : 'Them vao gio',
-                              ),
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(58),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              return _ProductDetailContent(
+                detail: (state as ProductDetailLoaded).product,
+                quantity: _quantity,
+                onBack: () => _goBackFromDetail(context),
+                onNotifications: () =>
+                    BuyerNavigation.push(context, AppRoutes.notifications),
+                onDecrease: _decreaseQuantity,
+                onIncrease: _increaseQuantity,
+                onAddToCart: _addToCart,
               );
             },
           ),
@@ -459,188 +112,103 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     BuyerNavigation.popOrGo(context, AppRoutes.productList);
   }
 
+  void _decreaseQuantity(ProductDetail detail) {
+    if (_quantity <= detail.minOrderQuantity) {
+      return;
+    }
+    setState(() => _quantity -= 1);
+  }
+
+  void _increaseQuantity(ProductDetail detail) {
+    if (_quantity >= detail.stockQuantity) {
+      return;
+    }
+    setState(() => _quantity += 1);
+  }
+
   void _addToCart(ProductDetail detail) {
     context.read<CartCubit>().addItem(product: detail, quantity: _quantity);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Da them ${detail.name} vao gio hang')),
-    );
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _HeaderIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: SizedBox(
-          width: 52,
-          height: 52,
-          child: Icon(icon, color: AppColors.primaryDark),
+      SnackBar(
+        content: Text(
+          '\u0110\u00e3 th\u00eam ${displayProductName(detail)} '
+          'v\u00e0o gi\u1ecf h\u00e0ng',
         ),
       ),
     );
   }
 }
 
-class _DetailStatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color? accentColor;
+class _ProductDetailContent extends StatelessWidget {
+  final ProductDetail detail;
+  final int quantity;
+  final VoidCallback onBack;
+  final VoidCallback onNotifications;
+  final void Function(ProductDetail detail) onDecrease;
+  final void Function(ProductDetail detail) onIncrease;
+  final void Function(ProductDetail detail) onAddToCart;
 
-  const _DetailStatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    this.accentColor,
+  const _ProductDetailContent({
+    required this.detail,
+    required this.quantity,
+    required this.onBack,
+    required this.onNotifications,
+    required this.onDecrease,
+    required this.onIncrease,
+    required this.onAddToCart,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = accentColor ?? AppColors.primary;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 12),
-          Text(title, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+    final effectivePrice = detail.priceFor(quantity);
+    final outOfStock = !detail.isAvailable;
+
+    return Scaffold(
+      backgroundColor: _detailBackground,
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          key: const Key('productDetailScrollView'),
+          child: Column(
+            children: [
+              ProductDetailHeader(
+                onBack: onBack,
+                onNotifications: onNotifications,
+              ),
+              ProductHeroImage(detail: detail),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
+                child: Column(
+                  children: [
+                    WholesalePricingCard(detail: detail),
+                    const SizedBox(height: 16),
+                    ProductInformationCard(detail: detail),
+                    const SizedBox(height: 16),
+                    OrderQuantityCard(
+                      detail: detail,
+                      effectivePrice: effectivePrice,
+                      quantity: quantity,
+                      outOfStock: outOfStock,
+                      onDecrease: quantity > detail.minOrderQuantity
+                          ? () => onDecrease(detail)
+                          : null,
+                      onIncrease: quantity < detail.stockQuantity
+                          ? () => onIncrease(detail)
+                          : null,
+                      onAddToCart: outOfStock
+                          ? null
+                          : () => onAddToCart(detail),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _DetailBadge({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSky,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text(label),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuantityButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _QuantityButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      onPressed: onTap,
-      style: IconButton.styleFrom(
-        minimumSize: const Size(52, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      icon: Icon(icon),
-    );
-  }
-}
-
-class _PriceTierTile extends StatelessWidget {
-  final PriceTier tier;
-  final String unit;
-  final bool selected;
-
-  const _PriceTierTile({
-    super.key,
-    required this.tier,
-    required this.unit,
-    required this.selected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final rangeLabel = tier.maxQuantity == null
-        ? 'Tu ${tier.minQuantity}$unit'
-        : '${tier.minQuantity}-${tier.maxQuantity}$unit';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: selected ? AppColors.primaryDark : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: selected ? AppColors.primaryDark : AppColors.border,
         ),
       ),
-      child: Row(
-        children: [
-          Icon(
-            selected ? Icons.check_circle : Icons.local_offer_outlined,
-            color: selected ? Colors.white : theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  rangeLabel,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: selected
-                        ? Colors.white
-                        : theme.colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${MoneyFormatter.format(tier.unitPrice)}/$unit',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: selected
-                        ? Colors.white.withValues(alpha: 0.82)
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      bottomNavigationBar: const BuyerBottomNav(
+        key: Key('productDetailBottomNav'),
+        currentTab: BuyerBottomNavTab.products,
       ),
     );
   }

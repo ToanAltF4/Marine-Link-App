@@ -16,6 +16,8 @@ import '../../domain/product_repository.dart';
 import '../bloc/product_bloc.dart';
 import '../widgets/product_visuals.dart';
 
+enum _ProductStockFilter { all, available, low }
+
 class ProductListScreen extends StatefulWidget {
   static const productListScrollKey = PageStorageKey<String>(
     'productListScrollView',
@@ -47,6 +49,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   List<Category> _categories = const [];
   String? _selectedCategoryId;
   String _selectedVariant = _allFilterValue;
+  _ProductStockFilter _stockFilter = _ProductStockFilter.all;
   bool _sortAscending = true;
   bool _hasCustomSort = false;
 
@@ -96,77 +99,98 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                 return Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: _handleBack,
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  size: 22,
-                                  color: AppColors.primaryDark,
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  _screenTitle(),
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.titleLarge?.copyWith(
+                    Material(
+                      color: const Color(0xFFF8FBFF),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 18),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: _handleBack,
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    size: 22,
                                     color: AppColors.primaryDark,
-                                    fontFamily: 'serif',
-                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: _openNotifications,
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(
-                                  Icons.notifications_none_rounded,
-                                  size: 24,
-                                  color: AppColors.primaryDark,
+                                Expanded(
+                                  child: Text(
+                                    _screenTitle(),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      color: AppColors.primaryDark,
+                                      fontFamily: 'serif',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            key: const Key('productSearchField'),
-                            controller: _searchController,
-                            onSubmitted: (_) => _requestProducts(),
-                            textInputAction: TextInputAction.search,
-                            decoration: InputDecoration(
-                              hintText: _selectedCategoryId == null
-                                  ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
-                                  : 'T\u00ecm trong danh m\u1ee5c...',
-                              prefixIcon: const Icon(
-                                Icons.search_rounded,
-                                color: AppColors.textSecondary,
-                              ),
-                              suffixIcon: IconButton(
-                                key: const Key('productSearchButton'),
-                                onPressed: _requestProducts,
-                                icon: const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: AppColors.primaryDark,
+                                IconButton(
+                                  onPressed: _openNotifications,
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.notifications_none_rounded,
+                                    size: 24,
+                                    color: AppColors.primaryDark,
+                                  ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              key: const Key('productSearchField'),
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) => _requestProducts(),
+                              textInputAction: TextInputAction.search,
+                              decoration: InputDecoration(
+                                hintText: _selectedCategoryId == null
+                                    ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
+                                    : 'T\u00ecm trong danh m\u1ee5c...',
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.textSecondary,
+                                ),
+                                suffixIcon: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_searchController.text
+                                        .trim()
+                                        .isNotEmpty)
+                                      IconButton(
+                                        key: const Key(
+                                          'productSearchClearButton',
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {});
+                                          _requestProducts();
+                                        },
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    IconButton(
+                                      key: const Key('productSearchButton'),
+                                      onPressed: _requestProducts,
+                                      icon: const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
                               ),
-                              filled: true,
-                              fillColor: Colors.white,
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: _buildTopFilters(variantOptions),
-                            ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            _buildTopFilters(variantOptions),
+                          ],
+                        ),
                       ),
                     ),
                     _buildBody(theme, state, visibleProducts),
@@ -214,9 +238,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (state is ProductInitial || state is ProductListLoading) {
       return const Expanded(
         child: _ScrollableState(
-          child: AppLoadingIndicator(
-            message: '\u0110ang t\u1ea3i danh s\u00e1ch s\u1ea3n ph\u1ea9m',
-          ),
+          child: AppLoadingIndicator(message: 'Đang tải danh sách sản phẩm'),
         ),
       );
     }
@@ -233,12 +255,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
 
     if (visibleProducts.isEmpty) {
-      return const Expanded(
+      return Expanded(
         child: _ScrollableState(
           child: AppEmptyState(
-            key: Key('productListEmptyState'),
-            message:
-                'Kh\u00f4ng t\u00ecm th\u1ea5y s\u1ea3n ph\u1ea9m ph\u00f9 h\u1ee3p',
+            key: const Key('productListEmptyState'),
+            message: 'Không tìm thấy sản phẩm phù hợp',
+            actionLabel: 'Xóa lọc',
+            onAction: _resetProductFilters,
             icon: Icons.search_off_outlined,
           ),
         ),
@@ -246,75 +269,107 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
 
     return Expanded(
-      child: ListView.separated(
-        key: ProductListScreen.productListScrollKey,
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
-        itemCount: visibleProducts.length + 1,
-        separatorBuilder: (_, index) =>
-            index == 0 ? const SizedBox(height: 8) : const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _WholesalePolicyCard(
-                  categoryName: _selectedCategoryId == null
-                      ? null
-                      : _screenTitle(),
-                ),
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${visibleProducts.length} m\u1eb7t h\u00e0ng',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.primaryDark,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _sortAscending
-                            ? 'Gi\u00e1 t\u0103ng d\u1ea7n'
-                            : 'Gi\u00e1 gi\u1ea3m d\u1ea7n',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF006A7C),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+      child: ClipRect(
+        child: ListView.separated(
+          key: ProductListScreen.productListScrollKey,
+          clipBehavior: Clip.hardEdge,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+          itemCount: visibleProducts.length + 1,
+          separatorBuilder: (_, index) => index == 0
+              ? const SizedBox(height: 8)
+              : const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _WholesalePolicyCard(
+                    categoryName: _selectedCategoryId == null
+                        ? null
+                        : _screenTitle(),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${visibleProducts.length} mặt hàng',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _sortLabel(),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF006A7C),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+            final product = visibleProducts[index - 1];
+            return _ProductListCard(
+              product: product,
+              onTap: () => _openProductDetail(product.id),
             );
-          }
-          final product = visibleProducts[index - 1];
-          return _ProductListCard(
-            product: product,
-            onTap: () => _openProductDetail(product.id),
-          );
-        },
+          },
+        ),
       ),
     );
   }
 
-  List<Widget> _buildTopFilters(List<String> variantOptions) {
-    final widgets = <Widget>[
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _FilterChipButton(
-          label: 'T\u1ea5t c\u1ea3',
-          selected: _selectedVariant == _allFilterValue,
-          onTap: () {
-            setState(() {
-              _selectedVariant = _allFilterValue;
-            });
-          },
-        ),
+  Widget _buildTopFilters(List<String> variantOptions) {
+    final scrollingFilters = _buildScrollableTopFilters(variantOptions);
+
+    return KeyedSubtree(
+      key: const Key('productTopFilterBar'),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _FilterChipButton(
+              key: const Key('productFilterAllChip'),
+              label: 'T\u1ea5t c\u1ea3',
+              selected:
+                  _selectedCategoryId == null &&
+                  _selectedVariant == _allFilterValue &&
+                  _stockFilter == _ProductStockFilter.all,
+              onTap: _resetProductFilters,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _AdvancedFilterButton(
+              activeCount: _activeFilterCount(),
+              onTap: _openAdvancedFilters,
+            ),
+          ),
+          Expanded(
+            child: ClipRect(
+              child: SingleChildScrollView(
+                key: const Key('productScrollableFilters'),
+                clipBehavior: Clip.hardEdge,
+                restorationId:
+                    'productTopFilters-${_selectedCategoryId ?? 'all'}-$_stockFilter',
+                scrollDirection: Axis.horizontal,
+                child: Row(children: scrollingFilters),
+              ),
+            ),
+          ),
+        ],
       ),
-    ];
+    );
+  }
+
+  List<Widget> _buildScrollableTopFilters(List<String> variantOptions) {
+    final widgets = <Widget>[];
 
     if (_selectedCategoryId == null) {
       for (final category in _categories) {
@@ -348,11 +403,29 @@ class _ProductListScreenState extends State<ProductListScreen> {
       }
     }
 
-    widgets.add(
+    widgets.addAll([
+      Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: _FilterChipButton(
+          label: 'Còn hàng',
+          selected: _stockFilter == _ProductStockFilter.available,
+          onTap: () => _selectStockFilter(_ProductStockFilter.available),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: _FilterChipButton(
+          label: 'Sắp hết',
+          selected: _stockFilter == _ProductStockFilter.low,
+          onTap: () => _selectStockFilter(_ProductStockFilter.low),
+        ),
+      ),
       Padding(
         padding: const EdgeInsets.only(left: 4),
         child: _SortChipButton(
+          label: _sortLabel(),
           ascending: _sortAscending,
+          active: _hasCustomSort,
           onTap: () {
             setState(() {
               _sortAscending = !_sortAscending;
@@ -362,7 +435,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           },
         ),
       ),
-    );
+    ]);
 
     return widgets;
   }
@@ -381,10 +454,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   List<Product> _applyLocalFilters(List<Product> products) {
     final filtered = products.where((product) {
-      if (_selectedVariant == _allFilterValue) {
-        return true;
+      if (_selectedVariant != _allFilterValue &&
+          _variantLabel(product) != _selectedVariant) {
+        return false;
       }
-      return _variantLabel(product) == _selectedVariant;
+      return switch (_stockFilter) {
+        _ProductStockFilter.all => true,
+        _ProductStockFilter.available => product.isAvailable,
+        _ProductStockFilter.low => _isLowStock(product),
+      };
     }).toList();
 
     if (_hasCustomSort) {
@@ -396,26 +474,128 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return filtered;
   }
 
+  bool _isLowStock(Product product) {
+    return product.isAvailable &&
+        product.stockQuantity <= product.minOrderQuantity * 6;
+  }
+
+  String _sortLabel() {
+    if (!_hasCustomSort) {
+      return 'Mặc định';
+    }
+    return _sortAscending ? 'Giá tăng dần' : 'Giá giảm dần';
+  }
+
+  int _activeFilterCount() {
+    var count = 0;
+    if (_selectedCategoryId != null) {
+      count++;
+    }
+    if (_selectedVariant != _allFilterValue) {
+      count++;
+    }
+    if (_stockFilter != _ProductStockFilter.all) {
+      count++;
+    }
+    if (_hasCustomSort) {
+      count++;
+    }
+    return count;
+  }
+
+  String? _sortParam() {
+    if (!_hasCustomSort) {
+      return null;
+    }
+    return _sortAscending ? 'price' : '-price';
+  }
+
+  void _selectStockFilter(_ProductStockFilter filter) {
+    setState(() {
+      _stockFilter = _stockFilter == filter ? _ProductStockFilter.all : filter;
+    });
+  }
+
+  void _openAdvancedFilters() {
+    var draftStockFilter = _stockFilter;
+    var draftSortAscending = _sortAscending;
+    var draftHasCustomSort = _hasCustomSort;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setDraftState) {
+            return _ProductFilterSheet(
+              stockFilter: draftStockFilter,
+              hasCustomSort: draftHasCustomSort,
+              sortAscending: draftSortAscending,
+              onStockFilterChanged: (filter) {
+                setDraftState(() => draftStockFilter = filter);
+              },
+              onSortChanged: (ascending) {
+                setDraftState(() {
+                  draftHasCustomSort = true;
+                  draftSortAscending = ascending;
+                });
+              },
+              onReset: () {
+                Navigator.of(sheetContext).pop();
+                _resetProductFilters();
+              },
+              onApply: () {
+                Navigator.of(sheetContext).pop();
+                setState(() {
+                  _stockFilter = draftStockFilter;
+                  _hasCustomSort = draftHasCustomSort;
+                  _sortAscending = draftSortAscending;
+                });
+                _requestProducts();
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _resetProductFilters() {
+    _searchController.clear();
+    setState(() {
+      _selectedCategoryId = null;
+      _selectedVariant = _allFilterValue;
+      _stockFilter = _ProductStockFilter.all;
+      _hasCustomSort = false;
+      _sortAscending = true;
+    });
+    _requestProducts();
+  }
+
   String? _variantLabel(Product product) {
     final lowerName = product.name.toLowerCase();
     if (lowerName.contains('loai 1')) {
-      return 'Lo\u1ea1i 1';
+      return 'Loại 1';
     }
     if (lowerName.contains('loai 2')) {
-      return 'Lo\u1ea1i 2';
+      return 'Loại 2';
     }
     if (lowerName.contains('xe soi')) {
-      return 'X\u00e9 s\u1ee3i';
+      return 'Xé sợi';
     }
     if (lowerName.contains('dac biet')) {
-      return '\u0110\u1eb7c bi\u1ec7t';
+      return 'Đặc biệt';
     }
     return null;
   }
 
   String _screenTitle() {
     if (_selectedCategoryId == null) {
-      return 'S\u1ea3n ph\u1ea9m';
+      return 'Sản phẩm';
     }
 
     for (final category in _categories) {
@@ -423,7 +603,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         return displayCategoryName(category);
       }
     }
-    return 'S\u1ea3n ph\u1ea9m';
+    return 'Sản phẩm';
   }
 
   void _selectCategory(String categoryId) {
@@ -442,6 +622,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             : _searchController.text.trim(),
         categoryId: _selectedCategoryId,
         status: 'ACTIVE',
+        sort: _sortParam(),
         size: 20,
       ),
     );
@@ -491,6 +672,7 @@ class _FilterChipButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _FilterChipButton({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -512,6 +694,9 @@ class _FilterChipButton extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: selected ? Colors.white : AppColors.textPrimary,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
@@ -523,10 +708,17 @@ class _FilterChipButton extends StatelessWidget {
 }
 
 class _SortChipButton extends StatelessWidget {
+  final String label;
   final bool ascending;
+  final bool active;
   final VoidCallback onTap;
 
-  const _SortChipButton({required this.ascending, required this.onTap});
+  const _SortChipButton({
+    required this.label,
+    required this.ascending,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -538,23 +730,250 @@ class _SortChipButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFE8F5FF),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFD1E7F7)),
+          border: Border.all(
+            color: active ? const Color(0xFF006A7C) : const Color(0xFFD1E7F7),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.sort_rounded, size: 16, color: Color(0xFF006A7C)),
+            Icon(
+              ascending
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
+              size: 16,
+              color: const Color(0xFF006A7C),
+            ),
             const SizedBox(width: 6),
             Text(
-              ascending
-                  ? 'Gi\u00e1 t\u0103ng d\u1ea7n'
-                  : 'Gi\u00e1 gi\u1ea3m d\u1ea7n',
+              label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: const Color(0xFF006A7C),
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdvancedFilterButton extends StatelessWidget {
+  final int activeCount;
+  final VoidCallback onTap;
+
+  const _AdvancedFilterButton({required this.activeCount, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = activeCount > 0;
+    return InkWell(
+      key: const Key('productAdvancedFilterButton'),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFE8F5FF) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? const Color(0xFF006A7C) : const Color(0xFFD9E4EF),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF006A7C)),
+            const SizedBox(width: 6),
+            Text(
+              isActive ? 'Lọc ($activeCount)' : 'Lọc',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: isActive
+                    ? const Color(0xFF006A7C)
+                    : AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductFilterSheet extends StatelessWidget {
+  final _ProductStockFilter stockFilter;
+  final bool hasCustomSort;
+  final bool sortAscending;
+  final ValueChanged<_ProductStockFilter> onStockFilterChanged;
+  final ValueChanged<bool> onSortChanged;
+  final VoidCallback onReset;
+  final VoidCallback onApply;
+
+  const _ProductFilterSheet({
+    required this.stockFilter,
+    required this.hasCustomSort,
+    required this.sortAscending,
+    required this.onStockFilterChanged,
+    required this.onSortChanged,
+    required this.onReset,
+    required this.onApply,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      child: Padding(
+        key: const Key('productFilterSheet'),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD8E3EA),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Lọc sản phẩm',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tồn kho',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _SheetChoiceButton(
+                  key: const Key('productFilterStockAll'),
+                  label: 'Tất cả',
+                  selected: stockFilter == _ProductStockFilter.all,
+                  onTap: () => onStockFilterChanged(_ProductStockFilter.all),
+                ),
+                _SheetChoiceButton(
+                  key: const Key('productFilterStockAvailable'),
+                  label: 'Còn hàng',
+                  selected: stockFilter == _ProductStockFilter.available,
+                  onTap: () =>
+                      onStockFilterChanged(_ProductStockFilter.available),
+                ),
+                _SheetChoiceButton(
+                  key: const Key('productFilterStockLow'),
+                  label: 'Sắp hết',
+                  selected: stockFilter == _ProductStockFilter.low,
+                  onTap: () => onStockFilterChanged(_ProductStockFilter.low),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Sắp xếp',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _SheetChoiceButton(
+                  key: const Key('productFilterSortPriceAsc'),
+                  label: 'Giá tăng dần',
+                  selected: hasCustomSort && sortAscending,
+                  onTap: () => onSortChanged(true),
+                ),
+                _SheetChoiceButton(
+                  key: const Key('productFilterSortPriceDesc'),
+                  label: 'Giá giảm dần',
+                  selected: hasCustomSort && !sortAscending,
+                  onTap: () => onSortChanged(false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('productFilterResetButton'),
+                    onPressed: onReset,
+                    child: const Text('Đặt lại'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    key: const Key('productFilterApplyButton'),
+                    onPressed: onApply,
+                    child: const Text('Áp dụng'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetChoiceButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SheetChoiceButton({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : const Color(0xFFF8FBFF),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? AppColors.primary : const Color(0xFFD9E4EF),
+          ),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: selected ? Colors.white : AppColors.textPrimary,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -699,7 +1118,6 @@ class _ProductListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final stockColor = productStockColor(product);
     final imageProvider = productImageProvider(product);
     final fallbackVisual = productVisualStyle(product);
 

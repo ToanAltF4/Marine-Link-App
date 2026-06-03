@@ -38,6 +38,7 @@ Marine-Link-App/
     src/main/resources/
     src/test/java/com/marinelink/
   docs/                     # Product, API, architecture, DB, sprint docs
+  dried_seafood_products/   # Source product photos used to seed Supabase Storage
   icon/                     # Brand and app icons
 ```
 
@@ -45,16 +46,69 @@ Frontend code must live under `frontend/`; backend code must live under `backend
 
 ## Product Image Assets
 
-Demo product photography lives in `frontend/assets/product_images/`. Each subfolder contains a `screen.png` for that product category:
+Real dried-seafood product photography lives in `dried_seafood_products/`. Use only the top-level product folders for seed data; the nested `stitch_marinelink_b2b_seafood_ui_kit/` folder is a duplicate UI-kit export.
 
-| Folder | Product |
-|---|---|
-| `professional_high_quality_studio_photography_of_premium_dried_shrimp_t_m_kh` | Tôm khô |
-| `professional_high_quality_studio_photography_of_premium_dried_squid_m_c_kh` | Mực khô |
-| `professional_high_quality_studio_photography_of_premium_dried_yellowstripe_scad` | Cá sọc vàng khô |
-| `professional_high_quality_studio_photography_of_premium_semi_dried_squid_m_c_m` | Mực mềm (semi-dried) |
+The current Supabase seed uploads 21 product images to bucket `product-images` under `products/dried-seafood/<product-slug>.png`. `V010__seed_dried_seafood_catalog.sql` stores those public URLs in `products.image_url` and `product_images.image_url`.
 
-These images are used for database seeding and local UI development only. Production images are served from Supabase Storage.
+Legacy mock product thumbnails live in `frontend/assets/products/` and are used only when remote repositories are disabled.
+
+## Running Against Spring Boot
+
+Mock repositories remain the default for fast local widget tests. To test with real backend/Supabase data:
+
+```powershell
+# Terminal 1
+cd backend
+mvn spring-boot:run
+
+# Terminal 2
+cd frontend
+flutter run --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+For Windows desktop/browser testing, change `API_BASE_URL` to `http://localhost:8080`.
+
+### Smoke Test API Thật
+
+Sau khi backend chạy ở `http://localhost:8080`, kiểm tra product thật:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/products?size=5"
+```
+
+Kiểm tra login tài khoản đã seed trong Supabase:
+
+```powershell
+$body = @{ emailOrPhone = "daily-a@marinelink.demo"; password = "Daily@123" } | ConvertTo-Json
+$login = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/auth/login" -ContentType "application/json" -Body $body
+$login.data.user
+```
+
+Kiểm tra JWT gọi profile hiện tại:
+
+```powershell
+$token = $login.data.token
+Invoke-RestMethod -Method Get -Uri "http://localhost:8080/api/users/me" -Headers @{ Authorization = "Bearer $token" }
+```
+
+### Test Commands
+
+Backend:
+
+```powershell
+cd backend
+mvn test
+mvn -DskipTests compile
+```
+
+Frontend:
+
+```powershell
+cd frontend
+flutter analyze
+flutter test
+flutter test --coverage
+```
 
 ## Code Requirements
 
@@ -66,7 +120,7 @@ These images are used for database seeding and local UI development only. Produc
 ## Demo Accounts
 
 > [!NOTE]
-> Các tài khoản dưới đây chỉ hoạt động với **mock repository** (Sprint 1–4). Khi tích hợp Spring Boot thật ở Sprint 5, cần seed vào DB với password hash tương ứng.
+> Các tài khoản dưới đây là credential test dùng cho mock repository và đã được seed vào Supabase thật bằng BCrypt hash trong `V011__seed_demo_users.sql`. Không dùng các password này cho production.
 
 | Role | Tên hiển thị | Email | Số điện thoại | Mật khẩu | Phạm vi truy cập |
 |---|---|---|---|---|---|
@@ -76,12 +130,13 @@ These images are used for database seeding and local UI development only. Produc
 
 **Đăng nhập bằng email hoặc số điện thoại** đều được. Tài khoản `USER` có thêm thông tin cửa hàng: **Hải Sản A Cần Thơ** (Cần Thơ, MST: 0312345678).
 
-Source: [`frontend/lib/features/auth/data/auth_mock_repository.dart`](frontend/lib/features/auth/data/auth_mock_repository.dart)
+Sources: [`frontend/lib/features/auth/data/auth_mock_repository.dart`](frontend/lib/features/auth/data/auth_mock_repository.dart), [`backend/src/main/resources/db/migration/V011__seed_demo_users.sql`](backend/src/main/resources/db/migration/V011__seed_demo_users.sql)
 
 
 
 ## Security Notes
 
-- Do not commit Supabase keys, JWT secrets, API keys, database passwords, or demo plaintext passwords.
+- Do not commit Supabase keys, JWT secrets, API keys, database passwords, or real user passwords.
+- The demo passwords in the table above are fixed test credentials only; real user passwords must never be committed.
 - Flutter must not call protected Supabase tables directly in the MVP; authorization is enforced through Spring Boot services.
 - Demo users should be seeded with password hashes only.

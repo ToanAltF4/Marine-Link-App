@@ -322,9 +322,180 @@ void main() {
 
       expect(find.byKey(const Key('productListEmptyState')), findsOneWidget);
     });
+
+    testWidgets('keeps the all filter chip visible while filters scroll', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(393, 852);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductListScreen(
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final allChip = find.byKey(const Key('productFilterAllChip'));
+      final filterBar = find.byKey(const Key('productTopFilterBar'));
+      final scrollableFilters = find.byKey(
+        const Key('productScrollableFilters'),
+      );
+      final productList = find.byKey(ProductListScreen.productListScrollKey);
+      expect(allChip, findsOneWidget);
+      expect(filterBar, findsOneWidget);
+      expect(productList, findsOneWidget);
+      expect(find.text('T\u1ea5t c\u1ea3'), findsOneWidget);
+      expect(
+        tester.getRect(scrollableFilters).left,
+        greaterThan(tester.getRect(allChip).right),
+      );
+      expect(
+        tester.getRect(productList).top,
+        greaterThan(tester.getRect(filterBar).bottom),
+      );
+
+      await tester.drag(scrollableFilters, const Offset(-220, 0));
+      await tester.pump();
+
+      final chipRect = tester.getRect(allChip);
+      expect(chipRect.left, greaterThanOrEqualTo(0));
+      expect(chipRect.right, lessThanOrEqualTo(393));
+
+      await tester.drag(
+        find.byKey(ProductListScreen.productListScrollKey),
+        const Offset(0, -480),
+      );
+      await tester.pump();
+
+      final chipRectAfterProductScroll = tester.getRect(allChip);
+      expect(chipRectAfterProductScroll.left, greaterThanOrEqualTo(0));
+      expect(chipRectAfterProductScroll.right, lessThanOrEqualTo(393));
+      expect(
+        tester.getRect(productList).top,
+        greaterThan(tester.getRect(filterBar).bottom),
+      );
+      expect(find.text('T\u1ea5t c\u1ea3'), findsOneWidget);
+    });
+
+    testWidgets('applies stock filter from the product filter sheet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductListScreen(
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byKey(const Key('productCard-prod-001')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('productFilterSheet')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('productFilterStockLow')));
+      await tester.tap(find.byKey(const Key('productFilterApplyButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 mặt hàng'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('productCard-prod-004')),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byKey(const Key('productCard-prod-004')), findsOneWidget);
+      expect(find.text('Sắp hết'), findsWidgets);
+
+      await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('productFilterResetButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('productCard-prod-001')), findsOneWidget);
+    });
   });
 
   group('ProductDetailScreen', () {
+    testWidgets('renders the reference product detail layout', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(390, 844);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductDetailScreen(
+              productId: 'prod-001',
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byKey(const Key('productDetailLogo')), findsOneWidget);
+      final detailTitle = tester.widget<Text>(
+        find.byKey(const Key('productDetailLogo')),
+      );
+      expect(detailTitle.style?.fontFamily, 'serif');
+      expect(find.byKey(const Key('productDetailHeroImage')), findsOneWidget);
+      expect(
+        find.byKey(const Key('productDetailWholesaleCard')),
+        findsOneWidget,
+      );
+      expect(find.text('M\u1ef1c kh\u00f4 lo\u1ea1i 1'), findsOneWidget);
+      expect(find.text('Gi\u00e1 s\u1ec9 t\u1eeb:'), findsOneWidget);
+      expect(find.text('450.000\u0111/kg'), findsWidgets);
+      expect(find.text('B\u1ea3ng gi\u00e1 s\u1ec9'), findsOneWidget);
+      expect(
+        find.byKey(const Key('productDetailPackagingSpec')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('productDetailBottomNav')), findsOneWidget);
+
+      final heroRect = tester.getRect(
+        find.byKey(const Key('productDetailHeroImage')),
+      );
+      final cardRect = tester.getRect(
+        find.byKey(const Key('productDetailWholesaleCard')),
+      );
+      final navRect = tester.getRect(
+        find.byKey(const Key('productDetailBottomNav')),
+      );
+
+      expect(heroRect.top, greaterThanOrEqualTo(56));
+      expect(cardRect.top, greaterThan(heroRect.bottom));
+      expect(navRect.bottom, closeTo(844, 1));
+    });
+
     testWidgets('shows price tiers and adds item to cart', (tester) async {
       final cartCubit = CartCubit();
 

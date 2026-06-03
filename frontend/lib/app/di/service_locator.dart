@@ -5,11 +5,13 @@ import '../../core/storage/secure_token_storage.dart';
 // Auth
 import '../../features/auth/domain/auth_repository.dart';
 import '../../features/auth/data/auth_mock_repository.dart';
+import '../../features/auth/data/auth_remote_repository.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 // Products
 import '../../features/products/domain/product_repository.dart';
 import '../../features/products/data/product_mock_repository.dart';
+import '../../features/products/data/product_remote_repository.dart';
 import '../../features/products/presentation/bloc/product_bloc.dart';
 
 // Cart
@@ -21,6 +23,11 @@ import '../../features/orders/data/order_mock_repository.dart';
 import '../../features/orders/presentation/bloc/order_bloc.dart';
 
 final GetIt sl = GetIt.instance;
+
+const bool _useRemoteRepositories = bool.fromEnvironment(
+  'USE_REMOTE_REPOSITORIES',
+  defaultValue: false,
+);
 
 /// Register all dependencies for dependency injection.
 /// Call this before [runApp] in main.dart.
@@ -38,14 +45,25 @@ Future<void> setupServiceLocator() async {
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
   // Sprint 5: swap AuthMockRepository → AuthRemoteRepository
-  sl.registerLazySingleton<AuthRepository>(() => AuthMockRepository());
+  sl.registerLazySingleton<AuthRepository>(
+    () => _useRemoteRepositories
+        ? AuthRemoteRepository(
+            apiClient: sl<ApiClient>(),
+            tokenStorage: sl<SecureTokenStorage>(),
+          )
+        : AuthMockRepository(),
+  );
   sl.registerFactory<AuthBloc>(
     () => AuthBloc(authRepository: sl<AuthRepository>()),
   );
 
   // ── Products ─────────────────────────────────────────────────────────────────
   // Sprint 5: swap ProductMockRepository → ProductRemoteRepository
-  sl.registerLazySingleton<ProductRepository>(() => ProductMockRepository());
+  sl.registerLazySingleton<ProductRepository>(
+    () => _useRemoteRepositories
+        ? ProductRemoteRepository(apiClient: sl<ApiClient>())
+        : ProductMockRepository(),
+  );
   sl.registerFactory<ProductBloc>(
     () => ProductBloc(productRepository: sl<ProductRepository>()),
   );
