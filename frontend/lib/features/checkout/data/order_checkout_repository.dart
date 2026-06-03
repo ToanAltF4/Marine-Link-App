@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_initializing_formals
+
 import '../../../core/api/api_response.dart';
 import '../../cart/domain/cart.dart';
 import '../../orders/domain/order_repository.dart';
