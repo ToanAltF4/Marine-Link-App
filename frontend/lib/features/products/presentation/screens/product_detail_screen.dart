@@ -73,7 +73,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 return const Scaffold(
                   backgroundColor: _detailBackground,
                   body: AppLoadingIndicator(
-                    message: 'Dang tai chi tiet san pham',
+                    message:
+                        '\u0110ang t\u1ea3i chi ti\u1ebft s\u1ea3n ph\u1ea9m',
                   ),
                 );
               }
@@ -128,7 +129,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     context.read<CartCubit>().addItem(product: detail, quantity: _quantity);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Da them ${displayProductName(detail)} vao gio hang'),
+        content: Text(
+          '\u0110\u00e3 th\u00eam ${displayProductName(detail)} '
+          'v\u00e0o gi\u1ecf h\u00e0ng',
+        ),
       ),
     );
   }

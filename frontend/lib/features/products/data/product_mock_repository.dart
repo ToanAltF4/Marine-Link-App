@@ -168,7 +168,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: true,
       category: const Category(id: 'cat-002', name: 'Tom kho'),
       description:
-          'Tom kho dac biet mau sac dong deu, phu hop don dai ly va ke combo qua bieu.',
+          'T\u00f4m kh\u00f4 \u0111\u1eb7c bi\u1ec7t m\u00e0u s\u1eafc '
+          '\u0111\u1ed3ng \u0111\u1ec1u, ph\u00f9 h\u1ee3p \u0111\u01a1n '
+          '\u0111\u1ea1i l\u00fd v\u00e0 k\u1ec7 combo qu\u00e0 bi\u1ebfu.',
       images: const [
         ProductImage(
           id: 'img-002-a',
@@ -256,7 +258,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: true,
       category: const Category(id: 'cat-004', name: 'Muc mot nang'),
       description:
-          'Muc mot nang thit day, phu hop kenh nha hang va khach san can loai premium.',
+          'M\u1ef1c m\u1ed9t n\u1eafng th\u1ecbt d\u00e0y, ph\u00f9 '
+          'h\u1ee3p k\u00eanh nh\u00e0 h\u00e0ng v\u00e0 kh\u00e1ch '
+          's\u1ea1n c\u1ea7n lo\u1ea1i premium.',
       images: const [
         ProductImage(
           id: 'img-004-a',
@@ -300,7 +304,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: false,
       category: const Category(id: 'cat-001', name: 'Muc kho'),
       description:
-          'Muc kho xe soi phu hop kenh qua tang va cua hang dac san cao cap.',
+          'M\u1ef1c kh\u00f4 x\u00e9 s\u1ee3i ph\u00f9 h\u1ee3p k\u00eanh '
+          'qu\u00e0 t\u1eb7ng v\u00e0 c\u1eeda h\u00e0ng \u0111\u1eb7c '
+          's\u1ea3n cao c\u1ea5p.',
       images: const [
         ProductImage(
           id: 'img-005-a',
@@ -344,7 +350,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: false,
       category: const Category(id: 'cat-001', name: 'Muc kho'),
       description:
-          'Muc kho loai 2 cho kenh phan phoi gia tot, van giu duoc do dong deu khi trung bay.',
+          'M\u1ef1c kh\u00f4 lo\u1ea1i 2 cho k\u00eanh ph\u00e2n '
+          'ph\u1ed1i gi\u00e1 t\u1ed1t, v\u1eabn gi\u1eef \u0111\u01b0\u1ee3c '
+          '\u0111\u1ed9 \u0111\u1ed3ng \u0111\u1ec1u khi tr\u01b0ng b\u00e0y.',
       images: const [
         ProductImage(
           id: 'img-006-a',
@@ -480,7 +488,7 @@ class ProductMockRepository implements ProductRepository {
     if (detail == null) {
       return const ApiResponse<ProductDetail>(
         success: false,
-        message: 'Khong tim thay san pham',
+        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y s\u1ea3n ph\u1ea9m',
         data: null,
       );
     }

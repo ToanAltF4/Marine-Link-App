@@ -99,98 +99,98 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                 return Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: _handleBack,
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  size: 22,
-                                  color: AppColors.primaryDark,
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  _screenTitle(),
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.titleLarge?.copyWith(
+                    Material(
+                      color: const Color(0xFFF8FBFF),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 18),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: _handleBack,
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    size: 22,
                                     color: AppColors.primaryDark,
-                                    fontFamily: 'serif',
-                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: _openNotifications,
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(
-                                  Icons.notifications_none_rounded,
-                                  size: 24,
-                                  color: AppColors.primaryDark,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            key: const Key('productSearchField'),
-                            controller: _searchController,
-                            onChanged: (_) => setState(() {}),
-                            onSubmitted: (_) => _requestProducts(),
-                            textInputAction: TextInputAction.search,
-                            decoration: InputDecoration(
-                              hintText: _selectedCategoryId == null
-                                  ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
-                                  : 'T\u00ecm trong danh m\u1ee5c...',
-                              prefixIcon: const Icon(
-                                Icons.search_rounded,
-                                color: AppColors.textSecondary,
-                              ),
-                              suffixIcon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_searchController.text.trim().isNotEmpty)
-                                    IconButton(
-                                      key: const Key(
-                                        'productSearchClearButton',
-                                      ),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() {});
-                                        _requestProducts();
-                                      },
-                                      icon: const Icon(
-                                        Icons.close_rounded,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  IconButton(
-                                    key: const Key('productSearchButton'),
-                                    onPressed: _requestProducts,
-                                    icon: const Icon(
-                                      Icons.arrow_forward_rounded,
+                                Expanded(
+                                  child: Text(
+                                    _screenTitle(),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.titleLarge?.copyWith(
                                       color: AppColors.primaryDark,
+                                      fontFamily: 'serif',
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                ],
+                                ),
+                                IconButton(
+                                  onPressed: _openNotifications,
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.notifications_none_rounded,
+                                    size: 24,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              key: const Key('productSearchField'),
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) => _requestProducts(),
+                              textInputAction: TextInputAction.search,
+                              decoration: InputDecoration(
+                                hintText: _selectedCategoryId == null
+                                    ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
+                                    : 'T\u00ecm trong danh m\u1ee5c...',
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  color: AppColors.textSecondary,
+                                ),
+                                suffixIcon: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_searchController.text
+                                        .trim()
+                                        .isNotEmpty)
+                                      IconButton(
+                                        key: const Key(
+                                          'productSearchClearButton',
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {});
+                                          _requestProducts();
+                                        },
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    IconButton(
+                                      key: const Key('productSearchButton'),
+                                      onPressed: _requestProducts,
+                                      icon: const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
                               ),
-                              filled: true,
-                              fillColor: Colors.white,
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: _buildTopFilters(variantOptions),
-                            ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            _buildTopFilters(variantOptions),
+                          ],
+                        ),
                       ),
                     ),
                     _buildBody(theme, state, visibleProducts),
@@ -269,79 +269,107 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
 
     return Expanded(
-      child: ListView.separated(
-        key: ProductListScreen.productListScrollKey,
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
-        itemCount: visibleProducts.length + 1,
-        separatorBuilder: (_, index) =>
-            index == 0 ? const SizedBox(height: 8) : const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _WholesalePolicyCard(
-                  categoryName: _selectedCategoryId == null
-                      ? null
-                      : _screenTitle(),
-                ),
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${visibleProducts.length} mặt hàng',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.primaryDark,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _sortLabel(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF006A7C),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+      child: ClipRect(
+        child: ListView.separated(
+          key: ProductListScreen.productListScrollKey,
+          clipBehavior: Clip.hardEdge,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+          itemCount: visibleProducts.length + 1,
+          separatorBuilder: (_, index) => index == 0
+              ? const SizedBox(height: 8)
+              : const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _WholesalePolicyCard(
+                    categoryName: _selectedCategoryId == null
+                        ? null
+                        : _screenTitle(),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${visibleProducts.length} mặt hàng',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _sortLabel(),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF006A7C),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+            final product = visibleProducts[index - 1];
+            return _ProductListCard(
+              product: product,
+              onTap: () => _openProductDetail(product.id),
             );
-          }
-          final product = visibleProducts[index - 1];
-          return _ProductListCard(
-            product: product,
-            onTap: () => _openProductDetail(product.id),
-          );
-        },
+          },
+        ),
       ),
     );
   }
 
-  List<Widget> _buildTopFilters(List<String> variantOptions) {
-    final widgets = <Widget>[
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _FilterChipButton(
-          label: 'Tất cả',
-          selected:
-              _selectedCategoryId == null &&
-              _selectedVariant == _allFilterValue &&
-              _stockFilter == _ProductStockFilter.all,
-          onTap: _resetProductFilters,
-        ),
+  Widget _buildTopFilters(List<String> variantOptions) {
+    final scrollingFilters = _buildScrollableTopFilters(variantOptions);
+
+    return KeyedSubtree(
+      key: const Key('productTopFilterBar'),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _FilterChipButton(
+              key: const Key('productFilterAllChip'),
+              label: 'T\u1ea5t c\u1ea3',
+              selected:
+                  _selectedCategoryId == null &&
+                  _selectedVariant == _allFilterValue &&
+                  _stockFilter == _ProductStockFilter.all,
+              onTap: _resetProductFilters,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _AdvancedFilterButton(
+              activeCount: _activeFilterCount(),
+              onTap: _openAdvancedFilters,
+            ),
+          ),
+          Expanded(
+            child: ClipRect(
+              child: SingleChildScrollView(
+                key: const Key('productScrollableFilters'),
+                clipBehavior: Clip.hardEdge,
+                restorationId:
+                    'productTopFilters-${_selectedCategoryId ?? 'all'}-$_stockFilter',
+                scrollDirection: Axis.horizontal,
+                child: Row(children: scrollingFilters),
+              ),
+            ),
+          ),
+        ],
       ),
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _AdvancedFilterButton(
-          activeCount: _activeFilterCount(),
-          onTap: _openAdvancedFilters,
-        ),
-      ),
-    ];
+    );
+  }
+
+  List<Widget> _buildScrollableTopFilters(List<String> variantOptions) {
+    final widgets = <Widget>[];
 
     if (_selectedCategoryId == null) {
       for (final category in _categories) {
@@ -644,6 +672,7 @@ class _FilterChipButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _FilterChipButton({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -665,6 +694,9 @@ class _FilterChipButton extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: selected ? Colors.white : AppColors.textPrimary,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
@@ -935,6 +967,9 @@ class _SheetChoiceButton extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: selected ? Colors.white : AppColors.textPrimary,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,

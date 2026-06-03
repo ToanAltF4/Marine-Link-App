@@ -891,8 +891,9 @@ for each row execute function set_updated_at();
 | `009_product_catalog_query_indexes` | Index `products(status, base_price)` cho Product List sort giá | Có file Flyway |
 | `010_seed_dried_seafood_catalog` | Seed 21 sản phẩm đồ khô, 5 category, price tiers và URL ảnh Supabase Storage | Có file Flyway |
 | `011_seed_demo_users` | Seed 3 tài khoản demo Admin/Staff/User bằng BCrypt hash | Có file Flyway |
-| `012_storage_policies_optional` | Storage policies lâu dài nếu Admin upload trực tiếp qua Supabase Storage | Chưa làm |
-| `013_rls_optional` | RLS policies nếu mở direct Supabase access | Chưa làm |
+| `012_localize_legacy_catalog_labels` | Chuẩn hóa nhãn catalog seed cũ sang tiếng Việt có dấu | Có file Flyway |
+| `013_storage_policies_optional` | Storage policies lâu dài nếu Admin upload trực tiếp qua Supabase Storage | Chưa làm |
+| `014_rls_optional` | RLS policies nếu mở direct Supabase access | Chưa làm |
 
 Migration rules:
 

@@ -323,6 +323,73 @@ void main() {
       expect(find.byKey(const Key('productListEmptyState')), findsOneWidget);
     });
 
+    testWidgets('keeps the all filter chip visible while filters scroll', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(393, 852);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductListScreen(
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final allChip = find.byKey(const Key('productFilterAllChip'));
+      final filterBar = find.byKey(const Key('productTopFilterBar'));
+      final scrollableFilters = find.byKey(
+        const Key('productScrollableFilters'),
+      );
+      final productList = find.byKey(ProductListScreen.productListScrollKey);
+      expect(allChip, findsOneWidget);
+      expect(filterBar, findsOneWidget);
+      expect(productList, findsOneWidget);
+      expect(find.text('T\u1ea5t c\u1ea3'), findsOneWidget);
+      expect(
+        tester.getRect(scrollableFilters).left,
+        greaterThan(tester.getRect(allChip).right),
+      );
+      expect(
+        tester.getRect(productList).top,
+        greaterThan(tester.getRect(filterBar).bottom),
+      );
+
+      await tester.drag(scrollableFilters, const Offset(-220, 0));
+      await tester.pump();
+
+      final chipRect = tester.getRect(allChip);
+      expect(chipRect.left, greaterThanOrEqualTo(0));
+      expect(chipRect.right, lessThanOrEqualTo(393));
+
+      await tester.drag(
+        find.byKey(ProductListScreen.productListScrollKey),
+        const Offset(0, -480),
+      );
+      await tester.pump();
+
+      final chipRectAfterProductScroll = tester.getRect(allChip);
+      expect(chipRectAfterProductScroll.left, greaterThanOrEqualTo(0));
+      expect(chipRectAfterProductScroll.right, lessThanOrEqualTo(393));
+      expect(
+        tester.getRect(productList).top,
+        greaterThan(tester.getRect(filterBar).bottom),
+      );
+      expect(find.text('T\u1ea5t c\u1ea3'), findsOneWidget);
+    });
+
     testWidgets('applies stock filter from the product filter sheet', (
       tester,
     ) async {
