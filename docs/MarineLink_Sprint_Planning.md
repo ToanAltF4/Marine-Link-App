@@ -79,7 +79,7 @@ Quy ước code chung repo:
 | P0 | Nền tảng dự án | Khởi tạo Flutter app, routing, theme, API client, model cơ bản, cấu trúc BLoC/Cubit | users, roles, products, categories, carts, orders | Xong |
 | P0 | Xác thực | Login, register, lưu JWT, phân quyền Admin/Staff/User bằng role table | `/api/auth/login`, `/api/auth/register`, `users`, `roles` | Xong |
 | P0 | Duyệt sản phẩm | Home, product list, product detail, search/filter/sort, price tiers | `/api/products`, `/api/products/{id}`, `products`, `categories`, `product_images`, `price_tiers` | Xong |
-| P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | Cart API chính (`/api/cart`, `/api/cart/items`) + `/api/cart/sync` phụ, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Chưa làm |
+| P0 | Luồng mua hàng | Cart, checkout, tạo order, clear cart sau khi đặt hàng | Cart API chính (`/api/cart`, `/api/cart/items`) + `/api/cart/sync` phụ, `/api/orders`, `carts`, `cart_items`, `orders`, `order_items` | Đang làm - FE cart/checkout local xong; BE/cart remote/orders list chưa |
 | P0 | Theo dõi đơn hàng | Danh sách đơn, chi tiết đơn, trạng thái đơn hàng | `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`, `notifications` | Chưa làm |
 | P1 | Thông báo | Danh sách thông báo, đã đọc/chưa đọc, điều hướng sang màn liên quan | `/api/notifications`, `/api/notifications/{id}/read` | Chưa làm |
 | P1 | Chat/hỗ trợ | Chat với Nhân viên, lịch sử chat, file đính kèm, chặn tin nhắn rỗng | `/api/chat/send`, `/api/chat/{roomId}`, `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` | Chưa làm |
@@ -138,7 +138,7 @@ Quy ước code chung repo:
 | Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|---:|---|---|
 | S2-01 | P0 | `CartCubit` + domain `Cart/CartItem`: add/update/remove/clear, selected items, tổng tiền, tổng số lượng, cart rỗng, unit test | Không đổi, chưa sync server | Không đổi | 4 pts | Product detail | Xong FE local |
-| S2-02 | P0 | Cart screen: list item, tăng/giảm số lượng, xóa item, empty state, tổng tiền, nút checkout disabled khi rỗng | Không đổi | Không đổi | 3 pts | Cart state | Chưa làm |
+| S2-02 | P0 | Cart screen: list item, tăng/giảm số lượng, xóa item, selected item, empty state, tổng tiền, nút checkout disabled khi rỗng | Không đổi | Không đổi | 3 pts | Cart state | Xong FE local |
 | S2-03 | P0 | Checkout screen: form người nhận, số điện thoại, địa chỉ, payment method, ghi chú, validation client, summary selected cart items, empty cart state | Contract đã dùng `POST /api/orders`; không đổi request body | Không đổi | 4 pts | Cart state | Xong FE local |
 | S2-04 | P0 | `CheckoutBloc` + `CheckoutRepository`: validate cart active local/UI cache, gọi adapter tạo order, clear cart UI cache, màn success/error | `POST /api/orders`: tạo order từ active server-side cart, tính lại giá, validate stock/min quantity, trả order code; BE thật vẫn ở S5-03/S2-08 | `orders`, `order_items`, `order_status_history`, rule sinh order code, transaction clear cart items | 4 pts | Checkout | Xong FE local |
 | S2-05 | P0 | Orders list/detail cho Đại lý: status badge, timeline, empty/loading/error | `GET /api/orders`, `GET /api/orders/{id}` chỉ trả đơn của user hiện tại | Index `orders(user_id, created_at)`, `order_status_history(order_id, created_at)` | 4 pts | Order model/repository | Chưa làm |
@@ -147,6 +147,8 @@ Quy ước code chung repo:
 | S2-08 | P0 | Cart remote repository gọi Cart API thật: load cart, add/update/remove/clear item, update selected; `/api/cart/sync` chỉ dùng merge local/offline/pre-login | Cart API BE: `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/{productId}`, `DELETE /api/cart/items/{productId}`, `DELETE /api/cart/items` là luồng chính; `POST /api/cart/sync` là endpoint phụ; BE tính lại totals và price tier | `carts`, `cart_items`, FK `price_tier_id`, unique `(cart_id, product_id)`, active cart theo user | 5 pts | Cart state + cart DB migration | Chưa làm |
 
 Ghi chú S2-01: FE đã có `CartCubit` và domain `Cart/CartItem` cho add/update/remove/clear, selected items, tổng tiền, tổng số lượng, empty cart và tính lại price tier khi đổi số lượng. BE Cart API chưa có controller/service/repository; các endpoint load/add/update/remove/clear là luồng chính ở S2-08, còn `/api/cart/sync` chỉ dùng cho merge local/offline/pre-login.
+
+Ghi chú S2-02: FE đã có `CartScreen` nối route `/cart`, hiển thị danh sách item, tăng/giảm số lượng theo min/stock, toggle selected, xóa item, empty state, tổng selected amount và nút checkout disabled khi cart không có item selected. UI cart đã đồng bộ radius/card với hệ thống, ảnh sản phẩm trong cart được clip bo góc riêng và bottom nav quay lại tab cũ bằng stack thay vì reload route. Màn này vẫn dùng `CartCubit` local/UI cache; Cart remote repository và server-side source of truth thuộc S2-08.
 
 Ghi chú S2-03/S2-04: FE đã có `CheckoutScreen`, `CheckoutBloc`, `CheckoutRepository` adapter qua `OrderRepository`, client validation, payment method, success/error state và clear `CartCubit` sau khi tạo đơn thành công. Vì Cart remote/server-side source of truth chưa làm, checkout hiện validate cart local/UI cache; validate active cart server-side và transaction clear `cart_items` vẫn thuộc BE/API ở S2-08/S5-03.
 

@@ -155,7 +155,7 @@ Quy ước trong monorepo:
 | Auth | BLoC | Login, register, JWT, role routing, logout |
 | Home | BLoC | Buyer dashboard hero, category rail, featured products, quick search, notifications entry |
 | Products | BLoC | Product list, quick filter chips, advanced filter bottom sheet, product detail, price tiers, add-to-cart temporary flow |
-| Cart | Cubit | Add/update/remove/clear item, selected items, total calculation, empty cart; khi dùng remote thì server Cart API là source of truth, Cubit là UI cache |
+| Cart | Cubit | Cart screen, add/update/remove/clear item, selected items, total calculation, empty cart, checkout disabled state; khi dùng remote thì server Cart API là source of truth, Cubit là UI cache |
 | Checkout | BLoC | Validate receiver info, payment method, selected cart items, create order through `CheckoutRepository`, success/error state, clear cart UI cache |
 | Orders | BLoC | List/detail, status tracking, role-based status update |
 | Notifications | Screen/Cubit | Buyer notifications list now has UI shell; unread state + mark-as-read stay for API integration phase |
@@ -376,14 +376,15 @@ Luồng test demo bắt buộc:
 
 ## 15. Implementation checklist
 
-- [ ] Flutter app structure created.
-- [ ] BLoC/Cubit dependencies added.
-- [ ] Core API client and response envelope implemented.
-- [ ] Mock repositories implemented for all P0 flows.
-- [ ] AuthBloc with role guard implemented.
-- [ ] Product browsing flow implemented with search, category chips, stock filter, price sort, empty state, and reset filter action.
+- [x] Flutter app structure created.
+- [x] BLoC/Cubit dependencies added.
+- [x] Core API client and response envelope implemented.
+- [x] Mock repositories implemented for auth/product/order checkout local flows.
+- [x] AuthBloc with role-based routing implemented.
+- [x] Product browsing flow implemented with search, category chips, stock filter, price sort, empty state, and reset filter action.
 - [x] Cart local state implemented with CartCubit add/update/remove/clear, totals, selected items, and empty cart handling.
-- [ ] Cart screen implemented.
+- [x] Cart screen implemented with item list, quantity controls, remove item, selected item, empty state, totals, and disabled checkout when no selected item exists.
+- [x] Buyer bottom navigation preserves existing tab stack for Home/Product/Cart instead of reloading visited tabs.
 - [x] Checkout flow implemented with form validation, payment method, local cart validation, success/error state, order creation adapter, and cart UI cache clear.
 - [ ] Orders and notifications implemented.
 - [ ] Messaging with sample responses and chat attachment metadata implemented.
