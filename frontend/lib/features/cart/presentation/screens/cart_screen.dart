@@ -69,7 +69,7 @@ class CartScreen extends StatelessWidget {
       onContinueShopping!();
       return;
     }
-    GoRouter.maybeOf(context)?.go(AppRoutes.productList);
+    BuyerNavigation.push(context, AppRoutes.productList);
   }
 
   void _goCheckout(BuildContext context) {
