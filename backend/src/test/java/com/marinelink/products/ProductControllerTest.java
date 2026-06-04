@@ -1,6 +1,5 @@
 package com.marinelink.products;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marinelink.common.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -26,7 +25,6 @@ class ProductControllerTest {
             .standaloneSetup(new ProductController(productService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void listProductsReturnsPaginatedEnvelope() throws Exception {
