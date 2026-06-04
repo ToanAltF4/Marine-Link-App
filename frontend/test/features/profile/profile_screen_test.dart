@@ -47,10 +47,10 @@ void main() {
     );
 
     expect(find.text('Tài khoản'), findsWidgets);
-    expect(find.text('Đơn hàng'), findsOneWidget);
+    expect(find.text('Đơn hàng của tôi'), findsOneWidget);
     expect(find.text('Giỏ hàng'), findsOneWidget);
 
-    await tester.tap(find.text('Đơn hàng'));
+    await tester.tap(find.text('Đơn hàng của tôi'));
     await tester.pumpAndSettle();
 
     expect(find.text('Orders route probe'), findsOneWidget);
