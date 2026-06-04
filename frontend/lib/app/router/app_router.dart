@@ -83,65 +83,91 @@ class AppRouter {
           child: const RegisterScreen(),
         ),
       ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.productList,
-        builder: (context, state) => ProductListScreen(
-          initialQuery: state.uri.queryParameters['q'],
-          initialCategoryId: state.uri.queryParameters['categoryId'],
-        ),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) =>
-                ProductDetailScreen(productId: state.pathParameters['id']!),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => navigationShell,
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
           ),
-        ],
-      ),
-      GoRoute(
-        path: AppRoutes.cart,
-        builder: (context, state) => const CartScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.checkout,
-        builder: (context, state) => const CheckoutScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.orders,
-        builder: (context, state) => const OrderListScreen(),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) =>
-                OrderDetailScreen(orderId: state.pathParameters['id']!),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.productList,
+                builder: (context, state) => ProductListScreen(
+                  initialQuery: state.uri.queryParameters['q'],
+                  initialCategoryId: state.uri.queryParameters['categoryId'],
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => ProductDetailScreen(
+                      productId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.cart,
+                builder: (context, state) => const CartScreen(),
+              ),
+              GoRoute(
+                path: AppRoutes.checkout,
+                builder: (context, state) => const CheckoutScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.chat,
+                builder: (context, state) => const _PlaceholderPage(
+                  title: 'Chat',
+                  buyerBottomNavTab: BuyerBottomNavTab.chat,
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':roomId',
+                    builder: (context, state) => _PlaceholderPage(
+                      title: 'Chat Room: ${state.pathParameters['roomId']}',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                builder: (context, state) => const ProfileScreen(),
+              ),
+              GoRoute(
+                path: AppRoutes.orders,
+                builder: (context, state) => const OrderListScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) =>
+                        OrderDetailScreen(orderId: state.pathParameters['id']!),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
       GoRoute(
         path: AppRoutes.notifications,
         builder: (context, state) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.chat,
-        builder: (context, state) => const _PlaceholderPage(
-          title: 'Chat',
-          buyerBottomNavTab: BuyerBottomNavTab.chat,
-        ),
-        routes: [
-          GoRoute(
-            path: ':roomId',
-            builder: (context, state) => _PlaceholderPage(
-              title: 'Chat Room: ${state.pathParameters['roomId']}',
-            ),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.warehouseMap,

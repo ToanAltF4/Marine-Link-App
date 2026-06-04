@@ -6,14 +6,15 @@ class BuyerNavigation {
 
   static final List<String> _tabStack = <String>[];
 
-  static const Set<String> _buyerRootTabs = {
-    '/home',
-    '/products',
-    '/orders',
-    '/cart',
-    '/chat',
-    '/profile',
+  static const Map<String, int> _buyerRootTabIndexes = {
+    '/home': 0,
+    '/products': 1,
+    '/cart': 2,
+    '/chat': 3,
+    '/profile': 4,
   };
+
+  static Set<String> get _buyerRootTabs => _buyerRootTabIndexes.keys.toSet();
 
   @visibleForTesting
   static void resetForTesting() {
@@ -29,6 +30,10 @@ class BuyerNavigation {
     final current = _currentLocation(context);
     if (current == location) {
       _syncTabStack(current);
+      return;
+    }
+
+    if (_switchBranch(context, location)) {
       return;
     }
 
@@ -51,10 +56,38 @@ class BuyerNavigation {
       return;
     }
 
+    if (_switchBranch(context, fallbackLocation)) {
+      return;
+    }
+
     GoRouter.maybeOf(context)?.go(fallbackLocation);
     _tabStack
       ..clear()
       ..add(_tabKey(fallbackLocation));
+  }
+
+  static bool _switchBranch(BuildContext context, String location) {
+    final tabKey = _tabKey(location);
+    final tabIndex = _buyerRootTabIndexes[tabKey];
+    if (tabIndex == null) {
+      return false;
+    }
+
+    final shell = StatefulNavigationShell.maybeOf(context);
+    if (shell == null) {
+      return false;
+    }
+
+    if (_isPlainRootTab(location)) {
+      shell.goBranch(tabIndex);
+    } else {
+      GoRouter.maybeOf(context)?.go(location);
+    }
+
+    _tabStack
+      ..clear()
+      ..add(tabKey);
+    return true;
   }
 
   static bool _popBackToExistingTab(BuildContext context, String location) {
@@ -125,6 +158,15 @@ class BuyerNavigation {
       return uri.path;
     } on Exception {
       return location;
+    }
+  }
+
+  static bool _isPlainRootTab(String location) {
+    try {
+      final uri = Uri.parse(location);
+      return uri.queryParameters.isEmpty && uri.fragment.isEmpty;
+    } on Exception {
+      return true;
     }
   }
 }

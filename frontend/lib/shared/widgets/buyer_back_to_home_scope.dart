@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:go_router/go_router.dart';
 
+import '../navigation/buyer_navigation.dart';
 import 'app_back_exit_scope.dart';
 
 class BuyerBackToHomeScope extends StatelessWidget {
@@ -16,7 +16,7 @@ class BuyerBackToHomeScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppBackExitScope(
-      onFirstBack: (context) => GoRouter.maybeOf(context)?.go(homeLocation),
+      onFirstBack: (context) => BuyerNavigation.popOrGo(context, homeLocation),
       child: child,
     );
   }

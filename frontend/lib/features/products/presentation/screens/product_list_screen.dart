@@ -72,6 +72,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant ProductListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final queryChanged = widget.initialQuery != oldWidget.initialQuery;
+    final categoryChanged =
+        widget.initialCategoryId != oldWidget.initialCategoryId;
+    if (!queryChanged && !categoryChanged) {
+      return;
+    }
+
+    _searchController.text = widget.initialQuery ?? '';
+    setState(() {
+      _selectedCategoryId = widget.initialCategoryId;
+      _selectedVariant = _allFilterValue;
+      _stockFilter = _ProductStockFilter.all;
+      _sortAscending = true;
+      _hasCustomSort = false;
+    });
+    _requestProducts();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 

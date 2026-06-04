@@ -7,6 +7,7 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../cart/domain/cart.dart';
@@ -594,11 +595,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       navigator.pop();
       return;
     }
-    GoRouter.maybeOf(context)?.go(AppRoutes.cart);
+    BuyerNavigation.popOrGo(context, AppRoutes.cart);
   }
 
   void _goToProducts(BuildContext context) {
-    GoRouter.maybeOf(context)?.go(AppRoutes.productList);
+    BuyerNavigation.push(context, AppRoutes.productList);
   }
 }
 
@@ -876,7 +877,7 @@ class _CheckoutSuccessView extends StatelessWidget {
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () =>
-                      GoRouter.maybeOf(context)?.go(AppRoutes.home),
+                      BuyerNavigation.push(context, AppRoutes.home),
                   icon: const Icon(Icons.home_outlined),
                   label: const Text('V\u1ec1 trang ch\u1ee7'),
                   style: OutlinedButton.styleFrom(
