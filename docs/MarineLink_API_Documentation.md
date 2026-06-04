@@ -151,6 +151,10 @@ Orders:
 | POST | `/api/auth/logout` | Authenticated |
 | GET | `/api/users/me` | Authenticated |
 | PUT | `/api/users/me` | Authenticated |
+| GET | `/api/users/me/shipping-addresses` | USER |
+| POST | `/api/users/me/shipping-addresses` | USER |
+| PUT | `/api/users/me/shipping-addresses/{id}` | USER owner |
+| DELETE | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | GET | `/api/products` | All roles |
 | GET | `/api/products/{id}` | All roles |
 | GET | `/api/cart` | USER |
@@ -313,6 +317,62 @@ Rules:
 
 - User không được tự đổi role/status.
 - Không trả `passwordHash`.
+
+### Shipping address APIs
+
+Shipping addresses are stored per current user and reused by checkout. Orders still snapshot
+`receiverName`, `receiverPhone`, and `shippingAddress` so old orders are not changed when a
+saved address is edited later.
+
+#### GET `/api/users/me/shipping-addresses`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440071",
+      "label": "Kho Can Tho",
+      "receiverName": "Nguyen Van A",
+      "receiverPhone": "0912345678",
+      "addressLine": "123 Tran Hung Dao, Can Tho",
+      "default": true,
+      "createdAt": "2026-06-04T01:00:00Z",
+      "updatedAt": "2026-06-04T01:00:00Z"
+    }
+  ]
+}
+```
+
+#### POST `/api/users/me/shipping-addresses`
+
+Request:
+
+```json
+{
+  "label": "Kho Can Tho",
+  "receiverName": "Nguyen Van A",
+  "receiverPhone": "0912345678",
+  "addressLine": "123 Tran Hung Dao, Can Tho",
+  "default": false
+}
+```
+
+Response `201`: saved address. If this is the first address for the user, backend sets
+`default = true` even when the request sends `false`.
+
+#### PUT `/api/users/me/shipping-addresses/{id}`
+
+Updates one saved address owned by the current user. If `default = true`, backend clears the
+previous default address for that user.
+
+#### DELETE `/api/users/me/shipping-addresses/{id}`
+
+Soft deletes one saved address owned by the current user. If the deleted address was default,
+backend promotes another active address when one exists.
 
 ## 10. Product APIs
 
@@ -968,6 +1028,7 @@ Rules:
 | `POST /api/auth/logout` | Token/session cleanup nếu backend lưu refresh token hoặc denylist |
 | `GET /api/users/me` | `users`, `roles` |
 | `PUT /api/users/me` | `users` |
+| Shipping address APIs | `shipping_addresses`, `users` |
 | `GET /api/products` | `products`, `categories`, `price_tiers` |
 | `GET /api/products/{id}` | `products`, `categories`, `price_tiers`, `product_images` |
 | Cart APIs: `GET /api/cart`, `/api/cart/items`, `/api/cart/sync` | `carts`, `cart_items`, `products`, `price_tiers` |

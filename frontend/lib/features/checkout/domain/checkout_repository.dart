@@ -8,6 +8,7 @@ class CheckoutRequest extends Equatable {
   final String receiverName;
   final String receiverPhone;
   final String shippingAddress;
+  final String? shippingAddressId;
   final PaymentMethod paymentMethod;
   final String? note;
 
@@ -15,6 +16,7 @@ class CheckoutRequest extends Equatable {
     required this.receiverName,
     required this.receiverPhone,
     required this.shippingAddress,
+    this.shippingAddressId,
     required this.paymentMethod,
     this.note,
   });
@@ -24,6 +26,7 @@ class CheckoutRequest extends Equatable {
     receiverName,
     receiverPhone,
     shippingAddress,
+    shippingAddressId,
     paymentMethod,
     note,
   ];

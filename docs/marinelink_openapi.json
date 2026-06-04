@@ -113,6 +113,31 @@
         "properties": {
           "roleCode": { "type": "string", "enum": ["ADMIN", "STAFF", "USER"], "example": "USER" }
         }
+      },
+      "ShippingAddressRequest": {
+        "type": "object",
+        "required": ["receiverName", "receiverPhone", "addressLine"],
+        "properties": {
+          "label": { "type": "string", "example": "Kho Can Tho" },
+          "receiverName": { "type": "string", "example": "Nguyen Van A" },
+          "receiverPhone": { "type": "string", "example": "0912345678" },
+          "addressLine": { "type": "string", "example": "123 Tran Hung Dao, Can Tho" },
+          "default": { "type": "boolean", "example": true }
+        }
+      },
+      "ShippingAddressResponse": {
+        "type": "object",
+        "required": ["id", "receiverName", "receiverPhone", "addressLine", "default"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440071" },
+          "label": { "type": "string", "nullable": true, "example": "Kho Can Tho" },
+          "receiverName": { "type": "string", "example": "Nguyen Van A" },
+          "receiverPhone": { "type": "string", "example": "0912345678" },
+          "addressLine": { "type": "string", "example": "123 Tran Hung Dao, Can Tho" },
+          "default": { "type": "boolean", "example": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
       }
     }
   },
@@ -226,6 +251,87 @@
         "responses": {
           "200": {
             "description": "Profile updated"
+          }
+        }
+      }
+    },
+    "/api/users/me/shipping-addresses": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "List current user's saved shipping addresses",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Saved shipping addresses returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "OK" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ShippingAddressResponse" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Profile"],
+        "summary": "Create a saved shipping address",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ShippingAddressRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shipping address created"
+          }
+        }
+      }
+    },
+    "/api/users/me/shipping-addresses/{id}": {
+      "put": {
+        "tags": ["Profile"],
+        "summary": "Update a saved shipping address owned by the current user",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ShippingAddressRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shipping address updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Profile"],
+        "summary": "Soft delete a saved shipping address owned by the current user",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipping address deleted"
           }
         }
       }

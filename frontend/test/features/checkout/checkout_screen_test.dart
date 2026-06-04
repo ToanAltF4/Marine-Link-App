@@ -5,6 +5,8 @@ import 'package:marinelink/app/theme/app_theme.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/cart/domain/cart.dart';
 import 'package:marinelink/features/cart/presentation/cubit/cart_cubit.dart';
+import 'package:marinelink/features/checkout/domain/shipping_address.dart';
+import 'package:marinelink/features/checkout/domain/shipping_address_repository.dart';
 import 'package:marinelink/features/checkout/domain/checkout_repository.dart';
 import 'package:marinelink/features/checkout/presentation/screens/checkout_screen.dart';
 import 'package:marinelink/features/orders/domain/order.dart';
@@ -19,6 +21,7 @@ void main() {
         _wrap(
           cartCubit: CartCubit(),
           checkoutRepository: _FakeCheckoutRepository(),
+          shippingAddressRepository: _FakeShippingAddressRepository(),
         ),
       );
 
@@ -38,6 +41,7 @@ void main() {
         _wrap(
           cartCubit: cartCubit,
           checkoutRepository: _FakeCheckoutRepository(),
+          shippingAddressRepository: _FakeShippingAddressRepository(),
         ),
       );
 
@@ -75,6 +79,7 @@ void main() {
         _wrap(
           cartCubit: cartCubit,
           checkoutRepository: _FakeCheckoutRepository(),
+          shippingAddressRepository: _FakeShippingAddressRepository(),
         ),
       );
 
@@ -106,18 +111,106 @@ void main() {
       expect(find.text('M\u00e3 \u0111\u01a1n ML-TEST-0001'), findsOneWidget);
       expect(cartCubit.state.cart.isEmpty, isTrue);
     });
+
+    testWidgets('loads saved shipping address for repeat checkout', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+      final addressRepository = _FakeShippingAddressRepository(
+        addresses: const [
+          ShippingAddress(
+            id: 'address-001',
+            label: 'Kho Can Tho',
+            receiverName: 'Nguyen Van A',
+            receiverPhone: '0912345678',
+            addressLine: '123 Tran Hung Dao, Can Tho',
+            isDefault: true,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          cartCubit: cartCubit,
+          checkoutRepository: _FakeCheckoutRepository(),
+          shippingAddressRepository: addressRepository,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('\u0110\u1ecba ch\u1ec9 \u0111\u00e3 l\u01b0u'),
+        findsOneWidget,
+      );
+      expect(find.text('Kho Can Tho'), findsWidgets);
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.byKey(const Key('checkoutShippingAddressField')),
+            )
+            .controller
+            ?.text,
+        '123 Tran Hung Dao, Can Tho',
+      );
+    });
+
+    testWidgets('creates first shipping address before checkout submit', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+      final addressRepository = _FakeShippingAddressRepository();
+      final checkoutRepository = _FakeCheckoutRepository();
+
+      await tester.pumpWidget(
+        _wrap(
+          cartCubit: cartCubit,
+          checkoutRepository: checkoutRepository,
+          shippingAddressRepository: addressRepository,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('checkoutReceiverNameField')),
+        'Nguyen Van A',
+      );
+      await tester.enterText(
+        find.byKey(const Key('checkoutReceiverPhoneField')),
+        '0912345678',
+      );
+      await tester.enterText(
+        find.byKey(const Key('checkoutShippingAddressField')),
+        '123 Tran Hung Dao, Can Tho',
+      );
+
+      await tester.ensureVisible(find.byKey(const Key('checkoutSubmitButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('checkoutSubmitButton')));
+      await tester.pumpAndSettle(const Duration(milliseconds: 80));
+
+      expect(addressRepository.createCallCount, 1);
+      expect(
+        addressRepository.addresses.single.addressLine,
+        '123 Tran Hung Dao, Can Tho',
+      );
+      expect(checkoutRepository.lastRequest?.shippingAddressId, 'address-001');
+    });
   });
 }
 
 Widget _wrap({
   required CartCubit cartCubit,
   required CheckoutRepository checkoutRepository,
+  required ShippingAddressRepository shippingAddressRepository,
 }) {
   return MaterialApp(
     theme: AppTheme.light(),
     home: BlocProvider.value(
       value: cartCubit,
-      child: CheckoutScreen(checkoutRepository: checkoutRepository),
+      child: CheckoutScreen(
+        checkoutRepository: checkoutRepository,
+        shippingAddressRepository: shippingAddressRepository,
+      ),
     ),
   );
 }
@@ -145,11 +238,14 @@ ProductDetail _product() {
 }
 
 class _FakeCheckoutRepository implements CheckoutRepository {
+  CheckoutRequest? lastRequest;
+
   @override
   Future<ApiResponse<CheckoutResult>> createOrder({
     required CheckoutRequest request,
     required Cart activeCart,
   }) async {
+    lastRequest = request;
     await Future<void>.delayed(const Duration(milliseconds: 20));
     return ApiResponse<CheckoutResult>(
       success: true,
@@ -166,5 +262,62 @@ class _FakeCheckoutRepository implements CheckoutRepository {
         totalItemCount: activeCart.totalSelectedItemCount,
       ),
     );
+  }
+}
+
+class _FakeShippingAddressRepository implements ShippingAddressRepository {
+  final List<ShippingAddress> addresses;
+  int createCallCount = 0;
+
+  _FakeShippingAddressRepository({List<ShippingAddress> addresses = const []})
+    : addresses = List<ShippingAddress>.of(addresses);
+
+  @override
+  Future<ApiResponse<List<ShippingAddress>>> listAddresses() async {
+    return ApiResponse<List<ShippingAddress>>(
+      success: true,
+      data: List<ShippingAddress>.unmodifiable(addresses),
+    );
+  }
+
+  @override
+  Future<ApiResponse<ShippingAddress>> createAddress(
+    ShippingAddressInput input,
+  ) async {
+    createCallCount += 1;
+    final address = ShippingAddress(
+      id: 'address-${createCallCount.toString().padLeft(3, '0')}',
+      label: input.label,
+      receiverName: input.receiverName,
+      receiverPhone: input.receiverPhone,
+      addressLine: input.addressLine,
+      isDefault: addresses.isEmpty || input.isDefault,
+    );
+    addresses.add(address);
+    return ApiResponse<ShippingAddress>(success: true, data: address);
+  }
+
+  @override
+  Future<ApiResponse<ShippingAddress>> updateAddress({
+    required String id,
+    required ShippingAddressInput input,
+  }) async {
+    final index = addresses.indexWhere((address) => address.id == id);
+    final address = ShippingAddress(
+      id: id,
+      label: input.label,
+      receiverName: input.receiverName,
+      receiverPhone: input.receiverPhone,
+      addressLine: input.addressLine,
+      isDefault: input.isDefault,
+    );
+    addresses[index] = address;
+    return ApiResponse<ShippingAddress>(success: true, data: address);
+  }
+
+  @override
+  Future<ApiResponse<void>> deleteAddress(String id) async {
+    addresses.removeWhere((address) => address.id == id);
+    return const ApiResponse<void>(success: true);
   }
 }

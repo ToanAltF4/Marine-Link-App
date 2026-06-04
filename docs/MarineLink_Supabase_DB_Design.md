@@ -35,6 +35,7 @@ Mục tiêu database:
 ```mermaid
 erDiagram
     users ||--o{ orders : creates
+    users ||--o{ shipping_addresses : saves
     users ||--o{ notifications : receives
     users ||--o{ chat_rooms : participates
     users ||--o{ chat_messages : sends
@@ -125,7 +126,31 @@ Indexes:
 - `(role_id)`
 - `(created_at desc)`
 
-### 6.2 `roles`
+### 6.2 `shipping_addresses`
+
+Saved delivery addresses for the current user. Checkout may create the first address automatically,
+then reuse any saved address in later orders. Orders keep their own shipping snapshot.
+
+| Column | Type | Constraint | Note |
+|---|---|---|---|
+| id | bigint | PK, generated identity, internal only | Address ID noi bo |
+| public_id | uuid | unique, default `gen_random_uuid()` | Public ID tra qua API |
+| user_id | bigint | FK -> users.id, not null | Owner |
+| label | text | nullable | Ten goi nho, vi du `Kho Can Tho` |
+| receiver_name | text | not null | Nguoi nhan |
+| receiver_phone | text | not null | SDT nhan hang |
+| address_line | text | not null | Dia chi giao hang |
+| is_default | boolean | not null, default false | Dia chi mac dinh |
+| deleted_at | timestamptz | nullable | Soft delete |
+| created_at | timestamptz | not null, default now() | Audit |
+| updated_at | timestamptz | not null, default now() | Audit |
+
+Indexes:
+
+- `(user_id, updated_at desc)` where `deleted_at is null`
+- Unique `(user_id)` where `is_default and deleted_at is null`
+
+### 6.3 `roles`
 
 Lưu vai trò hệ thống. Với cách này, thêm role mới như `SHIPPER`, `SUPPORT_LEAD`, `WAREHOUSE_STAFF` không cần sửa bảng `users`.
 
@@ -874,7 +899,7 @@ before update on users
 for each row execute function set_updated_at();
 ```
 
-Áp dụng trigger tương tự cho `roles`, `categories`, `products`, `price_tiers`, `carts`, `cart_items`, `orders`, `chat_rooms`, `complaints`, `warehouses`.
+Áp dụng trigger tương tự cho `roles`, `shipping_addresses`, `categories`, `products`, `price_tiers`, `carts`, `cart_items`, `orders`, `chat_rooms`, `complaints`, `warehouses`.
 
 ## 16. Migration plan
 
@@ -892,8 +917,9 @@ for each row execute function set_updated_at();
 | `010_seed_dried_seafood_catalog` | Seed 21 sản phẩm đồ khô, 5 category, price tiers và URL ảnh Supabase Storage | Có file Flyway |
 | `011_seed_demo_users` | Seed 3 tài khoản demo Admin/Staff/User bằng BCrypt hash | Có file Flyway |
 | `012_localize_legacy_catalog_labels` | Chuẩn hóa nhãn catalog seed cũ sang tiếng Việt có dấu | Có file Flyway |
-| `013_storage_policies_optional` | Storage policies lâu dài nếu Admin upload trực tiếp qua Supabase Storage | Chưa làm |
-| `014_rls_optional` | RLS policies nếu mở direct Supabase access | Chưa làm |
+| `013_shipping_addresses` | Saved delivery addresses per user, one active default address | Có file Flyway |
+| `014_storage_policies_optional` | Storage policies lâu dài nếu Admin upload trực tiếp qua Supabase Storage | Chưa làm |
+| `015_rls_optional` | RLS policies nếu mở direct Supabase access | Chưa làm |
 
 Migration rules:
 
@@ -929,6 +955,7 @@ Không commit password thật. Seed user demo chỉ dùng password hash cho mậ
 | `POST /api/auth/logout` | Token/session cleanup nếu backend lưu refresh token hoặc denylist |
 | `GET /api/users/me` | `users`, `roles` |
 | `PUT /api/users/me` | `users` |
+| Shipping address APIs | `shipping_addresses`, `users` |
 | `GET /api/products` | `products`, `categories`, `price_tiers` |
 | `GET /api/products/{id}` | `products`, `categories`, `price_tiers`, `product_images` |
 | Cart APIs: `GET /api/cart`, `/api/cart/items`, `/api/cart/sync` | `carts`, `cart_items`, `products`, `price_tiers` |

@@ -13,12 +13,19 @@ import '../../../cart/domain/cart.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../orders/domain/order.dart';
 import '../../domain/checkout_repository.dart';
+import '../../domain/shipping_address.dart';
+import '../../domain/shipping_address_repository.dart';
 import '../bloc/checkout_bloc.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final CheckoutRepository? checkoutRepository;
+  final ShippingAddressRepository? shippingAddressRepository;
 
-  const CheckoutScreen({super.key, this.checkoutRepository});
+  const CheckoutScreen({
+    super.key,
+    this.checkoutRepository,
+    this.shippingAddressRepository,
+  });
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -29,10 +36,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _receiverNameController = TextEditingController();
   final _receiverPhoneController = TextEditingController();
   final _shippingAddressController = TextEditingController();
+  final _addressLabelController = TextEditingController();
   final _noteController = TextEditingController();
 
   late final CheckoutBloc _checkoutBloc;
+  late final ShippingAddressRepository _shippingAddressRepository;
+  List<ShippingAddress> _shippingAddresses = const [];
+  ShippingAddress? _selectedAddress;
   PaymentMethod _paymentMethod = PaymentMethod.cod;
+  bool _isLoadingAddresses = false;
+  bool _isSavingAddress = false;
 
   @override
   void initState() {
@@ -40,6 +53,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _checkoutBloc = CheckoutBloc(
       checkoutRepository: widget.checkoutRepository ?? sl<CheckoutRepository>(),
     );
+    _shippingAddressRepository =
+        widget.shippingAddressRepository ?? sl<ShippingAddressRepository>();
+    _loadShippingAddresses();
   }
 
   @override
@@ -47,6 +63,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _receiverNameController.dispose();
     _receiverPhoneController.dispose();
     _shippingAddressController.dispose();
+    _addressLabelController.dispose();
     _noteController.dispose();
     _checkoutBloc.close();
     super.dispose();
@@ -76,7 +93,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return _CheckoutSuccessView(result: checkoutState.result);
     }
 
-    final isSubmitting = checkoutState is CheckoutSubmitting;
+    final isSubmitting =
+        checkoutState is CheckoutSubmitting || _isSavingAddress;
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, cartState) {
         final cart = cartState.cart;
@@ -126,6 +144,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 14),
+            _buildAddressBook(context, isSubmitting),
+            const SizedBox(height: 14),
+            TextFormField(
+              key: const Key('checkoutAddressLabelField'),
+              controller: _addressLabelController,
+              decoration: const InputDecoration(
+                labelText: 'T\u00ean g\u1ee3i nh\u1edb',
+                prefixIcon: Icon(Icons.bookmark_border_rounded),
+              ),
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 14),
             TextFormField(
               key: const Key('checkoutReceiverNameField'),
               controller: _receiverNameController,
@@ -163,6 +193,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               textInputAction: TextInputAction.next,
               validator: Validators.address,
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('checkoutSaveAddressButton'),
+                    onPressed: isSubmitting ? null : _saveCurrentAddress,
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text(
+                      _selectedAddress == null
+                          ? 'L\u01b0u \u0111\u1ecba ch\u1ec9'
+                          : 'C\u1eadp nh\u1eadt',
+                    ),
+                  ),
+                ),
+                if (_selectedAddress != null) ...[
+                  const SizedBox(width: 10),
+                  IconButton.outlined(
+                    key: const Key('checkoutDeleteAddressButton'),
+                    onPressed: isSubmitting ? null : _deleteSelectedAddress,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    tooltip: 'X\u00f3a \u0111\u1ecba ch\u1ec9',
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 18),
             Text(
@@ -256,6 +312,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void _submit(Cart cart) {
     if (!_formKey.currentState!.validate()) return;
 
+    _submitWithAddress(cart);
+  }
+
+  Future<void> _submitWithAddress(Cart cart) async {
+    ShippingAddress? address = _selectedAddress;
+    if (address == null) {
+      final created = await _createAddressFromForm(forceDefault: true);
+      if (created == null) return;
+      address = created;
+    }
+
     _checkoutBloc.add(
       CheckoutSubmitted(
         activeCart: cart,
@@ -263,6 +330,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           receiverName: _receiverNameController.text.trim(),
           receiverPhone: _receiverPhoneController.text.trim(),
           shippingAddress: _shippingAddressController.text.trim(),
+          shippingAddressId: address.id,
           paymentMethod: _paymentMethod,
           note: _trimOptional(_noteController.text),
         ),
@@ -273,6 +341,251 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _trimOptional(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Widget _buildAddressBook(BuildContext context, bool isSubmitting) {
+    final theme = Theme.of(context);
+    if (_isLoadingAddresses) {
+      return const LinearProgressIndicator(minHeight: 2);
+    }
+
+    return Column(
+      key: const Key('checkoutSavedAddressesSection'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '\u0110\u1ecba ch\u1ec9 \u0111\u00e3 l\u01b0u',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              key: const Key('checkoutNewAddressButton'),
+              onPressed: isSubmitting ? null : _startNewAddress,
+              icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+              label: const Text('Th\u00eam'),
+            ),
+          ],
+        ),
+        if (_shippingAddresses.isEmpty)
+          Text(
+            'Ch\u01b0a c\u00f3 \u0111\u1ecba ch\u1ec9. \u0110\u1eb7t h\u00e0ng l\u1ea7n \u0111\u1ea7u s\u1ebd t\u1ef1 l\u01b0u.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          )
+        else
+          DropdownButtonFormField<String>(
+            key: ValueKey(
+              'checkoutSavedAddressSelector-${_selectedAddress?.id}',
+            ),
+            initialValue: _selectedAddress?.id,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.location_on_outlined),
+            ),
+            items: _shippingAddresses.map((address) {
+              return DropdownMenuItem<String>(
+                value: address.id,
+                child: Text(
+                  address.label?.isNotEmpty == true
+                      ? address.label!
+                      : address.addressLine,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+            onChanged: isSubmitting
+                ? null
+                : (id) {
+                    final address = _shippingAddresses.firstWhere(
+                      (item) => item.id == id,
+                    );
+                    _selectAddress(address);
+                  },
+          ),
+      ],
+    );
+  }
+
+  Future<void> _loadShippingAddresses() async {
+    setState(() => _isLoadingAddresses = true);
+    try {
+      final response = await _shippingAddressRepository.listAddresses();
+      if (!mounted) return;
+      final addresses = response.data ?? const <ShippingAddress>[];
+      setState(() {
+        _shippingAddresses = addresses;
+        _isLoadingAddresses = false;
+      });
+      if (addresses.isNotEmpty) {
+        final defaultAddress = addresses.firstWhere(
+          (address) => address.isDefault,
+          orElse: () => addresses.first,
+        );
+        _selectAddress(defaultAddress);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingAddresses = false);
+      _showMessage(
+        'Kh\u00f4ng th\u1ec3 t\u1ea3i \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+      );
+    }
+  }
+
+  void _selectAddress(ShippingAddress address) {
+    setState(() => _selectedAddress = address);
+    _addressLabelController.text = address.label ?? '';
+    _receiverNameController.text = address.receiverName;
+    _receiverPhoneController.text = address.receiverPhone;
+    _shippingAddressController.text = address.addressLine;
+  }
+
+  void _startNewAddress() {
+    setState(() => _selectedAddress = null);
+    _addressLabelController.clear();
+    _receiverNameController.clear();
+    _receiverPhoneController.clear();
+    _shippingAddressController.clear();
+  }
+
+  Future<void> _saveCurrentAddress() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedAddress == null) {
+      await _createAddressFromForm(forceDefault: _shippingAddresses.isEmpty);
+      return;
+    }
+
+    setState(() => _isSavingAddress = true);
+    try {
+      final response = await _shippingAddressRepository.updateAddress(
+        id: _selectedAddress!.id,
+        input: _addressInput(isDefault: _selectedAddress!.isDefault),
+      );
+      if (!mounted) return;
+      if (!response.success || response.data == null) {
+        _showMessage(
+          response.message ??
+              'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+        );
+        return;
+      }
+      _replaceAddress(response.data!);
+      _selectAddress(response.data!);
+      _showMessage(
+        '\u0110\u00e3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+      );
+    } catch (_) {
+      if (mounted) {
+        _showMessage(
+          'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingAddress = false);
+    }
+  }
+
+  Future<ShippingAddress?> _createAddressFromForm({
+    required bool forceDefault,
+  }) async {
+    setState(() => _isSavingAddress = true);
+    try {
+      final response = await _shippingAddressRepository.createAddress(
+        _addressInput(isDefault: forceDefault),
+      );
+      if (!mounted) return null;
+      if (!response.success || response.data == null) {
+        _showMessage(
+          response.message ??
+              'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+        );
+        return null;
+      }
+      setState(() {
+        _shippingAddresses = [..._shippingAddresses, response.data!];
+      });
+      _selectAddress(response.data!);
+      return response.data!;
+    } catch (_) {
+      if (mounted) {
+        _showMessage(
+          'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+        );
+      }
+      return null;
+    } finally {
+      if (mounted) setState(() => _isSavingAddress = false);
+    }
+  }
+
+  Future<void> _deleteSelectedAddress() async {
+    final address = _selectedAddress;
+    if (address == null) return;
+
+    setState(() => _isSavingAddress = true);
+    try {
+      final response = await _shippingAddressRepository.deleteAddress(
+        address.id,
+      );
+      if (!mounted) return;
+      if (!response.success) {
+        _showMessage(
+          response.message ??
+              'Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9',
+        );
+        return;
+      }
+      final nextAddresses = _shippingAddresses
+          .where((item) => item.id != address.id)
+          .toList();
+      setState(() => _shippingAddresses = nextAddresses);
+      if (nextAddresses.isEmpty) {
+        _startNewAddress();
+      } else {
+        _selectAddress(nextAddresses.first);
+      }
+      _showMessage(
+        '\u0110\u00e3 x\u00f3a \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+      );
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9');
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingAddress = false);
+    }
+  }
+
+  ShippingAddressInput _addressInput({required bool isDefault}) {
+    return ShippingAddressInput(
+      label: _trimOptional(_addressLabelController.text),
+      receiverName: _receiverNameController.text.trim(),
+      receiverPhone: _receiverPhoneController.text.trim(),
+      addressLine: _shippingAddressController.text.trim(),
+      isDefault: isDefault,
+    );
+  }
+
+  void _replaceAddress(ShippingAddress address) {
+    setState(() {
+      _shippingAddresses = _shippingAddresses
+          .map((item) => item.id == address.id ? address : item)
+          .toList();
+    });
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _goBack(BuildContext context) {

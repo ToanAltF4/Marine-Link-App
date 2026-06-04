@@ -39,6 +39,7 @@ class OrderCheckoutRepository implements CheckoutRepository {
       receiverName: request.receiverName,
       receiverPhone: request.receiverPhone,
       shippingAddress: request.shippingAddress,
+      shippingAddressId: request.shippingAddressId,
       paymentMethod: request.paymentMethod.apiValue,
       note: request.note,
     );

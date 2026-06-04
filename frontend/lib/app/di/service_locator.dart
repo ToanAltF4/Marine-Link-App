@@ -25,6 +25,8 @@ import '../../features/orders/presentation/bloc/order_bloc.dart';
 // Checkout
 import '../../features/checkout/domain/checkout_repository.dart';
 import '../../features/checkout/data/order_checkout_repository.dart';
+import '../../features/checkout/domain/shipping_address_repository.dart';
+import '../../features/checkout/data/shipping_address_remote_repository.dart';
 import '../../features/checkout/presentation/bloc/checkout_bloc.dart';
 
 final GetIt sl = GetIt.instance;
@@ -85,6 +87,9 @@ Future<void> setupServiceLocator() async {
   );
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.
+  sl.registerLazySingleton<ShippingAddressRepository>(
+    () => ShippingAddressRemoteRepository(apiClient: sl<ApiClient>()),
+  );
   sl.registerLazySingleton<CheckoutRepository>(
     () => OrderCheckoutRepository(orderRepository: sl<OrderRepository>()),
   );

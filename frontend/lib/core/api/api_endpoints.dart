@@ -13,6 +13,9 @@ abstract class ApiEndpoints {
 
   // ── Profile ───────────────────────────────────────────────────────────────
   static const String me = '/api/users/me';
+  static const String shippingAddresses = '/api/users/me/shipping-addresses';
+  static String shippingAddressDetail(String id) =>
+      '/api/users/me/shipping-addresses/$id';
 
   // ── Products ──────────────────────────────────────────────────────────────
   static const String products = '/api/products';
