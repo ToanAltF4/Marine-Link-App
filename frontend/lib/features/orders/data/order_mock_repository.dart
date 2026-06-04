@@ -184,6 +184,7 @@ class OrderMockRepository implements OrderRepository {
     String? shippingAddressId,
     required String paymentMethod,
     String? note,
+    List<OrderCreateItemInput>? items,
   }) async {
     await Future.delayed(const Duration(milliseconds: 600));
 

@@ -53,7 +53,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             orders: orders,
             currentPage: pagination?.page ?? 0,
             totalPages: pagination?.totalPages ?? 1,
-            hasMore: pagination != null &&
+            hasMore:
+                pagination != null &&
                 pagination.page < pagination.totalPages - 1,
           ),
         );
@@ -120,9 +121,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (!response.success) {
-        emit(OrderStatusUpdateError(
-          response.message ?? 'Lỗi cập nhật trạng thái đơn hàng',
-        ));
+        emit(
+          OrderStatusUpdateError(
+            response.message ?? 'Lỗi cập nhật trạng thái đơn hàng',
+          ),
+        );
         return;
       }
 

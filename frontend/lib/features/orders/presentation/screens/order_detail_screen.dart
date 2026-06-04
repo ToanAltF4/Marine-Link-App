@@ -1,0 +1,435 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../app/di/service_locator.dart';
+import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
+import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../../../shared/widgets/order_status_badge.dart';
+import '../../domain/order.dart';
+import '../bloc/order_bloc.dart';
+
+class OrderDetailScreen extends StatelessWidget {
+  final String orderId;
+
+  const OrderDetailScreen({super.key, required this.orderId});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => sl<OrderBloc>()..add(OrderDetailRequested(orderId)),
+      child: BuyerBackToHomeScope(
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF2F8FA),
+          appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
+          bottomNavigationBar: const BuyerBottomNav(
+            currentTab: BuyerBottomNavTab.profile,
+          ),
+          body: BlocBuilder<OrderBloc, OrderState>(
+            builder: (context, state) {
+              return switch (state) {
+                OrderDetailLoading() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                OrderDetailError(:final message) => _DetailMessage(
+                  title: 'Không tải được chi tiết',
+                  message: message,
+                  onRetry: () => context.read<OrderBloc>().add(
+                    OrderDetailRequested(orderId),
+                  ),
+                ),
+                OrderDetailLoaded(:final order) => _OrderDetailBody(
+                  order: order,
+                ),
+                _ => const SizedBox.shrink(),
+              };
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderDetailBody extends StatelessWidget {
+  final OrderDetail order;
+
+  const _OrderDetailBody({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        _Header(order: order),
+        const SizedBox(height: 12),
+        _Panel(
+          title: 'Trạng thái',
+          icon: Icons.route_outlined,
+          child: _Timeline(history: order.statusHistory),
+        ),
+        const SizedBox(height: 12),
+        _Panel(
+          title: 'Địa chỉ giao hàng',
+          icon: Icons.location_on_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                order.receiverName,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(order.receiverPhone),
+              const SizedBox(height: 4),
+              Text(order.shippingAddress),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Panel(
+          title: 'Sản phẩm đã đặt (${order.items.length})',
+          icon: Icons.inventory_2_outlined,
+          child: Column(
+            children: order.items
+                .map((item) => _OrderItemRow(item: item))
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Panel(
+          title: 'Thanh toán',
+          icon: Icons.account_balance_wallet_outlined,
+          child: _PaymentSummary(order: order),
+        ),
+      ],
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  final OrderDetail order;
+
+  const _Header({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final createdAt = DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt);
+    return DecoratedBox(
+      decoration: _panelDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Mã đơn: ${order.orderCode}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                OrderStatusBadge(status: order.status.apiValue),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              createdAt,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _Panel({required this.title, required this.icon, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: _panelDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: AppColors.primary, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Timeline extends StatelessWidget {
+  final List<OrderStatusHistory> history;
+
+  const _Timeline({required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    if (history.isEmpty) {
+      return const Text('Chưa có lịch sử trạng thái.');
+    }
+    return Column(
+      children: history.map((step) {
+        final time = DateFormat('dd/MM HH:mm').format(step.createdAt);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.success,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      OrderStatus.fromString(step.toStatus).displayLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    if (step.note != null && step.note!.isNotEmpty)
+                      Text(
+                        step.note!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Text(
+                time,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _OrderItemRow extends StatelessWidget {
+  final OrderItem item;
+
+  const _OrderItemRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF8FB),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.set_meal_outlined,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.productNameSnapshot,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Đơn giá: ${_currency(item.unitPrice)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  'x ${item.quantity} ${item.productUnitSnapshot}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            _currency(item.lineTotal),
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentSummary extends StatelessWidget {
+  final OrderDetail order;
+
+  const _PaymentSummary({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _SummaryRow(label: 'Tạm tính', value: _currency(order.subtotalAmount)),
+        _SummaryRow(
+          label: 'Phí vận chuyển',
+          value: _currency(order.shippingFee),
+        ),
+        _SummaryRow(
+          label: 'Giảm giá',
+          value: '-${_currency(order.discountAmount)}',
+          valueColor: AppColors.success,
+        ),
+        const Divider(height: 24),
+        _SummaryRow(
+          label: 'Tổng cộng',
+          value: _currency(order.totalAmount),
+          emphasized: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool emphasized;
+
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: emphasized ? FontWeight.w900 : FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? AppColors.primary,
+              fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailMessage extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+
+  const _DetailMessage({
+    required this.title,
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: onRetry, child: const Text('Thử lại')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final _panelDecoration = BoxDecoration(
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(8),
+  boxShadow: const [
+    BoxShadow(color: Color(0x110B3760), blurRadius: 12, offset: Offset(0, 4)),
+  ],
+);
+
+String _currency(double value) {
+  return NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: 'đ',
+    decimalDigits: 0,
+  ).format(value);
+}

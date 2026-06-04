@@ -1,6 +1,29 @@
 import '../../../core/api/api_response.dart';
 import 'order.dart';
 
+class OrderCreateItemInput {
+  final String productId;
+  final int quantity;
+
+  const OrderCreateItemInput({required this.productId, required this.quantity});
+
+  Map<String, dynamic> toJson() {
+    return {'productId': productId, 'quantity': quantity};
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is OrderCreateItemInput &&
+            runtimeType == other.runtimeType &&
+            productId == other.productId &&
+            quantity == other.quantity;
+  }
+
+  @override
+  int get hashCode => Object.hash(productId, quantity);
+}
+
 /// Abstract order repository interface.
 /// Mock implementation: OrderMockRepository (data/)
 /// Remote implementation: OrderRemoteRepository (data/) — Sprint 5
@@ -22,6 +45,7 @@ abstract class OrderRepository {
     String? shippingAddressId,
     required String paymentMethod,
     String? note,
+    List<OrderCreateItemInput>? items,
   });
 
   Future<ApiResponse<void>> updateOrderStatus({

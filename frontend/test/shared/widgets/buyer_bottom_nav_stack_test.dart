@@ -45,7 +45,10 @@ void main() {
       MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
     );
 
-    await tester.enterText(find.byKey(const Key('homeStateField')), 'home kept');
+    await tester.enterText(
+      find.byKey(const Key('homeStateField')),
+      'home kept',
+    );
     await tester.tap(find.text('S\u1ea3n ph\u1ea9m'));
     await tester.pumpAndSettle();
 

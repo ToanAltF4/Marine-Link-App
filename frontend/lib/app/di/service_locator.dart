@@ -20,10 +20,12 @@ import '../../features/cart/presentation/cubit/cart_cubit.dart';
 // Orders
 import '../../features/orders/domain/order_repository.dart';
 import '../../features/orders/data/order_mock_repository.dart';
+import '../../features/orders/data/order_remote_repository.dart';
 import '../../features/orders/presentation/bloc/order_bloc.dart';
 
 // Checkout
 import '../../features/checkout/domain/checkout_repository.dart';
+import '../../features/checkout/data/cart_sync_repository.dart';
 import '../../features/checkout/data/order_checkout_repository.dart';
 import '../../features/checkout/domain/shipping_address_repository.dart';
 import '../../features/checkout/data/shipping_address_remote_repository.dart';
@@ -81,7 +83,11 @@ Future<void> setupServiceLocator() async {
 
   // ── Orders ───────────────────────────────────────────────────────────────────
   // Sprint 5: swap OrderMockRepository → OrderRemoteRepository
-  sl.registerLazySingleton<OrderRepository>(() => OrderMockRepository());
+  sl.registerLazySingleton<OrderRepository>(
+    () => _useRemoteRepositories
+        ? OrderRemoteRepository(apiClient: sl<ApiClient>())
+        : OrderMockRepository(),
+  );
   sl.registerFactory<OrderBloc>(
     () => OrderBloc(orderRepository: sl<OrderRepository>()),
   );
@@ -90,8 +96,16 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<ShippingAddressRepository>(
     () => ShippingAddressRemoteRepository(apiClient: sl<ApiClient>()),
   );
+  sl.registerLazySingleton<CartSyncRepository>(
+    () => CartSyncRemoteRepository(apiClient: sl<ApiClient>()),
+  );
   sl.registerLazySingleton<CheckoutRepository>(
-    () => OrderCheckoutRepository(orderRepository: sl<OrderRepository>()),
+    () => OrderCheckoutRepository(
+      orderRepository: sl<OrderRepository>(),
+      cartSyncRepository: _useRemoteRepositories
+          ? sl<CartSyncRepository>()
+          : null,
+    ),
   );
   sl.registerFactory<CheckoutBloc>(
     () => CheckoutBloc(checkoutRepository: sl<CheckoutRepository>()),

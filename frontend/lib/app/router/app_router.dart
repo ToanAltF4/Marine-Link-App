@@ -9,8 +9,11 @@ import '../../features/cart/presentation/screens/cart_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/orders/presentation/screens/order_detail_screen.dart';
+import '../../features/orders/presentation/screens/order_list_screen.dart';
 import '../../features/products/presentation/screens/product_detail_screen.dart';
 import '../../features/products/presentation/screens/product_list_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../shared/widgets/app_back_exit_scope.dart';
 import '../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../shared/widgets/buyer_bottom_nav.dart';
@@ -38,6 +41,7 @@ abstract class AppRoutes {
   static const adminOrders = '/admin/orders';
 
   static String productDetailPath(String id) => '$productList/$id';
+  static String orderDetailPath(String id) => '$orders/$id';
 
   static String productListLocation({String? query, String? categoryId}) {
     final params = <String, String>{};
@@ -107,13 +111,12 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.orders,
-        builder: (context, state) => const _PlaceholderPage(title: 'Orders'),
+        builder: (context, state) => const OrderListScreen(),
         routes: [
           GoRoute(
             path: ':id',
-            builder: (context, state) => _PlaceholderPage(
-              title: 'Order Detail: ${state.pathParameters['id']}',
-            ),
+            builder: (context, state) =>
+                OrderDetailScreen(orderId: state.pathParameters['id']!),
           ),
         ],
       ),
@@ -138,10 +141,7 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const _PlaceholderPage(
-          title: 'Profile',
-          buyerBottomNavTab: BuyerBottomNavTab.profile,
-        ),
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.warehouseMap,

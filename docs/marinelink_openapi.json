@@ -521,7 +521,19 @@
                   "receiverPhone": { "type": "string", "example": "0912345678" },
                   "shippingAddress": { "type": "string", "example": "Cần Thơ" },
                   "paymentMethod": { "type": "string", "enum": ["COD", "BANK_TRANSFER"], "example": "COD" },
-                  "note": { "type": "string", "example": "Giao vào buổi sáng trước 11h." }
+                  "note": { "type": "string", "example": "Giao vào buổi sáng trước 11h." },
+                  "items": {
+                    "type": "array",
+                    "description": "Optional checkout fallback items when server-side cart is not yet synced. Backend recalculates all prices.",
+                    "items": {
+                      "type": "object",
+                      "required": ["productId", "quantity"],
+                      "properties": {
+                        "productId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440012" },
+                        "quantity": { "type": "integer", "minimum": 1, "example": 2 }
+                      }
+                    }
+                  }
                 }
               }
             }

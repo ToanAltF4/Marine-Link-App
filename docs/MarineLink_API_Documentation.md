@@ -613,7 +613,7 @@ Rules:
 
 ### POST `/api/orders`
 
-Tạo đơn hàng từ active server-side cart của user hiện tại. Nếu FE có cart local/offline/pre-login thì gọi `POST /api/cart/sync` để merge trước; order endpoint không nhận line items và không tin tổng tiền client trong MVP.
+Tạo đơn hàng từ active server-side cart của user hiện tại. Nếu FE có cart local/offline/pre-login thì gọi `POST /api/cart/sync` để merge trước. Trong giai đoạn Cart API chính chưa làm source of truth, endpoint cũng nhận `items` gồm `productId` và `quantity`; backend vẫn tính lại giá, validate tồn kho/min quantity và không tin tổng tiền client.
 
 Request:
 
@@ -623,7 +623,13 @@ Request:
   "receiverPhone": "0912345678",
   "shippingAddress": "Can Tho",
   "paymentMethod": "COD",
-  "note": "Giao buoi sang"
+  "note": "Giao buoi sang",
+  "items": [
+    {
+      "productId": "550e8400-e29b-41d4-a716-446655440012",
+      "quantity": 2
+    }
+  ]
 }
 ```
 
@@ -650,7 +656,8 @@ Response `201`:
 
 Rules:
 
-- Active server-side cart không rỗng và có ít nhất một item `selected = true`.
+- Nếu request có `items`, backend tạo dòng đơn từ request items sau khi revalidate sản phẩm.
+- Nếu request không có `items`, active server-side cart không rỗng và có ít nhất một item `selected = true`.
 - Product còn hàng và quantity hợp lệ.
 - Snapshot `productName`, `unit`, `unitPrice` vào `order_items`.
 - Tạo notification khi order được tạo hoặc đổi trạng thái.

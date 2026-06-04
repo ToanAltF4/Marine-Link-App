@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Order status matching the API contract.
 enum OrderStatus {
   pending,
   confirmed,
@@ -29,7 +28,6 @@ enum OrderStatus {
     OrderStatus.cancelled => 'Đã hủy',
   };
 
-  /// Returns allowed next statuses from this one (matches API doc).
   List<OrderStatus> get allowedTransitions => switch (this) {
     OrderStatus.pending => [OrderStatus.confirmed, OrderStatus.cancelled],
     OrderStatus.confirmed => [OrderStatus.shipping, OrderStatus.cancelled],
@@ -39,7 +37,6 @@ enum OrderStatus {
   };
 }
 
-/// Payment method values.
 enum PaymentMethod {
   cod,
   bankTransfer;
@@ -62,13 +59,11 @@ enum PaymentMethod {
   };
 }
 
-/// Domain entity: OrderItem.
-/// Snapshot of product at time of order (productNameSnapshot, unitPrice).
 class OrderItem extends Equatable {
   final String productId;
   final String productNameSnapshot;
   final String productUnitSnapshot;
-  final double unitPrice; // VND
+  final double unitPrice;
   final int quantity;
 
   const OrderItem({
@@ -82,10 +77,15 @@ class OrderItem extends Equatable {
   double get lineTotal => unitPrice * quantity;
 
   @override
-  List<Object?> get props => [productId, quantity, unitPrice];
+  List<Object?> get props => [
+    productId,
+    productNameSnapshot,
+    productUnitSnapshot,
+    unitPrice,
+    quantity,
+  ];
 }
 
-/// Domain entity: OrderStatusHistory — one step in the status timeline.
 class OrderStatusHistory extends Equatable {
   final String? fromStatus;
   final String toStatus;
@@ -100,15 +100,14 @@ class OrderStatusHistory extends Equatable {
   });
 
   @override
-  List<Object?> get props => [fromStatus, toStatus, createdAt];
+  List<Object?> get props => [fromStatus, toStatus, note, createdAt];
 }
 
-/// Domain entity: Order (list-view variant — no items/history).
 class Order extends Equatable {
   final String id;
   final String orderCode;
   final OrderStatus status;
-  final double totalAmount; // VND
+  final double totalAmount;
   final DateTime createdAt;
 
   const Order({
@@ -120,16 +119,15 @@ class Order extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, orderCode, status];
+  List<Object?> get props => [id, orderCode, status, totalAmount, createdAt];
 }
 
-/// Domain entity: OrderDetail — full order with items and status history.
 class OrderDetail extends Order {
   final String receiverName;
   final String receiverPhone;
   final String shippingAddress;
   final PaymentMethod paymentMethod;
-  final String paymentStatus; // UNPAID | PAID
+  final String paymentStatus;
   final double subtotalAmount;
   final double shippingFee;
   final double discountAmount;
@@ -157,5 +155,18 @@ class OrderDetail extends Order {
   });
 
   @override
-  List<Object?> get props => [...super.props, paymentMethod, paymentStatus];
+  List<Object?> get props => [
+    ...super.props,
+    receiverName,
+    receiverPhone,
+    shippingAddress,
+    paymentMethod,
+    paymentStatus,
+    subtotalAmount,
+    shippingFee,
+    discountAmount,
+    note,
+    items,
+    statusHistory,
+  ];
 }

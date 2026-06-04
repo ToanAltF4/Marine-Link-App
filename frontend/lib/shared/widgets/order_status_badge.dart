@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../app/theme/app_theme.dart';
 
-/// Status badge for order status display.
-/// Maps OrderStatus string to color and label.
 class OrderStatusBadge extends StatelessWidget {
   final String status;
 
@@ -23,7 +22,7 @@ class OrderStatusBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

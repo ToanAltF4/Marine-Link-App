@@ -216,7 +216,7 @@ sequenceDiagram
     Bloc-->>Screen: CheckoutSuccess
 ```
 
-Current FE local implementation uses `CheckoutScreen` + `CheckoutBloc` + `OrderCheckoutRepository`. The repository adapts to `OrderRepository.createOrder` and preserves the `POST /api/orders` contract shape. Until S2-08/S5-03 implements Cart remote/server-side source of truth, checkout validates `CartCubit` local/UI cache; backend still must revalidate active cart, stock, min quantity, price tier and clear `cart_items` transactionally.
+Current FE local implementation uses `CheckoutScreen` + `CheckoutBloc` + `OrderCheckoutRepository`. The repository adapts to `OrderRepository.createOrder` and preserves the `POST /api/orders` contract shape. Until S2-08/S5-03 implements Cart remote/server-side source of truth, checkout validates `CartCubit` local/UI cache, calls `/api/cart/sync` as best-effort, and sends selected `items` in the order request as a fallback; backend still must revalidate product IDs, stock, min quantity, and price tier.
 
 ## 8. API integration strategy
 
@@ -241,7 +241,7 @@ Giai đoạn Spring Boot:
 - `AuthRemoteRepository` gọi `/api/auth/login`, `/api/auth/register`.
 - `CartRemoteRepository` gọi Cart API thật để load/add/update/remove/clear cart item. Sau login, server cart là source of truth để đổi thiết bị vẫn thấy giỏ hàng.
 - `/api/cart/sync` chỉ là endpoint phụ để merge cart local/offline/pre-login lên `carts` + `cart_items`; không dùng làm luồng add/update/remove chính.
-- `OrderRemoteRepository` gọi `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`.
+- `OrderRemoteRepository` gọi `/api/orders`, `/api/orders/{id}`, `/api/orders/{id}/status`; khi checkout từ local cart, `POST /api/orders` gửi thêm selected `items` để tránh lỗi server cart rỗng trong giai đoạn chưa có Cart API chính.
 - `MessagingRemoteRepository` gọi `/api/chat/send`, `/api/chat/{roomId}` và xử lý metadata `chat_attachments`.
 - DI quyết định dùng mock hay remote qua `--dart-define=USE_REMOTE_REPOSITORIES=true`.
 - Khi test Android emulator với backend local, dùng thêm `--dart-define=API_BASE_URL=http://10.0.2.2:8080`; desktop/browser dùng `http://localhost:8080`.

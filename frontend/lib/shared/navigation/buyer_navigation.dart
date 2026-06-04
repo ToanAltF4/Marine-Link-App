@@ -9,6 +9,7 @@ class BuyerNavigation {
   static const Set<String> _buyerRootTabs = {
     '/home',
     '/products',
+    '/orders',
     '/cart',
     '/chat',
     '/profile',
