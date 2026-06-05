@@ -253,6 +253,36 @@ class OrderMockRepository implements OrderRepository {
       );
     }
 
+    final trimmedNote = note?.trim();
+    final updatedOrder = OrderDetail(
+      id: order.id,
+      orderCode: order.orderCode,
+      status: targetStatus,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      receiverName: order.receiverName,
+      receiverPhone: order.receiverPhone,
+      shippingAddress: order.shippingAddress,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      subtotalAmount: order.subtotalAmount,
+      shippingFee: order.shippingFee,
+      discountAmount: order.discountAmount,
+      note: order.note,
+      items: order.items,
+      statusHistory: [
+        ...order.statusHistory,
+        OrderStatusHistory(
+          fromStatus: order.status.apiValue,
+          toStatus: targetStatus.apiValue,
+          note: trimmedNote == null || trimmedNote.isEmpty ? null : trimmedNote,
+          createdAt: DateTime.now(),
+        ),
+      ],
+    );
+
+    _orders[index] = updatedOrder;
+
     return const ApiResponse<void>(
       success: true,
       message: 'Order status updated',

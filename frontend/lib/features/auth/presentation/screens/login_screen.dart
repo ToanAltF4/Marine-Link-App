@@ -230,8 +230,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final router = GoRouter.maybeOf(context);
     if (router == null) return;
 
-    if (user.isAdmin || user.isStaff) {
+    if (user.isAdmin) {
       router.go('/admin');
+      return;
+    }
+    if (user.isStaff) {
+      router.go('/staff');
       return;
     }
     router.go('/home');

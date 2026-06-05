@@ -3,59 +3,119 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/di/service_locator.dart';
+import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/order_status_badge.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/order.dart';
 import '../bloc/order_bloc.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
+  final bool adminMode;
+  final bool staffMode;
 
-  const OrderDetailScreen({super.key, required this.orderId});
+  const OrderDetailScreen({
+    super.key,
+    required this.orderId,
+    this.adminMode = false,
+    this.staffMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<OrderBloc>()..add(OrderDetailRequested(orderId)),
-      child: BuyerBackToHomeScope(
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF2F8FA),
-          appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
-          bottomNavigationBar: const BuyerBottomNav(
-            currentTab: BuyerBottomNavTab.profile,
-          ),
-          body: BlocBuilder<OrderBloc, OrderState>(
-            builder: (context, state) {
-              return switch (state) {
-                OrderDetailLoading() => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                OrderDetailError(:final message) => _DetailMessage(
-                  title: 'Không tải được chi tiết',
-                  message: message,
-                  onRetry: () => context.read<OrderBloc>().add(
-                    OrderDetailRequested(orderId),
+      child: Builder(
+        builder: (context) {
+          final scaffold = Scaffold(
+            key: Key(
+              staffMode
+                  ? 'staffOrderDetailScreen'
+                  : adminMode
+                  ? 'adminOrderDetailScreen'
+                  : 'buyerOrderDetailScreen',
+            ),
+            backgroundColor: const Color(0xFFF2F8FA),
+            appBar: AppBar(title: Text(_screenTitle())),
+            bottomNavigationBar: adminMode || staffMode
+                ? _roleBottomNav()
+                : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
+            body: BlocBuilder<OrderBloc, OrderState>(
+              builder: (context, state) {
+                return switch (state) {
+                  OrderDetailLoading() => const Center(
+                    child: CircularProgressIndicator(),
                   ),
-                ),
-                OrderDetailLoaded(:final order) => _OrderDetailBody(
-                  order: order,
-                ),
-                _ => const SizedBox.shrink(),
-              };
-            },
-          ),
-        ),
+                  OrderDetailError(:final message) => _DetailMessage(
+                    title: 'Không tải được chi tiết',
+                    message: message,
+                    onRetry: () => context.read<OrderBloc>().add(
+                      OrderDetailRequested(orderId),
+                    ),
+                  ),
+                  OrderDetailLoaded(:final order) => _OrderDetailBody(
+                    order: order,
+                    adminMode: adminMode,
+                    staffMode: staffMode,
+                  ),
+                  _ => const SizedBox.shrink(),
+                };
+              },
+            ),
+          );
+
+          if (adminMode || staffMode) {
+            return RoleBackToDashboardScope(
+              dashboardLocation: _roleDashboardLocation(),
+              child: scaffold,
+            );
+          }
+
+          return BuyerBackToHomeScope(child: scaffold);
+        },
       ),
     );
+  }
+
+  String _screenTitle() {
+    if (staffMode) {
+      return 'Cập nhật trạng thái đơn';
+    }
+    if (adminMode) {
+      return 'Giám sát trạng thái đơn';
+    }
+    return 'Chi tiết đơn hàng';
+  }
+
+  Widget _roleBottomNav() {
+    if (staffMode) {
+      return const StaffBottomNav(currentTab: StaffBottomNavTab.orders);
+    }
+    return const AdminBottomNav(currentTab: AdminBottomNavTab.orders);
+  }
+
+  String _roleDashboardLocation() {
+    if (staffMode) {
+      return AppRoutes.staffDashboard;
+    }
+    return AppRoutes.adminDashboard;
   }
 }
 
 class _OrderDetailBody extends StatelessWidget {
   final OrderDetail order;
+  final bool adminMode;
+  final bool staffMode;
 
-  const _OrderDetailBody({required this.order});
+  const _OrderDetailBody({
+    required this.order,
+    required this.adminMode,
+    required this.staffMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +124,22 @@ class _OrderDetailBody extends StatelessWidget {
       children: [
         _Header(order: order),
         const SizedBox(height: 12),
+        if (adminMode || staffMode) ...[
+          _Panel(
+            key: Key(
+              staffMode ? 'staffOrderStatusPanel' : 'adminOrderStatusPanel',
+            ),
+            title: staffMode ? 'Cập nhật trạng thái' : 'Giám sát trạng thái',
+            icon: staffMode
+                ? Icons.fact_check_outlined
+                : Icons.admin_panel_settings_outlined,
+            child: _AdminStatusControl(
+              order: order,
+              keyPrefix: staffMode ? 'staff' : 'admin',
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         _Panel(
           title: 'Trạng thái',
           icon: Icons.route_outlined,
@@ -152,12 +228,163 @@ class _Header extends StatelessWidget {
   }
 }
 
+class _AdminStatusControl extends StatefulWidget {
+  final OrderDetail order;
+  final String keyPrefix;
+
+  const _AdminStatusControl({required this.order, required this.keyPrefix});
+
+  @override
+  State<_AdminStatusControl> createState() => _AdminStatusControlState();
+}
+
+class _AdminStatusControlState extends State<_AdminStatusControl> {
+  final _noteController = TextEditingController();
+  OrderStatus? _selectedStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStatus = widget.order.status.allowedTransitions.firstOrNull;
+  }
+
+  @override
+  void didUpdateWidget(covariant _AdminStatusControl oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.order.status != widget.order.status) {
+      _selectedStatus = widget.order.status.allowedTransitions.firstOrNull;
+      _noteController.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final transitions = widget.order.status.allowedTransitions;
+    if (transitions.isEmpty) {
+      return Text(
+        'Đơn hàng đã ở trạng thái kết thúc.',
+        style: Theme.of(context).textTheme.bodyMedium,
+      );
+    }
+
+    final detailBloc = context.read<OrderBloc>();
+    return BlocProvider(
+      create: (_) => sl<OrderBloc>(),
+      child: BlocConsumer<OrderBloc, OrderState>(
+        listener: (context, state) {
+          if (state is OrderStatusUpdateSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Đã cập nhật trạng thái đơn hàng',
+                  key: Key('adminOrderStatusSuccessSnack'),
+                ),
+              ),
+            );
+            detailBloc.add(OrderDetailRequested(widget.order.id));
+          }
+          if (state is OrderStatusUpdateError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is OrderStatusUpdateLoading;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Trạng thái hiện tại: ${widget.order.status.displayLabel}',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: transitions.map((status) {
+                  final selected = _selectedStatus == status;
+                  return ChoiceChip(
+                    key: Key(
+                      '${widget.keyPrefix}OrderStatusOption_${status.apiValue}',
+                    ),
+                    selected: selected,
+                    label: Text(status.displayLabel),
+                    onSelected: isLoading
+                        ? null
+                        : (_) => setState(() => _selectedStatus = status),
+                    showCheckmark: false,
+                    selectedColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : AppColors.textPrimary,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: Key('${widget.keyPrefix}OrderStatusNoteField'),
+                controller: _noteController,
+                minLines: 2,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Ghi chú nội bộ',
+                  hintText: 'VD: Đã xác nhận tồn kho và chuẩn bị giao',
+                  prefixIcon: Icon(Icons.sticky_note_2_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  key: Key('${widget.keyPrefix}OrderStatusSubmitButton'),
+                  onPressed: isLoading || _selectedStatus == null
+                      ? null
+                      : () => context.read<OrderBloc>().add(
+                          OrderStatusUpdateRequested(
+                            orderId: widget.order.id,
+                            newStatus: _selectedStatus!.apiValue,
+                            note: _noteController.text,
+                          ),
+                        ),
+                  icon: isLoading
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(isLoading ? 'Đang lưu' : 'Lưu trạng thái'),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _Panel extends StatelessWidget {
   final String title;
   final IconData icon;
   final Widget child;
 
-  const _Panel({required this.title, required this.icon, required this.child});
+  const _Panel({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {

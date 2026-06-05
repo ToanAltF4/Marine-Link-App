@@ -124,8 +124,8 @@ flutter test --coverage
 
 | Role | Tên hiển thị | Email | Số điện thoại | Mật khẩu | Phạm vi truy cập |
 |---|---|---|---|---|---|
-| `ADMIN` | MarineLink Admin | `admin@marinelink.demo` | `0900000000` | `Admin@123` | Toàn bộ: dashboard, sản phẩm, người dùng, đơn hàng, chat |
-| `STAFF` | Nhân viên Demo | `staff@marinelink.demo` | `0900000001` | `Staff@123` | Xử lý đơn hàng, hỗ trợ chat |
+| `ADMIN` | MarineLink Admin | `admin@marinelink.demo` | `0900000000` | `Admin@123` | Dashboard quản trị, quản lý sản phẩm, quản lý người dùng, giám sát đơn hàng; vẫn có quyền cập nhật trạng thái khi cần |
+| `STAFF` | Nhân viên Demo | `staff@marinelink.demo` | `0900000001` | `Staff@123` | Dashboard công việc riêng, mở danh sách đơn và cập nhật trạng thái đơn là luồng xử lý chính, hỗ trợ chat |
 | `USER` | Đại lý Nguyễn Văn A | `daily-a@marinelink.demo` | `0912345678` | `Daily@123` | Duyệt sản phẩm, đặt hàng, theo dõi đơn, chat |
 
 **Đăng nhập bằng email hoặc số điện thoại** đều được. Tài khoản `USER` có thêm thông tin cửa hàng: **Hải Sản A Cần Thơ** (Cần Thơ, MST: 0312345678).

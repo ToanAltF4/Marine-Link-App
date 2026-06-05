@@ -4,6 +4,7 @@ import 'di/service_locator.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/cart/presentation/cubit/cart_cubit.dart';
 import 'router/app_router.dart';
+import 'system_back_button_dispatcher.dart';
 import 'theme/app_theme.dart';
 
 class MarineLinkApp extends StatelessWidget {
@@ -11,6 +12,8 @@ class MarineLinkApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final router = AppRouter.router;
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
@@ -22,7 +25,13 @@ class MarineLinkApp extends StatelessWidget {
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.system,
-        routerConfig: AppRouter.router,
+        routeInformationProvider: router.routeInformationProvider,
+        routeInformationParser: router.routeInformationParser,
+        routerDelegate: router.routerDelegate,
+        backButtonDispatcher: AppSystemBackDispatcher(
+          router: router,
+          rootContext: () => AppRouter.rootNavigatorKey.currentContext,
+        ),
       ),
     );
   }

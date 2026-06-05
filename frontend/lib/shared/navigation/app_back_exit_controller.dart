@@ -1,46 +1,29 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppBackExitController {
-  static const Duration doubleBackWindow = Duration(seconds: 2);
-
-  static DateTime? _lastBackPressTime;
+  /// Khoảng thời gian tối đa giữa 2 lần nhấn back để thoát app.
+  static const Duration _doubleBackThreshold = Duration(milliseconds: 800);
 
   AppBackExitController._();
 
-  static Future<bool> exitIfSecondPress() async {
-    final now = DateTime.now();
-    final isSecondPress =
-        _lastBackPressTime != null &&
-        now.difference(_lastBackPressTime!) < doubleBackWindow;
+  static DateTime? _lastBackPressTime;
 
-    if (isSecondPress) {
+  /// Ghi nhận lần nhấn back.
+  /// Trả về `true` nếu là lần nhấn thứ 2 trong vòng [_doubleBackThreshold] → cần thoát app.
+  static bool recordRootBackPress() {
+    final now = DateTime.now();
+    if (_lastBackPressTime != null &&
+        now.difference(_lastBackPressTime!) <= _doubleBackThreshold) {
       _lastBackPressTime = null;
-      await SystemNavigator.pop();
       return true;
     }
-
     _lastBackPressTime = now;
     return false;
   }
 
-  static void showExitHint(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Nh\u1ea5n back l\u1ea7n n\u1eefa \u0111\u1ec3 tho\u00e1t \u1ee9ng d\u1ee5ng',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          duration: doubleBackWindow,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        ),
-      );
+  /// Thoát app.
+  static Future<void> exitApp() async {
+    await SystemNavigator.pop();
   }
 
   static void resetForTesting() {

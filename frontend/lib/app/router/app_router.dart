@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/assets/app_assets.dart';
+import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
+import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -14,9 +16,14 @@ import '../../features/orders/presentation/screens/order_list_screen.dart';
 import '../../features/products/presentation/screens/product_detail_screen.dart';
 import '../../features/products/presentation/screens/product_list_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/staff/presentation/screens/staff_dashboard_screen.dart';
+import '../../features/staff/presentation/widgets/staff_role_guard.dart';
+import '../../shared/navigation/app_back_exit_controller.dart';
+import '../../shared/navigation/buyer_navigation.dart';
 import '../../shared/widgets/app_back_exit_scope.dart';
 import '../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../shared/widgets/buyer_bottom_nav.dart';
+import '../../shared/widgets/role_bottom_nav.dart';
 
 abstract class AppRoutes {
   static const splash = '/';
@@ -35,13 +42,23 @@ abstract class AppRoutes {
   static const profile = '/profile';
   static const warehouseMap = '/warehouses';
 
+  static const staffDashboard = '/staff';
+  static const staffOrders = '/staff/orders';
+  static const staffNotifications = '/staff/notifications';
+  static const staffChat = '/staff/chat';
+  static const staffProfile = '/staff/profile';
+  static const staffWarehouses = '/staff/warehouses';
   static const adminDashboard = '/admin';
   static const adminProducts = '/admin/products';
   static const adminUsers = '/admin/users';
   static const adminOrders = '/admin/orders';
+  static const adminNotifications = '/admin/notifications';
+  static const adminProfile = '/admin/profile';
 
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
+  static String staffOrderDetailPath(String id) => '$staffOrders/$id';
+  static String adminOrderDetailPath(String id) => '$adminOrders/$id';
 
   static String productListLocation({String? query, String? categoryId}) {
     final params = <String, String>{};
@@ -60,9 +77,14 @@ abstract class AppRoutes {
 class AppRouter {
   AppRouter._();
 
+  static final rootNavigatorKey = GlobalKey<NavigatorState>(
+    debugLabel: 'rootNavigator',
+  );
+
   static final GoRouter router = GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    navigatorKey: rootNavigatorKey,
     routes: [
       GoRoute(
         path: AppRoutes.splash,
@@ -84,7 +106,8 @@ class AppRouter {
         ),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => navigationShell,
+        builder: (context, state, navigationShell) =>
+            _BuyerShellBackScope(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -175,24 +198,152 @@ class AppRouter {
             const _PlaceholderPage(title: 'Warehouse Map'),
       ),
       GoRoute(
+        path: AppRoutes.staffDashboard,
+        builder: (context, state) =>
+            const StaffRoleGuard(child: StaffDashboardScreen()),
+        routes: [
+          GoRoute(
+            path: 'orders',
+            builder: (context, state) =>
+                const StaffRoleGuard(child: OrderListScreen(staffMode: true)),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) => StaffRoleGuard(
+                  child: OrderDetailScreen(
+                    orderId: state.pathParameters['id']!,
+                    staffMode: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'notifications',
+            builder: (context, state) => const StaffRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('staffNotificationsScreen'),
+                title: 'Thông báo nhân viên',
+                fallbackLocation: AppRoutes.staffDashboard,
+                bottomNavigationBar: StaffBottomNav(
+                  currentTab: StaffBottomNavTab.work,
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: 'chat',
+            builder: (context, state) => const StaffRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('staffChatScreen'),
+                title: 'Tin nhắn nhân viên',
+                fallbackLocation: AppRoutes.staffDashboard,
+                bottomNavigationBar: StaffBottomNav(
+                  currentTab: StaffBottomNavTab.chat,
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: 'profile',
+            builder: (context, state) => const StaffRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('staffProfileScreen'),
+                title: 'Hồ sơ nhân viên',
+                fallbackLocation: AppRoutes.staffDashboard,
+                bottomNavigationBar: StaffBottomNav(
+                  currentTab: StaffBottomNavTab.profile,
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: 'warehouses',
+            builder: (context, state) => const StaffRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('staffWarehousesScreen'),
+                title: 'Kho hàng nhân viên',
+                fallbackLocation: AppRoutes.staffDashboard,
+                bottomNavigationBar: StaffBottomNav(
+                  currentTab: StaffBottomNavTab.work,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
         path: AppRoutes.adminDashboard,
         builder: (context, state) =>
-            const _PlaceholderPage(title: 'Admin Dashboard'),
+            const AdminRoleGuard(child: AdminDashboardScreen()),
         routes: [
           GoRoute(
             path: 'products',
-            builder: (context, state) =>
-                const _PlaceholderPage(title: 'Admin: Products'),
+            builder: (context, state) => const AdminRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('adminProductsScreen'),
+                title: 'Quản lý sản phẩm',
+                fallbackLocation: AppRoutes.adminDashboard,
+                bottomNavigationBar: AdminBottomNav(
+                  currentTab: AdminBottomNavTab.products,
+                ),
+              ),
+            ),
           ),
           GoRoute(
             path: 'users',
-            builder: (context, state) =>
-                const _PlaceholderPage(title: 'Admin: Users'),
+            builder: (context, state) => const AdminRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('adminUsersScreen'),
+                title: 'Quản lý tài khoản',
+                fallbackLocation: AppRoutes.adminDashboard,
+                bottomNavigationBar: AdminBottomNav(
+                  currentTab: AdminBottomNavTab.users,
+                ),
+              ),
+            ),
           ),
           GoRoute(
             path: 'orders',
             builder: (context, state) =>
-                const _PlaceholderPage(title: 'Admin: Orders'),
+                const AdminRoleGuard(child: OrderListScreen(adminMode: true)),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) => AdminRoleGuard(
+                  child: OrderDetailScreen(
+                    orderId: state.pathParameters['id']!,
+                    adminMode: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'notifications',
+            builder: (context, state) => const AdminRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('adminNotificationsScreen'),
+                title: 'Thông báo quản trị',
+                fallbackLocation: AppRoutes.adminDashboard,
+                bottomNavigationBar: AdminBottomNav(
+                  currentTab: AdminBottomNavTab.dashboard,
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: 'profile',
+            builder: (context, state) => const AdminRoleGuard(
+              child: _RolePlaceholderPage(
+                key: Key('adminProfileScreen'),
+                title: 'Hồ sơ quản trị',
+                fallbackLocation: AppRoutes.adminDashboard,
+                bottomNavigationBar: AdminBottomNav(
+                  currentTab: AdminBottomNavTab.profile,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -200,8 +351,12 @@ class AppRouter {
   );
 
   static void _routeByRole(BuildContext context, User user) {
-    if (user.isAdmin || user.isStaff) {
+    if (user.isAdmin) {
       context.go(AppRoutes.adminDashboard);
+      return;
+    }
+    if (user.isStaff) {
+      context.go(AppRoutes.staffDashboard);
       return;
     }
     context.go(AppRoutes.home);
@@ -256,6 +411,30 @@ class _SplashPageState extends State<_SplashPage> {
   }
 }
 
+class _BuyerShellBackScope extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const _BuyerShellBackScope({required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context) {
+    BuyerNavigation.attachShell(navigationShell);
+
+    return AppBackExitScope(
+      onFirstBack: (context) async {
+        final handled = BuyerNavigation.popOrGo(context, AppRoutes.home);
+        if (handled) return;
+
+        final shouldExit = AppBackExitController.recordRootBackPress();
+        if (shouldExit) {
+          await AppBackExitController.exitApp();
+        }
+      },
+      child: navigationShell,
+    );
+  }
+}
+
 class _PlaceholderPage extends StatelessWidget {
   final String title;
   final BuyerBottomNavTab? buyerBottomNavTab;
@@ -290,6 +469,37 @@ class _PlaceholderPage extends StatelessWidget {
         context.go(AppRoutes.home);
       },
       child: scaffold,
+    );
+  }
+}
+
+class _RolePlaceholderPage extends StatelessWidget {
+  final String title;
+  final String fallbackLocation;
+  final Widget bottomNavigationBar;
+
+  const _RolePlaceholderPage({
+    super.key,
+    required this.title,
+    required this.fallbackLocation,
+    required this.bottomNavigationBar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBackExitScope(
+      onFirstBack: (context) => context.go(fallbackLocation),
+      child: Scaffold(
+        appBar: AppBar(title: Text(title)),
+        bottomNavigationBar: bottomNavigationBar,
+        body: Center(
+          child: Text(
+            '$title\n(Sprint 2 implementation pending)',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ),
+      ),
     );
   }
 }
