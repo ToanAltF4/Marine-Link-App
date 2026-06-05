@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/app/app.dart';
 import 'package:marinelink/app/di/service_locator.dart';
+import 'package:marinelink/app/router/app_router.dart';
 import 'package:marinelink/shared/navigation/buyer_navigation.dart';
 
 void main() {
-  setUp(BuyerNavigation.resetForTesting);
+  setUp(() {
+    BuyerNavigation.resetForTesting();
+    AppRouter.router.go(AppRoutes.splash);
+  });
   tearDown(BuyerNavigation.resetForTesting);
 
   testWidgets('staff can open admin orders and update an order status', (
@@ -53,7 +57,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byKey(const Key('adminOrderStatusPanel')), findsOneWidget);
-    expect(find.byKey(const Key('adminOrderStatusOption_CONFIRMED')), findsOneWidget);
+    expect(
+      find.byKey(const Key('adminOrderStatusOption_CONFIRMED')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('adminOrderStatusOption_CONFIRMED')));
     await tester.enterText(
@@ -65,9 +72,12 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('adminOrderStatusSubmitButton')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 1000));
 
-    expect(find.byKey(const Key('adminOrderStatusSuccessSnack')), findsOneWidget);
+    expect(
+      find.byKey(const Key('adminOrderStatusOption_SHIPPING')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('buyer role cannot see admin dashboard content', (tester) async {

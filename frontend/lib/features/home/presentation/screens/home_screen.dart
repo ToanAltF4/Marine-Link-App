@@ -68,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return AppBackExitScope(
       child: Scaffold(
+        key: const Key('homeScreen'),
         backgroundColor: const Color(0xFFF8FBFF),
         bottomNavigationBar: const BuyerBottomNav(
           currentTab: BuyerBottomNavTab.home,

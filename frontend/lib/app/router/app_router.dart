@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/assets/app_assets.dart';
+import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
+import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -42,6 +44,7 @@ abstract class AppRoutes {
 
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
+  static String adminOrderDetailPath(String id) => '$adminOrders/$id';
 
   static String productListLocation({String? query, String? categoryId}) {
     final params = <String, String>{};
@@ -177,22 +180,35 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.adminDashboard,
         builder: (context, state) =>
-            const _PlaceholderPage(title: 'Admin Dashboard'),
+            const AdminRoleGuard(child: AdminDashboardScreen()),
         routes: [
           GoRoute(
             path: 'products',
-            builder: (context, state) =>
-                const _PlaceholderPage(title: 'Admin: Products'),
+            builder: (context, state) => const AdminRoleGuard(
+              child: _PlaceholderPage(title: 'Admin: Products'),
+            ),
           ),
           GoRoute(
             path: 'users',
-            builder: (context, state) =>
-                const _PlaceholderPage(title: 'Admin: Users'),
+            builder: (context, state) => const AdminRoleGuard(
+              child: _PlaceholderPage(title: 'Admin: Users'),
+            ),
           ),
           GoRoute(
             path: 'orders',
             builder: (context, state) =>
-                const _PlaceholderPage(title: 'Admin: Orders'),
+                const AdminRoleGuard(child: OrderListScreen(adminMode: true)),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) => AdminRoleGuard(
+                  child: OrderDetailScreen(
+                    orderId: state.pathParameters['id']!,
+                    adminMode: true,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
