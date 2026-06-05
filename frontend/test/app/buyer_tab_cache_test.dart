@@ -86,11 +86,39 @@ void main() {
     );
     expect(productField.controller?.text, 'tom kho');
 
+    await tester.tap(find.text('Gi\u1ecf h\u00e0ng'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gi\u1ecf h\u00e0ng c\u1ee7a b\u1ea1n'), findsOneWidget);
+
+    final handledCartBack = await tester.binding.handlePopRoute();
+    expect(handledCartBack, isTrue);
+    await tester.pumpAndSettle();
+    productField = tester.widget<TextField>(
+      find.byKey(const Key('productSearchField')),
+    );
+    expect(productField.controller?.text, 'tom kho');
+
+    final handledProductBack = await tester.binding.handlePopRoute();
+    expect(handledProductBack, isTrue);
+    await tester.pumpAndSettle();
+    homeField = tester.widget<TextField>(
+      find.byKey(const Key('homeQuickSearchField')),
+    );
+    expect(homeField.controller?.text, 'home kept');
+
+    await tester.tap(find.text('S\u1ea3n ph\u1ea9m'));
+    await tester.pumpAndSettle();
+    productField = tester.widget<TextField>(
+      find.byKey(const Key('productSearchField')),
+    );
+    expect(productField.controller?.text, 'tom kho');
+
     final context = tester.element(find.byKey(const Key('productSearchField')));
     context.read<CartCubit>().addItem(product: _checkoutProduct(), quantity: 2);
     expect(context.read<CartCubit>().state.canCheckout, isTrue);
     GoRouter.of(context).go(AppRoutes.checkout);
     await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('checkoutReceiverNameField')), findsOneWidget);
 
     await tester.enterText(

@@ -4,41 +4,49 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/dashboard_header.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: const Key('adminDashboardScreen'),
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          DashboardHeader(
-            onNotificationPressed: () => context.go(AppRoutes.notifications),
-            onProfilePressed: () => context.go(AppRoutes.profile),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-              children: [
-                const _SystemSummaryBand(),
-                const SizedBox(height: 20),
-                _OperationsSection(
-                  onOpenOrders: () => context.go(AppRoutes.adminOrders),
-                  onOpenProducts: () => context.go(AppRoutes.adminProducts),
-                  onOpenUsers: () => context.go(AppRoutes.adminUsers),
-                ),
-                const SizedBox(height: 20),
-                _RecentOrdersSection(
-                  onViewAll: () => context.go(AppRoutes.adminOrders),
-                ),
-              ],
+    return AppBackExitScope(
+      child: Scaffold(
+        key: const Key('adminDashboardScreen'),
+        backgroundColor: AppColors.background,
+        bottomNavigationBar: const AdminBottomNav(
+          currentTab: AdminBottomNavTab.dashboard,
+        ),
+        body: Column(
+          children: [
+            DashboardHeader(
+              onNotificationPressed: () =>
+                  context.push(AppRoutes.adminNotifications),
+              onProfilePressed: () => context.push(AppRoutes.adminProfile),
             ),
-          ),
-        ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                children: [
+                  const _SystemSummaryBand(),
+                  const SizedBox(height: 20),
+                  _OperationsSection(
+                    onOpenOrders: () => context.push(AppRoutes.adminOrders),
+                    onOpenProducts: () => context.push(AppRoutes.adminProducts),
+                    onOpenUsers: () => context.push(AppRoutes.adminUsers),
+                  ),
+                  const SizedBox(height: 20),
+                  _RecentOrdersSection(
+                    onViewAll: () => context.push(AppRoutes.adminOrders),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

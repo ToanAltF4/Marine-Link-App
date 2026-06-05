@@ -223,10 +223,8 @@ void main() {
       await tester.pump();
 
       expect(
-        platformCalls
-            .where((call) => call.method == 'SystemNavigator.pop')
-            .map((call) => call.method),
-        ['SystemNavigator.pop'],
+        platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+        isEmpty,
       );
     });
 

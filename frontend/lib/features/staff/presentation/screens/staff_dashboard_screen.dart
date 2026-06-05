@@ -3,45 +3,53 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/dashboard_header.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
 
 class StaffDashboardScreen extends StatelessWidget {
   const StaffDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: const Key('staffDashboardScreen'),
-      backgroundColor: AppColors.background,
-      bottomNavigationBar: const _StaffBottomNav(),
-      body: Column(
-        children: [
-          DashboardHeader(
-            hasNotification: true,
-            onNotificationPressed: () => context.go(AppRoutes.notifications),
-            onProfilePressed: () => context.go(AppRoutes.profile),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-              children: [
-                _WorkOverviewSection(
-                  onOpenChats: () => context.go(AppRoutes.chat),
-                  onOpenOrders: () => context.go(AppRoutes.staffOrders),
-                  onOpenWarehouses: () => context.go(AppRoutes.warehouseMap),
-                ),
-                const SizedBox(height: 20),
-                _QuickActionsSection(
-                  onOpenOrders: () => context.go(AppRoutes.staffOrders),
-                ),
-                const SizedBox(height: 20),
-                const _SupportChatSection(),
-                const SizedBox(height: 20),
-                const _DeliveryRouteSection(),
-              ],
+    return AppBackExitScope(
+      child: Scaffold(
+        key: const Key('staffDashboardScreen'),
+        backgroundColor: AppColors.background,
+        bottomNavigationBar: const StaffBottomNav(
+          currentTab: StaffBottomNavTab.work,
+        ),
+        body: Column(
+          children: [
+            DashboardHeader(
+              hasNotification: true,
+              onNotificationPressed: () =>
+                  context.push(AppRoutes.staffNotifications),
+              onProfilePressed: () => context.push(AppRoutes.staffProfile),
             ),
-          ),
-        ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                children: [
+                  _WorkOverviewSection(
+                    onOpenChats: () => context.push(AppRoutes.staffChat),
+                    onOpenOrders: () => context.push(AppRoutes.staffOrders),
+                    onOpenWarehouses: () =>
+                        context.push(AppRoutes.staffWarehouses),
+                  ),
+                  const SizedBox(height: 20),
+                  _QuickActionsSection(
+                    onOpenOrders: () => context.push(AppRoutes.staffOrders),
+                  ),
+                  const SizedBox(height: 20),
+                  const _SupportChatSection(),
+                  const SizedBox(height: 20),
+                  const _DeliveryRouteSection(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -353,7 +361,7 @@ class _SupportChatSection extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => context.go(AppRoutes.chat),
+              onPressed: () => context.push(AppRoutes.staffChat),
               child: const Text('Tất cả'),
             ),
           ],
@@ -626,121 +634,6 @@ class _RouteDot extends StatelessWidget {
         border: Border.all(color: const Color(0xFFCFE8FF), width: 2),
       ),
       child: const SizedBox(width: 14, height: 14),
-    );
-  }
-}
-
-class _StaffBottomNav extends StatelessWidget {
-  const _StaffBottomNav();
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.border)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x110B3760),
-              blurRadius: 12,
-              offset: Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: _StaffNavItem(
-                  key: const Key('staffBottomNavWork'),
-                  icon: Icons.fact_check_outlined,
-                  label: 'Công việc',
-                  selected: true,
-                  onTap: () {},
-                ),
-              ),
-              Expanded(
-                child: _StaffNavItem(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Kho hàng',
-                  onTap: () => context.go(AppRoutes.warehouseMap),
-                ),
-              ),
-              Expanded(
-                child: _StaffNavItem(
-                  icon: Icons.chat_bubble_outline,
-                  label: 'Tin nhắn',
-                  onTap: () => context.go(AppRoutes.chat),
-                ),
-              ),
-              Expanded(
-                child: _StaffNavItem(
-                  icon: Icons.person_outline,
-                  label: 'Hồ sơ',
-                  onTap: () => context.go(AppRoutes.profile),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StaffNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _StaffNavItem({
-    super.key,
-    required this.icon,
-    required this.label,
-    this.selected = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textSecondary;
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: SizedBox(
-        height: 58,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.surfaceSky : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 22),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: color,
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

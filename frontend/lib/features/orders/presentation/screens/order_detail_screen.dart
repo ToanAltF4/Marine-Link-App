@@ -3,10 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/di/service_locator.dart';
+import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/order_status_badge.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/order.dart';
 import '../bloc/order_bloc.dart';
 
@@ -39,7 +42,7 @@ class OrderDetailScreen extends StatelessWidget {
             backgroundColor: const Color(0xFFF2F8FA),
             appBar: AppBar(title: Text(_screenTitle())),
             bottomNavigationBar: adminMode || staffMode
-                ? null
+                ? _roleBottomNav()
                 : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
             body: BlocBuilder<OrderBloc, OrderState>(
               builder: (context, state) {
@@ -66,7 +69,10 @@ class OrderDetailScreen extends StatelessWidget {
           );
 
           if (adminMode || staffMode) {
-            return scaffold;
+            return RoleBackToDashboardScope(
+              dashboardLocation: _roleDashboardLocation(),
+              child: scaffold,
+            );
           }
 
           return BuyerBackToHomeScope(child: scaffold);
@@ -83,6 +89,20 @@ class OrderDetailScreen extends StatelessWidget {
       return 'Giám sát trạng thái đơn';
     }
     return 'Chi tiết đơn hàng';
+  }
+
+  Widget _roleBottomNav() {
+    if (staffMode) {
+      return const StaffBottomNav(currentTab: StaffBottomNavTab.orders);
+    }
+    return const AdminBottomNav(currentTab: AdminBottomNavTab.orders);
+  }
+
+  String _roleDashboardLocation() {
+    if (staffMode) {
+      return AppRoutes.staffDashboard;
+    }
+    return AppRoutes.adminDashboard;
   }
 }
 

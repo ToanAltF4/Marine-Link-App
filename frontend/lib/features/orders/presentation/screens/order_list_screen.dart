@@ -9,6 +9,8 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/order_status_badge.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/order.dart';
 import '../bloc/order_bloc.dart';
 
@@ -63,7 +65,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
               ],
             ),
             bottomNavigationBar: widget.adminMode || widget.staffMode
-                ? null
+                ? _roleBottomNav()
                 : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
             body: BlocBuilder<OrderBloc, OrderState>(
               builder: (context, state) {
@@ -134,7 +136,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
           );
 
           if (widget.adminMode || widget.staffMode) {
-            return scaffold;
+            return RoleBackToDashboardScope(
+              dashboardLocation: _roleDashboardLocation(),
+              child: scaffold,
+            );
           }
 
           return BuyerBackToHomeScope(child: scaffold);
@@ -145,6 +150,20 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   void _reload(BuildContext context) {
     context.read<OrderBloc>().add(OrderListRequested(status: _status));
+  }
+
+  Widget _roleBottomNav() {
+    if (widget.staffMode) {
+      return const StaffBottomNav(currentTab: StaffBottomNavTab.orders);
+    }
+    return const AdminBottomNav(currentTab: AdminBottomNavTab.orders);
+  }
+
+  String _roleDashboardLocation() {
+    if (widget.staffMode) {
+      return AppRoutes.staffDashboard;
+    }
+    return AppRoutes.adminDashboard;
   }
 
   String _screenTitle() {
@@ -350,7 +369,7 @@ class _OrderCard extends StatelessWidget {
                       ? 'adminOrderDetailButton_${order.id}'
                       : 'buyerOrderDetailButton_${order.id}',
                 ),
-                onPressed: () => context.go(_detailPath(order.id)),
+                onPressed: () => _openDetail(context),
                 child: const Text('Xem chi tiết'),
               ),
             ),
@@ -358,6 +377,15 @@ class _OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _openDetail(BuildContext context) {
+    final detailPath = _detailPath(order.id);
+    if (adminMode || staffMode) {
+      context.push(detailPath);
+      return;
+    }
+    context.go(detailPath);
   }
 
   String _detailPath(String orderId) {

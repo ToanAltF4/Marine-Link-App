@@ -1,20 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/app/app.dart';
 import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/app/router/app_router.dart';
+import 'package:marinelink/shared/navigation/app_back_exit_controller.dart';
 import 'package:marinelink/shared/navigation/buyer_navigation.dart';
 
 void main() {
   setUp(() {
     BuyerNavigation.resetForTesting();
+    AppBackExitController.resetForTesting();
     AppRouter.router.go(AppRoutes.splash);
   });
-  tearDown(BuyerNavigation.resetForTesting);
+  tearDown(() {
+    BuyerNavigation.resetForTesting();
+    AppBackExitController.resetForTesting();
+  });
 
   testWidgets('admin dashboard follows system layout and opens orders', (
     tester,
   ) async {
+    final platformCalls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          platformCalls.add(call);
+          return null;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 1000);
     addTearDown(() {
@@ -51,7 +68,7 @@ void main() {
     expect(find.byKey(const Key('adminProductsShortcut')), findsOneWidget);
     expect(find.text('Quản lý tài khoản'), findsOneWidget);
     expect(find.text('Giám sát đơn hàng'), findsOneWidget);
-    expect(find.byKey(const Key('adminBottomNavDashboard')), findsNothing);
+    expect(find.byKey(const Key('adminBottomNavDashboard')), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const Key('adminRecentOrdersSection')),
@@ -71,11 +88,47 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byKey(const Key('adminOrderListScreen')), findsOneWidget);
+    expect(find.byKey(const Key('adminBottomNavOrders')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
+    expect(find.byKey(const Key('adminBottomNavDashboard')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
+    expect(
+      platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+      isEmpty,
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
+    expect(
+      platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+      isEmpty,
+    );
   });
 
   testWidgets('staff can open work dashboard and update an order status', (
     tester,
   ) async {
+    final platformCalls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          platformCalls.add(call);
+          return null;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 1000);
     addTearDown(() {
@@ -132,12 +185,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byKey(const Key('staffOrderListScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffBottomNavOrders')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('staffOrderDetailButton_order-001')));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byKey(const Key('staffOrderDetailScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffBottomNavOrders')), findsOneWidget);
     expect(find.byKey(const Key('staffOrderStatusPanel')), findsOneWidget);
     expect(
       find.byKey(const Key('staffOrderStatusOption_CONFIRMED')),
@@ -160,9 +215,49 @@ void main() {
       find.byKey(const Key('staffOrderStatusOption_SHIPPING')),
       findsOneWidget,
     );
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('staffOrderListScreen')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffBottomNavWork')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
+    expect(
+      platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+      isEmpty,
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
+    expect(
+      platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+      isEmpty,
+    );
   });
 
   testWidgets('buyer role cannot see admin dashboard content', (tester) async {
+    final platformCalls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          platformCalls.add(call);
+          return null;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 1000);
     addTearDown(() {
@@ -194,5 +289,23 @@ void main() {
 
     expect(find.byKey(const Key('adminDashboardScreen')), findsNothing);
     expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    expect(
+      platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+      isEmpty,
+    );
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    expect(
+      platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+      isEmpty,
+    );
   });
 }
