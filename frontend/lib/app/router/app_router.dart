@@ -29,7 +29,7 @@ abstract class AppRoutes {
   static const checkout = '/checkout';
   static const orders = '/orders';
   static const orderDetail = '/orders/:id';
-  static const notifications = '/notifications';
+  static const notifications = '/home/notifications';
   static const chat = '/chat';
   static const chatRoom = '/chat/:roomId';
   static const profile = '/profile';
@@ -91,6 +91,12 @@ class AppRouter {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'notifications', // matches /home/notifications
+                    builder: (context, state) => const NotificationsScreen(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -164,10 +170,6 @@ class AppRouter {
             ],
           ),
         ],
-      ),
-      GoRoute(
-        path: AppRoutes.notifications,
-        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: AppRoutes.warehouseMap,

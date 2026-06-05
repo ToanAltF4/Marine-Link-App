@@ -29,35 +29,44 @@ class _NotificationsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return BuyerBackToHomeScope(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FBFF),
-        bottomNavigationBar: const BuyerBottomNav(),
-        body: SafeArea(
-          bottom: false,
-          child: BlocBuilder<NotificationCubit, NotificationState>(
-            builder: (context, state) {
-              if (state.status == NotificationStatus.loading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FBFF),
+      body: SafeArea(
+        bottom: false,
+        child: BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            if (state.status == NotificationStatus.loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              final unreadItems = state.notifications.where((item) => !item.isRead).toList();
-              final olderItems = state.notifications.where((item) => item.isRead).toList();
+            final unreadItems = state.notifications.where((item) => !item.isRead).toList();
+            final olderItems = state.notifications.where((item) => item.isRead).toList();
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                children: [
-                  Text(
-                    'Thông báo',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
+                    Text(
+                      'Thông báo',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 48),
+                  child: Text(
                     'Theo dõi cập nhật đơn hàng, chat và thay đổi giá theo nhu cầu mua sỉ.',
                     style: theme.textTheme.bodyMedium,
                   ),
+                ),
                   const SizedBox(height: 18),
                   Container(
                     padding: const EdgeInsets.all(18),
