@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_theme.dart';
-import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
-import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../domain/notification.dart';
 import '../../data/notification_mock_repository.dart';
 import '../bloc/notification_cubit.dart';
@@ -67,7 +65,7 @@ class _NotificationsView extends StatelessWidget {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-                  const SizedBox(height: 18),
+                const SizedBox(height: 18),
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
