@@ -16,7 +16,7 @@ class AdminRoleGuard extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final user = state is AuthAuthenticated ? state.user : null;
-        if (user != null && (user.isAdmin || user.isStaff)) {
+        if (user != null && user.isAdmin) {
           return child;
         }
 
@@ -63,7 +63,7 @@ class AdminRoleGuard extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Chỉ tài khoản Staff hoặc Admin được quản lý đơn hàng.',
+                          'Chỉ tài khoản Admin được vào khu quản trị.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),

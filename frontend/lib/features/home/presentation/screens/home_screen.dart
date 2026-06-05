@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../core/assets/app_assets.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
@@ -12,6 +11,7 @@ import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../../../shared/widgets/dashboard_header.dart';
 import '../../../products/domain/product.dart';
 import '../../../products/domain/product_repository.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
@@ -75,308 +75,288 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         body: BlocProvider.value(
           value: _productBloc,
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Image.asset(
-                            AppAssets.headerLight,
-                            height: 42,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
+          child: Column(
+            children: [
+              DashboardHeader(
+                hasNotification: true,
+                onNotificationPressed: _openNotifications,
+                onProfilePressed: _openProfile,
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+                  children: [
+                    Text(
+                      'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: AppColors.primaryDark,
+                        fontFamily: 'serif',
+                        fontWeight: FontWeight.w700,
                       ),
-                      _NotificationButton(onTap: _openNotifications),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-                    children: [
-                      Text(
-                        'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: AppColors.primaryDark,
-                          fontFamily: 'serif',
-                          fontWeight: FontWeight.w700,
-                        ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD9F3FF),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.storefront_outlined,
-                              size: 16,
-                              color: Color(0xFF006A7C),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '\u0110\u1ea1i l\u00fd',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: const Color(0xFF006A7C),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9F3FF),
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                      const SizedBox(height: 22),
-                      TextField(
-                        key: const Key('homeQuickSearchField'),
-                        controller: _searchController,
-                        onSubmitted: (_) => _submitQuickSearch(),
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText:
-                              'T\u00ecm ki\u1ebfm h\u1ea3i s\u1ea3n kh\u00f4...',
-                          prefixIcon: const Icon(
-                            Icons.search_rounded,
-                            size: 30,
-                            color: AppColors.textSecondary,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 16,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      _PromoBanner(onTap: _submitQuickSearch),
-                      const SizedBox(height: 22),
-                      Text(
-                        'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
-                        style: _sectionTitleStyle(theme),
-                      ),
-                      const SizedBox(height: 12),
-                      FutureBuilder<List<_HomeCategorySummary>>(
-                        future: _categoriesFuture,
-                        builder: (context, snapshot) {
-                          final categories =
-                              snapshot.data ?? const <_HomeCategorySummary>[];
-                          if (snapshot.connectionState ==
-                                  ConnectionState.waiting &&
-                              categories.isEmpty) {
-                            return const SizedBox(
-                              height: 124,
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          if (categories.isEmpty) {
-                            return const AppEmptyState(
-                              message:
-                                  'Ch\u01b0a c\u00f3 danh m\u1ee5c s\u1ea3n ph\u1ea9m.',
-                              icon: Icons.category_outlined,
-                            );
-                          }
-
-                          return SizedBox(
-                            height: 124,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: categories.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(width: 12),
-                              itemBuilder: (context, index) {
-                                final item = categories[index];
-                                return _CategoryThumbnailCard(
-                                  key: Key(
-                                    'homeCategoryChip-${item.category.id}',
-                                  ),
-                                  summary: item,
-                                  onTap: () => _openCategory(item.category.id),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5FF),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF59D4FF)),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: const Color(0xFF006A7C),
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.info_outline_rounded,
-                                size: 20,
-                                color: Color(0xFF006A7C),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Mua t\u1eeb 50kg gi\u1ea3m 5% \u2022 T\u1eeb 100kg gi\u1ea3m 10%',
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: AppColors.textPrimary,
-                                      height: 1.45,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      Row(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: Text(
-                              'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
-                              style: _sectionTitleStyle(theme),
-                            ),
+                          const Icon(
+                            Icons.storefront_outlined,
+                            size: 16,
+                            color: Color(0xFF006A7C),
                           ),
-                          TextButton(
-                            onPressed: _openCatalog,
-                            child: Text(
-                              'Xem t\u1ea5t c\u1ea3',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: const Color(0xFF006A7C),
-                                fontWeight: FontWeight.w600,
-                              ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '\u0110\u1ea1i l\u00fd',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: const Color(0xFF006A7C),
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      BlocBuilder<ProductBloc, ProductState>(
-                        builder: (context, state) {
-                          if (state is ProductInitial ||
-                              state is ProductListLoading) {
-                            return const SizedBox(
-                              height: 360,
-                              child: AppLoadingIndicator(
-                                message:
-                                    '\u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
-                              ),
-                            );
-                          }
-                          if (state is ProductListError) {
-                            return SizedBox(
-                              height: 320,
-                              child: AppErrorState(
-                                message: state.message,
-                                onRetry: () => _productBloc.add(
-                                  const ProductListRequested(
-                                    featured: true,
-                                    status: 'ACTIVE',
-                                    size: 4,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          if (state is ProductListEmpty) {
-                            return const SizedBox(
-                              height: 220,
-                              child: AppEmptyState(
-                                message:
-                                    'Ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m n\u1ed5i b\u1eadt.',
-                                icon: Icons.inventory_2_outlined,
-                              ),
-                            );
-                          }
+                    ),
+                    const SizedBox(height: 22),
+                    TextField(
+                      key: const Key('homeQuickSearchField'),
+                      controller: _searchController,
+                      onSubmitted: (_) => _submitQuickSearch(),
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText:
+                            'T\u00ecm ki\u1ebfm h\u1ea3i s\u1ea3n kh\u00f4...',
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          size: 30,
+                          color: AppColors.textSecondary,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 16,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    _PromoBanner(onTap: _submitQuickSearch),
+                    const SizedBox(height: 22),
+                    Text(
+                      'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
+                      style: _sectionTitleStyle(theme),
+                    ),
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<_HomeCategorySummary>>(
+                      future: _categoriesFuture,
+                      builder: (context, snapshot) {
+                        final categories =
+                            snapshot.data ?? const <_HomeCategorySummary>[];
+                        if (snapshot.connectionState ==
+                                ConnectionState.waiting &&
+                            categories.isEmpty) {
+                          return const SizedBox(
+                            height: 124,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        if (categories.isEmpty) {
+                          return const AppEmptyState(
+                            message:
+                                'Ch\u01b0a c\u00f3 danh m\u1ee5c s\u1ea3n ph\u1ea9m.',
+                            icon: Icons.category_outlined,
+                          );
+                        }
 
-                          final loaded = state as ProductListLoaded;
-                          final screenWidth = MediaQuery.sizeOf(context).width;
-                          final compactGrid = screenWidth < 560;
-                          final cardAspectRatio = compactGrid
-                              ? _compactFeaturedCardAspectRatio
-                              : 0.74;
-
-                          final productGrid = GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: loaded.products.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 14,
-                                  crossAxisSpacing: 12,
-                                  childAspectRatio: cardAspectRatio,
-                                ),
+                        return SizedBox(
+                          height: 124,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: categories.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 12),
                             itemBuilder: (context, index) {
-                              final product = loaded.products[index];
-                              return _HotProductCard(
-                                product: product,
-                                onTap: () => _openProductDetail(product.id),
+                              final item = categories[index];
+                              return _CategoryThumbnailCard(
+                                key: Key(
+                                  'homeCategoryChip-${item.category.id}',
+                                ),
+                                summary: item,
+                                onTap: () => _openCategory(item.category.id),
                               );
                             },
-                          );
-
-                          if (!compactGrid) {
-                            return productGrid;
-                          }
-
-                          return Align(
-                            alignment: Alignment.center,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: _compactFeaturedGridMaxWidth,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5FF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF59D4FF)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFF006A7C),
                               ),
-                              child: productGrid,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.info_outline_rounded,
+                              size: 20,
+                              color: Color(0xFF006A7C),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Mua t\u1eeb 50kg gi\u1ea3m 5% \u2022 T\u1eeb 100kg gi\u1ea3m 10%',
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                            style: _sectionTitleStyle(theme),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _openCatalog,
+                          child: Text(
+                            'Xem t\u1ea5t c\u1ea3',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: const Color(0xFF006A7C),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    BlocBuilder<ProductBloc, ProductState>(
+                      builder: (context, state) {
+                        if (state is ProductInitial ||
+                            state is ProductListLoading) {
+                          return const SizedBox(
+                            height: 360,
+                            child: AppLoadingIndicator(
+                              message:
+                                  '\u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
                             ),
                           );
-                        },
-                      ),
-                    ],
-                  ),
+                        }
+                        if (state is ProductListError) {
+                          return SizedBox(
+                            height: 320,
+                            child: AppErrorState(
+                              message: state.message,
+                              onRetry: () => _productBloc.add(
+                                const ProductListRequested(
+                                  featured: true,
+                                  status: 'ACTIVE',
+                                  size: 4,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        if (state is ProductListEmpty) {
+                          return const SizedBox(
+                            height: 220,
+                            child: AppEmptyState(
+                              message:
+                                  'Ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m n\u1ed5i b\u1eadt.',
+                              icon: Icons.inventory_2_outlined,
+                            ),
+                          );
+                        }
+
+                        final loaded = state as ProductListLoaded;
+                        final screenWidth = MediaQuery.sizeOf(context).width;
+                        final compactGrid = screenWidth < 560;
+                        final cardAspectRatio = compactGrid
+                            ? _compactFeaturedCardAspectRatio
+                            : 0.74;
+
+                        final productGrid = GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: loaded.products.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 14,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: cardAspectRatio,
+                              ),
+                          itemBuilder: (context, index) {
+                            final product = loaded.products[index];
+                            return _HotProductCard(
+                              product: product,
+                              onTap: () => _openProductDetail(product.id),
+                            );
+                          },
+                        );
+
+                        if (!compactGrid) {
+                          return productGrid;
+                        }
+
+                        return Align(
+                          alignment: Alignment.center,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: _compactFeaturedGridMaxWidth,
+                            ),
+                            child: productGrid,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -451,6 +431,11 @@ class _HomeScreenState extends State<HomeScreen> {
     BuyerNavigation.push(context, AppRoutes.notifications);
   }
 
+  void _openProfile() {
+    if (!mounted) return;
+    BuyerNavigation.push(context, AppRoutes.profile);
+  }
+
   void _openCategory(String categoryId) {
     if (widget.onOpenCategory != null) {
       widget.onOpenCategory!(categoryId);
@@ -481,42 +466,6 @@ class _HomeCategorySummary {
     required this.category,
     required this.previewPath,
   });
-}
-
-class _NotificationButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _NotificationButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Stack(
-            alignment: Alignment.center,
-            children: const [
-              Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.primaryDark,
-                size: 28,
-              ),
-              Positioned(
-                right: 8,
-                top: 9,
-                child: CircleAvatar(radius: 4, backgroundColor: Colors.red),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _PromoBanner extends StatelessWidget {

@@ -12,7 +12,68 @@ void main() {
   });
   tearDown(BuyerNavigation.resetForTesting);
 
-  testWidgets('staff can open admin orders and update an order status', (
+  testWidgets('admin dashboard follows system layout and opens orders', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 1000);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await sl.reset();
+    await setupServiceLocator();
+    addTearDown(sl.reset);
+
+    await tester.pumpWidget(const MarineLinkApp());
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('loginEmailOrPhoneField')),
+      'admin@marinelink.demo',
+    );
+    await tester.enterText(
+      find.byKey(const Key('loginPasswordField')),
+      'Admin@123',
+    );
+    await tester.ensureVisible(find.byKey(const Key('loginSubmitButton')));
+    await tester.tap(find.byKey(const Key('loginSubmitButton')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
+    expect(find.byKey(const Key('adminSystemSummaryBand')), findsOneWidget);
+    expect(find.byKey(const Key('adminOperationsSection')), findsOneWidget);
+    expect(find.byKey(const Key('adminUsersShortcut')), findsOneWidget);
+    expect(find.byKey(const Key('adminProductsShortcut')), findsOneWidget);
+    expect(find.text('Quản lý tài khoản'), findsOneWidget);
+    expect(find.text('Giám sát đơn hàng'), findsOneWidget);
+    expect(find.byKey(const Key('adminBottomNavDashboard')), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('adminRecentOrdersSection')),
+      280,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('adminDashboardScreen')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.byKey(const Key('adminRecentOrdersSection')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('adminOrdersShortcut')));
+
+    await tester.tap(find.byKey(const Key('adminOrdersShortcut')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byKey(const Key('adminOrderListScreen')), findsOneWidget);
+  });
+
+  testWidgets('staff can open work dashboard and update an order status', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -44,38 +105,59 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffWorkOverviewSection')), findsOneWidget);
+    expect(find.byKey(const Key('staffWaitingChatCard')), findsOneWidget);
+    expect(find.byKey(const Key('staffQuickActionsSection')), findsOneWidget);
+    expect(find.byKey(const Key('staffSupportChatSection')), findsOneWidget);
+    expect(find.byKey(const Key('staffBottomNavWork')), findsOneWidget);
+    expect(find.text('Quản lý công việc'), findsOneWidget);
+    expect(find.text('Đơn cần xử lý'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('adminOrdersShortcut')));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('staffDeliveryRouteSection')),
+      320,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('staffDashboardScreen')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.byKey(const Key('staffDeliveryRouteSection')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('staffOrdersShortcut')));
+
+    await tester.tap(find.byKey(const Key('staffOrdersShortcut')));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byKey(const Key('adminOrderListScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffOrderListScreen')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('adminOrderDetailButton_order-001')));
+    await tester.tap(find.byKey(const Key('staffOrderDetailButton_order-001')));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byKey(const Key('adminOrderStatusPanel')), findsOneWidget);
+    expect(find.byKey(const Key('staffOrderDetailScreen')), findsOneWidget);
+    expect(find.byKey(const Key('staffOrderStatusPanel')), findsOneWidget);
     expect(
-      find.byKey(const Key('adminOrderStatusOption_CONFIRMED')),
+      find.byKey(const Key('staffOrderStatusOption_CONFIRMED')),
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const Key('adminOrderStatusOption_CONFIRMED')));
+    await tester.tap(find.byKey(const Key('staffOrderStatusOption_CONFIRMED')));
     await tester.enterText(
-      find.byKey(const Key('adminOrderStatusNoteField')),
+      find.byKey(const Key('staffOrderStatusNoteField')),
       'Da xac nhan don',
     );
     await tester.ensureVisible(
-      find.byKey(const Key('adminOrderStatusSubmitButton')),
+      find.byKey(const Key('staffOrderStatusSubmitButton')),
     );
-    await tester.tap(find.byKey(const Key('adminOrderStatusSubmitButton')));
+    await tester.tap(find.byKey(const Key('staffOrderStatusSubmitButton')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1000));
 
     expect(
-      find.byKey(const Key('adminOrderStatusOption_SHIPPING')),
+      find.byKey(const Key('staffOrderStatusOption_SHIPPING')),
       findsOneWidget,
     );
   });

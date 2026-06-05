@@ -14,8 +14,13 @@ import '../bloc/order_bloc.dart';
 
 class OrderListScreen extends StatefulWidget {
   final bool adminMode;
+  final bool staffMode;
 
-  const OrderListScreen({super.key, this.adminMode = false});
+  const OrderListScreen({
+    super.key,
+    this.adminMode = false,
+    this.staffMode = false,
+  });
 
   @override
   State<OrderListScreen> createState() => _OrderListScreenState();
@@ -39,13 +44,15 @@ class _OrderListScreenState extends State<OrderListScreen> {
         builder: (context) {
           final scaffold = Scaffold(
             key: Key(
-              widget.adminMode
+              widget.staffMode
+                  ? 'staffOrderListScreen'
+                  : widget.adminMode
                   ? 'adminOrderListScreen'
                   : 'buyerOrderListScreen',
             ),
             backgroundColor: const Color(0xFFF2F8FA),
             appBar: AppBar(
-              title: Text(widget.adminMode ? 'Quản lý đơn hàng' : 'Đơn hàng'),
+              title: Text(_screenTitle()),
               centerTitle: true,
               actions: [
                 IconButton(
@@ -55,7 +62,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 ),
               ],
             ),
-            bottomNavigationBar: widget.adminMode
+            bottomNavigationBar: widget.adminMode || widget.staffMode
                 ? null
                 : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
             body: BlocBuilder<OrderBloc, OrderState>(
@@ -115,6 +122,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                         OrderListLoaded(:final orders) => _OrderList(
                           orders: _filteredOrders(orders),
                           adminMode: widget.adminMode,
+                          staffMode: widget.staffMode,
                         ),
                         _ => const SliverFillRemaining(hasScrollBody: false),
                       },
@@ -125,7 +133,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
             ),
           );
 
-          if (widget.adminMode) {
+          if (widget.adminMode || widget.staffMode) {
             return scaffold;
           }
 
@@ -137,6 +145,16 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   void _reload(BuildContext context) {
     context.read<OrderBloc>().add(OrderListRequested(status: _status));
+  }
+
+  String _screenTitle() {
+    if (widget.staffMode) {
+      return 'Đơn cần xử lý';
+    }
+    if (widget.adminMode) {
+      return 'Giám sát đơn hàng';
+    }
+    return 'Đơn hàng';
   }
 
   List<Order> _filteredOrders(List<Order> orders) {
@@ -214,8 +232,13 @@ class _StatusFilters extends StatelessWidget {
 class _OrderList extends StatelessWidget {
   final List<Order> orders;
   final bool adminMode;
+  final bool staffMode;
 
-  const _OrderList({required this.orders, required this.adminMode});
+  const _OrderList({
+    required this.orders,
+    required this.adminMode,
+    required this.staffMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -231,8 +254,11 @@ class _OrderList extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       sliver: SliverList.separated(
-        itemBuilder: (context, index) =>
-            _OrderCard(order: orders[index], adminMode: adminMode),
+        itemBuilder: (context, index) => _OrderCard(
+          order: orders[index],
+          adminMode: adminMode,
+          staffMode: staffMode,
+        ),
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemCount: orders.length,
       ),
@@ -243,8 +269,13 @@ class _OrderList extends StatelessWidget {
 class _OrderCard extends StatelessWidget {
   final Order order;
   final bool adminMode;
+  final bool staffMode;
 
-  const _OrderCard({required this.order, required this.adminMode});
+  const _OrderCard({
+    required this.order,
+    required this.adminMode,
+    required this.staffMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -313,15 +344,13 @@ class _OrderCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: OutlinedButton(
                 key: Key(
-                  adminMode
+                  staffMode
+                      ? 'staffOrderDetailButton_${order.id}'
+                      : adminMode
                       ? 'adminOrderDetailButton_${order.id}'
                       : 'buyerOrderDetailButton_${order.id}',
                 ),
-                onPressed: () => context.go(
-                  adminMode
-                      ? AppRoutes.adminOrderDetailPath(order.id)
-                      : AppRoutes.orderDetailPath(order.id),
-                ),
+                onPressed: () => context.go(_detailPath(order.id)),
                 child: const Text('Xem chi tiết'),
               ),
             ),
@@ -329,6 +358,16 @@ class _OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _detailPath(String orderId) {
+    if (staffMode) {
+      return AppRoutes.staffOrderDetailPath(orderId);
+    }
+    if (adminMode) {
+      return AppRoutes.adminOrderDetailPath(orderId);
+    }
+    return AppRoutes.orderDetailPath(orderId);
   }
 }
 

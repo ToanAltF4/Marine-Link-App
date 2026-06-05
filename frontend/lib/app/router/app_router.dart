@@ -16,6 +16,8 @@ import '../../features/orders/presentation/screens/order_list_screen.dart';
 import '../../features/products/presentation/screens/product_detail_screen.dart';
 import '../../features/products/presentation/screens/product_list_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/staff/presentation/screens/staff_dashboard_screen.dart';
+import '../../features/staff/presentation/widgets/staff_role_guard.dart';
 import '../../shared/widgets/app_back_exit_scope.dart';
 import '../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../shared/widgets/buyer_bottom_nav.dart';
@@ -37,6 +39,8 @@ abstract class AppRoutes {
   static const profile = '/profile';
   static const warehouseMap = '/warehouses';
 
+  static const staffDashboard = '/staff';
+  static const staffOrders = '/staff/orders';
   static const adminDashboard = '/admin';
   static const adminProducts = '/admin/products';
   static const adminUsers = '/admin/users';
@@ -44,6 +48,7 @@ abstract class AppRoutes {
 
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
+  static String staffOrderDetailPath(String id) => '$staffOrders/$id';
   static String adminOrderDetailPath(String id) => '$adminOrders/$id';
 
   static String productListLocation({String? query, String? categoryId}) {
@@ -178,6 +183,29 @@ class AppRouter {
             const _PlaceholderPage(title: 'Warehouse Map'),
       ),
       GoRoute(
+        path: AppRoutes.staffDashboard,
+        builder: (context, state) =>
+            const StaffRoleGuard(child: StaffDashboardScreen()),
+        routes: [
+          GoRoute(
+            path: 'orders',
+            builder: (context, state) =>
+                const StaffRoleGuard(child: OrderListScreen(staffMode: true)),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) => StaffRoleGuard(
+                  child: OrderDetailScreen(
+                    orderId: state.pathParameters['id']!,
+                    staffMode: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
         path: AppRoutes.adminDashboard,
         builder: (context, state) =>
             const AdminRoleGuard(child: AdminDashboardScreen()),
@@ -216,8 +244,12 @@ class AppRouter {
   );
 
   static void _routeByRole(BuildContext context, User user) {
-    if (user.isAdmin || user.isStaff) {
+    if (user.isAdmin) {
       context.go(AppRoutes.adminDashboard);
+      return;
+    }
+    if (user.isStaff) {
+      context.go(AppRoutes.staffDashboard);
       return;
     }
     context.go(AppRoutes.home);

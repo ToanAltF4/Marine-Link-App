@@ -13,11 +13,13 @@ import '../bloc/order_bloc.dart';
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
   final bool adminMode;
+  final bool staffMode;
 
   const OrderDetailScreen({
     super.key,
     required this.orderId,
     this.adminMode = false,
+    this.staffMode = false,
   });
 
   @override
@@ -28,15 +30,15 @@ class OrderDetailScreen extends StatelessWidget {
         builder: (context) {
           final scaffold = Scaffold(
             key: Key(
-              adminMode ? 'adminOrderDetailScreen' : 'buyerOrderDetailScreen',
+              staffMode
+                  ? 'staffOrderDetailScreen'
+                  : adminMode
+                  ? 'adminOrderDetailScreen'
+                  : 'buyerOrderDetailScreen',
             ),
             backgroundColor: const Color(0xFFF2F8FA),
-            appBar: AppBar(
-              title: Text(
-                adminMode ? 'Quản lý trạng thái đơn' : 'Chi tiết đơn hàng',
-              ),
-            ),
-            bottomNavigationBar: adminMode
+            appBar: AppBar(title: Text(_screenTitle())),
+            bottomNavigationBar: adminMode || staffMode
                 ? null
                 : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
             body: BlocBuilder<OrderBloc, OrderState>(
@@ -55,6 +57,7 @@ class OrderDetailScreen extends StatelessWidget {
                   OrderDetailLoaded(:final order) => _OrderDetailBody(
                     order: order,
                     adminMode: adminMode,
+                    staffMode: staffMode,
                   ),
                   _ => const SizedBox.shrink(),
                 };
@@ -62,7 +65,7 @@ class OrderDetailScreen extends StatelessWidget {
             ),
           );
 
-          if (adminMode) {
+          if (adminMode || staffMode) {
             return scaffold;
           }
 
@@ -71,13 +74,28 @@ class OrderDetailScreen extends StatelessWidget {
       ),
     );
   }
+
+  String _screenTitle() {
+    if (staffMode) {
+      return 'Cập nhật trạng thái đơn';
+    }
+    if (adminMode) {
+      return 'Giám sát trạng thái đơn';
+    }
+    return 'Chi tiết đơn hàng';
+  }
 }
 
 class _OrderDetailBody extends StatelessWidget {
   final OrderDetail order;
   final bool adminMode;
+  final bool staffMode;
 
-  const _OrderDetailBody({required this.order, required this.adminMode});
+  const _OrderDetailBody({
+    required this.order,
+    required this.adminMode,
+    required this.staffMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -86,12 +104,19 @@ class _OrderDetailBody extends StatelessWidget {
       children: [
         _Header(order: order),
         const SizedBox(height: 12),
-        if (adminMode) ...[
+        if (adminMode || staffMode) ...[
           _Panel(
-            key: const Key('adminOrderStatusPanel'),
-            title: 'Cập nhật trạng thái',
-            icon: Icons.admin_panel_settings_outlined,
-            child: _AdminStatusControl(order: order),
+            key: Key(
+              staffMode ? 'staffOrderStatusPanel' : 'adminOrderStatusPanel',
+            ),
+            title: staffMode ? 'Cập nhật trạng thái' : 'Giám sát trạng thái',
+            icon: staffMode
+                ? Icons.fact_check_outlined
+                : Icons.admin_panel_settings_outlined,
+            child: _AdminStatusControl(
+              order: order,
+              keyPrefix: staffMode ? 'staff' : 'admin',
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -185,8 +210,9 @@ class _Header extends StatelessWidget {
 
 class _AdminStatusControl extends StatefulWidget {
   final OrderDetail order;
+  final String keyPrefix;
 
-  const _AdminStatusControl({required this.order});
+  const _AdminStatusControl({required this.order, required this.keyPrefix});
 
   @override
   State<_AdminStatusControl> createState() => _AdminStatusControlState();
@@ -265,7 +291,9 @@ class _AdminStatusControlState extends State<_AdminStatusControl> {
                 children: transitions.map((status) {
                   final selected = _selectedStatus == status;
                   return ChoiceChip(
-                    key: Key('adminOrderStatusOption_${status.apiValue}'),
+                    key: Key(
+                      '${widget.keyPrefix}OrderStatusOption_${status.apiValue}',
+                    ),
                     selected: selected,
                     label: Text(status.displayLabel),
                     onSelected: isLoading
@@ -282,7 +310,7 @@ class _AdminStatusControlState extends State<_AdminStatusControl> {
               ),
               const SizedBox(height: 12),
               TextField(
-                key: const Key('adminOrderStatusNoteField'),
+                key: Key('${widget.keyPrefix}OrderStatusNoteField'),
                 controller: _noteController,
                 minLines: 2,
                 maxLines: 3,
@@ -296,7 +324,7 @@ class _AdminStatusControlState extends State<_AdminStatusControl> {
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton.icon(
-                  key: const Key('adminOrderStatusSubmitButton'),
+                  key: Key('${widget.keyPrefix}OrderStatusSubmitButton'),
                   onPressed: isLoading || _selectedStatus == null
                       ? null
                       : () => context.read<OrderBloc>().add(
