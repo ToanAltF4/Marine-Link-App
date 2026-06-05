@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_theme.dart';
-import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
-import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../domain/notification.dart';
 import '../../data/notification_mock_repository.dart';
 import '../bloc/notification_cubit.dart';
@@ -67,84 +65,80 @@ class _NotificationsView extends StatelessWidget {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-                  const SizedBox(height: 18),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _NotificationSummaryCard(
-                            label: 'Chưa đọc',
-                            value: '${unreadItems.length}',
-                            icon: Icons.mark_chat_unread_outlined,
-                          ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _NotificationSummaryCard(
+                          label: 'Chưa đọc',
+                          value: '${unreadItems.length}',
+                          icon: Icons.mark_chat_unread_outlined,
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: _NotificationSummaryCard(
-                            label: 'Đã đồng bộ',
-                            value: 'Realtime',
-                            icon: Icons.sync_rounded,
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: _NotificationSummaryCard(
+                          label: 'Đã đồng bộ',
+                          value: 'Realtime',
+                          icon: Icons.sync_rounded,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                if (unreadItems.isNotEmpty) ...[
+                  Text(
+                    'Mới nhất',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 22),
-                  if (unreadItems.isNotEmpty) ...[
-                    Text(
-                      'Mới nhất',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  const SizedBox(height: 12),
+                  for (final item in unreadItems) ...[
+                    GestureDetector(
+                      onTap: () => context.read<NotificationCubit>().markAsRead(item.id),
+                      child: _NotificationTile(item: item),
                     ),
                     const SizedBox(height: 12),
-                    for (final item in unreadItems) ...[
-                      GestureDetector(
-                        onTap: () => context.read<NotificationCubit>().markAsRead(item.id),
-                        child: _NotificationTile(item: item),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    const SizedBox(height: 10),
                   ],
-                  if (olderItems.isNotEmpty) ...[
-                    Text(
-                      'Trước đó',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final item in olderItems) ...[
-                      _NotificationTile(item: item),
-                      const SizedBox(height: 12),
-                    ],
-                  ],
-                  if (state.notifications.isEmpty)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 40),
-                        child: Text('Không có thông báo nào', style: theme.textTheme.bodyMedium),
-                      ),
-                    ),
+                  const SizedBox(height: 10),
                 ],
-              );
-            },
-          ),
+                if (olderItems.isNotEmpty) ...[
+                  Text(
+                    'Trước đó',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final item in olderItems) ...[
+                    _NotificationTile(item: item),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+                if (state.notifications.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 40),
+                      child: Text('Không có thông báo nào', style: theme.textTheme.bodyMedium),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
-
-
-
 
 class _NotificationSummaryCard extends StatelessWidget {
   final String label;
@@ -210,9 +204,7 @@ class _NotificationTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: !item.isRead
-              ? color.withValues(alpha: 0.24)
-              : AppColors.border,
+          color: !item.isRead ? color.withValues(alpha: 0.24) : AppColors.border,
         ),
       ),
       child: Row(
@@ -237,8 +229,7 @@ class _NotificationTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
                     if (!item.isRead)
@@ -281,12 +272,12 @@ class _NotificationTile extends StatelessWidget {
   }
 
   String _formatCategory(NotificationType type) => switch (type) {
-    NotificationType.order => 'Đơn hàng',
-    NotificationType.product => 'Giá sỉ',
-    NotificationType.chat => 'Tin nhắn',
-    NotificationType.system => 'Hệ thống',
-    NotificationType.promotion => 'Khuyến mãi',
-  };
+        NotificationType.order => 'Đơn hàng',
+        NotificationType.product => 'Giá sỉ',
+        NotificationType.chat => 'Tin nhắn',
+        NotificationType.system => 'Hệ thống',
+        NotificationType.promotion => 'Khuyến mãi',
+      };
 
   String _formatTime(DateTime date) {
     final diff = DateTime.now().difference(date);
@@ -295,7 +286,6 @@ class _NotificationTile extends StatelessWidget {
     return 'Hôm qua';
   }
 }
-
 
 class _NotificationMetaChip extends StatelessWidget {
   final String label;
@@ -314,9 +304,9 @@ class _NotificationMetaChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
