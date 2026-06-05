@@ -105,13 +105,14 @@ void main() {
       isEmpty,
     );
 
+    // Lần 2 nhấn back trong 800ms → double-back thoát app
     await tester.binding.handlePopRoute();
     await tester.pump();
 
     expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
     expect(
       platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
-      isEmpty,
+      isNotEmpty,
     );
   });
 
@@ -236,13 +237,14 @@ void main() {
       isEmpty,
     );
 
+    // Lần 2 nhấn back trong 800ms → double-back thoát app
     await tester.binding.handlePopRoute();
     await tester.pump();
 
     expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
     expect(
       platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
-      isEmpty,
+      isNotEmpty,
     );
   });
 
@@ -299,13 +301,14 @@ void main() {
       isEmpty,
     );
 
+    // Lần 2 nhấn back trong 800ms → double-back thoát app
     await tester.binding.handlePopRoute();
     await tester.pump();
 
     expect(find.byKey(const Key('homeScreen')), findsOneWidget);
     expect(
       platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
-      isEmpty,
+      isNotEmpty,
     );
   });
 }

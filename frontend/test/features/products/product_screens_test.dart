@@ -218,13 +218,14 @@ void main() {
         isEmpty,
       );
 
+      // Lần 2 nhấn back trong 800ms → double-back thoát app
       final thirdHandled = await tester.binding.handlePopRoute();
       expect(thirdHandled, isTrue);
       await tester.pump();
 
       expect(
         platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
-        isEmpty,
+        isNotEmpty,
       );
     });
 
