@@ -1,6 +1,7 @@
 package com.marinelink.notifications;
 
 import com.marinelink.common.exception.GlobalExceptionHandler;
+import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -8,9 +9,11 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,7 +33,14 @@ class NotificationControllerTest {
         UUID notificationId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        // Mô phỏng việc gọi API PUT /api/notifications/{id}/read
+        User mockUser = User.builder()
+                .id(1L)
+                .publicId(userId)
+                .fullName("Test User")
+                .build();
+
+        when(userRepository.findActiveByPublicId(userId)).thenReturn(Optional.of(mockUser));
+
         mockMvc.perform(put("/api/notifications/{id}/read", notificationId)
                         .principal(new TestingAuthenticationToken(userId.toString(), null))
                         .contentType(MediaType.APPLICATION_JSON))
@@ -41,9 +51,9 @@ class NotificationControllerTest {
 
     @Test
     void markAsRead_WithInvalidId_ShouldReturnBadRequest() throws java.lang.Exception {
-        // Test xem nếu truyền ID không phải UUID (ví dụ "abc") thì Controller có chặn lại không
         mockMvc.perform(put("/api/notifications/not-a-uuid/read")
                         .principal(new TestingAuthenticationToken(UUID.randomUUID().toString(), null)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }

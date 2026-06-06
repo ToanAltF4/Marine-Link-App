@@ -32,7 +32,7 @@ public class NotificationService {
     @Transactional
     public void markAsRead(UUID publicId, User user) {
         Notification notification = notificationRepository.findByPublicId(publicId)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
         if (!notification.getUser().getId().equals(user.getId())) {
             throw new SecurityException("Not authorized to read this notification");

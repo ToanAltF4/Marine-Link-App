@@ -598,7 +598,7 @@ class _PromoBanner extends StatelessWidget {
                               ? theme.textTheme.bodyMedium
                               : theme.textTheme.bodyLarge)
                           ?.copyWith(
-                            color: Colors.white.withOpacity(0.94),
+                            color: Colors.white.withValues(alpha: 0.94),
                             fontWeight: FontWeight.w500,
                           ),
                 ),
@@ -918,7 +918,7 @@ TextStyle? _sectionTitleStyle(ThemeData theme) {
 class _DotPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.16);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.16);
     const step = 20.0;
     const radius = 1.2;
 

@@ -232,7 +232,7 @@ class _NotificationTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: !item.isRead ? color.withOpacity(0.24) : AppColors.border,
+          color: !item.isRead ? color.withValues(alpha: 0.24) : AppColors.border,
         ),
       ),
       child: Row(
@@ -242,7 +242,7 @@ class _NotificationTile extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(icon, color: color),
@@ -326,7 +326,7 @@ class _NotificationMetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
