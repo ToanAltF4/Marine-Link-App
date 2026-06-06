@@ -42,6 +42,8 @@ Thumbs.db
 
 # ── Node / JS (Monorepo root) ────────────────────────────────────────────────
 node_modules/
+package.json      # CHẶN LUÔN
+package-lock.json # CHẶN LUÔN
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
