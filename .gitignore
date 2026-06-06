@@ -8,7 +8,7 @@
 .packages
 .flutter-plugins
 .flutter-plugins-dependencies
-pubspec.lock        # root-level lock (not part of any subproject)
+/pubspec.lock        # root-level lock (not part of any subproject)
 build/              # Flutter build output at root
 *.dart.js
 *.info.json
