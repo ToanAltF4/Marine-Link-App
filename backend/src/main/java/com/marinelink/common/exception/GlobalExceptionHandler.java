@@ -10,7 +10,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.util.List;
 
 /**
@@ -22,7 +22,11 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     // ── Validation errors (Bean Validation) ───────────────────────────────────
-
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String message = String.format("Tham số '%s' không đúng định dạng", ex.getName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message));
+    }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException ex) {
         List<ApiResponse.FieldError> errors = ex.getBindingResult()

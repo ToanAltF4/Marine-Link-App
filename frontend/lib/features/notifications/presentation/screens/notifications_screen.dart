@@ -1,154 +1,171 @@
+import '../../../orders/presentation/screens/order_detail_screen.dart';
+import '../../../products/presentation/screens/product_detail_screen.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_theme.dart';
-import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
-import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../domain/notification.dart';
+import '../../data/notification_mock_repository.dart';
+import '../bloc/notification_cubit.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
-  static const List<_NotificationItem> _items = [
-    _NotificationItem(
-      title: 'Don hang #OD2305 da duoc xac nhan',
-      message: 'Kho Ca Mau da xac nhan 120kg muc kho giao vao sang mai.',
-      timeLabel: '5 phut truoc',
-      categoryLabel: 'Don hang',
-      icon: Icons.inventory_2_outlined,
-      accentColor: AppColors.primary,
-      unread: true,
-    ),
-    _NotificationItem(
-      title: 'Gia tom kho da cap nhat theo tier moi',
-      message: 'Moc gia 5kg va 10kg da duoc dieu chinh cho kenh dai ly.',
-      timeLabel: '25 phut truoc',
-      categoryLabel: 'Gia si',
-      icon: Icons.stacked_line_chart_rounded,
-      accentColor: AppColors.secondary,
-      unread: true,
-    ),
-    _NotificationItem(
-      title: 'Nhan vien ho tro da phan hoi chat',
-      message: 'Ban co tin nhan moi trong phong chat ve don hang dang giao.',
-      timeLabel: '2 gio truoc',
-      categoryLabel: 'Tin nhan',
-      icon: Icons.chat_bubble_outline_rounded,
-      accentColor: Color(0xFF7C3AED),
-      unread: false,
-    ),
-    _NotificationItem(
-      title: 'Lich seed catalog da dong bo',
-      message: 'UI buyer da doc token moi tu Stitch kit Ocean B2B.',
-      timeLabel: 'Hom qua',
-      categoryLabel: 'He thong',
-      icon: Icons.sync_rounded,
-      accentColor: Color(0xFFEA580C),
-      unread: false,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final unreadItems = _items.where((item) => item.unread).toList();
-    final olderItems = _items.where((item) => !item.unread).toList();
-
-    return BuyerBackToHomeScope(
-      child: Scaffold(
-        bottomNavigationBar: const BuyerBottomNav(),
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-            children: [
-              Text(
-                'Thong bao',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Theo doi cap nhat don hang, chat va thay doi gia theo nhu cau mua si.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _NotificationSummaryCard(
-                        label: 'Chua doc',
-                        value: '${unreadItems.length}',
-                        icon: Icons.mark_chat_unread_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: _NotificationSummaryCard(
-                        label: 'Da dong bo',
-                        value: 'Realtime',
-                        icon: Icons.sync_rounded,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                'Moi nhat',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final item in unreadItems) ...[
-                _NotificationTile(item: item),
-                const SizedBox(height: 12),
-              ],
-              const SizedBox(height: 10),
-              Text(
-                'Truoc do',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final item in olderItems) ...[
-                _NotificationTile(item: item),
-                const SizedBox(height: 12),
-              ],
-            ],
-          ),
-        ),
-      ),
+    return BlocProvider(
+      create: (context) => NotificationCubit(
+        notificationRepository: NotificationMockRepository(),
+      )..loadNotifications(),
+      child: const _NotificationsView(),
     );
   }
 }
 
-class _NotificationItem {
-  final String title;
-  final String message;
-  final String timeLabel;
-  final String categoryLabel;
-  final IconData icon;
-  final Color accentColor;
-  final bool unread;
+class _NotificationsView extends StatelessWidget {
+  const _NotificationsView();
 
-  const _NotificationItem({
-    required this.title,
-    required this.message,
-    required this.timeLabel,
-    required this.categoryLabel,
-    required this.icon,
-    required this.accentColor,
-    required this.unread,
-  });
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FBFF),
+      body: SafeArea(
+        bottom: false,
+        child: BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            if (state.status == NotificationStatus.loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final unreadItems = state.notifications.where((item) => !item.isRead).toList();
+            final olderItems = state.notifications.where((item) => item.isRead).toList();
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    ),
+                    Text(
+                      'Thông báo',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 48),
+                  child: Text(
+                    'Theo dõi cập nhật đơn hàng, chat và thay đổi giá theo nhu cầu mua sỉ.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _NotificationSummaryCard(
+                          label: 'Chưa đọc',
+                          value: '${unreadItems.length}',
+                          icon: Icons.mark_chat_unread_outlined,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: _NotificationSummaryCard(
+                          label: 'Đã đồng bộ',
+                          value: 'Realtime',
+                          icon: Icons.sync_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                if (unreadItems.isNotEmpty) ...[
+                  Text(
+                    'Mới nhất',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final item in unreadItems) ...[
+                    GestureDetector(
+                      onTap: () => _handleNotificationClick(context, item),
+                      child: _NotificationTile(item: item),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  const SizedBox(height: 10),
+                ],
+                if (olderItems.isNotEmpty) ...[
+                  Text(
+                    'Trước đó',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final item in olderItems) ...[
+                    GestureDetector(
+                      onTap: () => _handleNotificationClick(context, item),
+                      child: _NotificationTile(item: item),
+                    ),
+                    const SizedBox(height: 12), // Chỉ cần 1 dòng này thôi
+                  ],
+                ],
+                if (state.notifications.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 40),
+                      child: Text('Không có thông báo nào', style: theme.textTheme.bodyMedium),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+  // Chèn vào khoảng dòng 128
+  void _handleNotificationClick(BuildContext context, NotificationEntity item) {
+    // 1. Đánh dấu đã đọc nếu là thông báo mới
+    if (!item.isRead) {
+      context.read<NotificationCubit>().markAsRead(item.id);
+    }
+
+    // 2. Điều hướng dựa trên loại thông báo
+    if (item.relatedId != null) {
+      if (item.type == NotificationType.order) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: item.relatedId!)),
+        );
+      } else if (item.type == NotificationType.product) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: item.relatedId!)),
+        );
+      }
+    }
+  }
 }
 
 class _NotificationSummaryCard extends StatelessWidget {
@@ -190,21 +207,32 @@ class _NotificationSummaryCard extends StatelessWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  final _NotificationItem item;
+  final NotificationEntity item;
 
   const _NotificationTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
+    // Map NotificationType to Icon and Color
+    final (icon, color) = switch (item.type) {
+      NotificationType.order => (Icons.inventory_2_outlined, AppColors.primary),
+      NotificationType.product => (Icons.stacked_line_chart_rounded, AppColors.secondary),
+      NotificationType.chat => (Icons.chat_bubble_outline_rounded, const Color(0xFF7C3AED)),
+      NotificationType.system => (Icons.sync_rounded, const Color(0xFFEA580C)),
+      NotificationType.promotion => (Icons.local_offer_outlined, Colors.pink),
+    };
+
+    // Simple time formatter
+    final timeLabel = _formatTime(item.createdAt);
+    final categoryLabel = _formatCategory(item.type);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: item.unread
-              ? item.accentColor.withValues(alpha: 0.24)
-              : AppColors.border,
+          color: !item.isRead ? color.withValues(alpha: 0.24) : AppColors.border,
         ),
       ),
       child: Row(
@@ -214,10 +242,10 @@ class _NotificationTile extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: item.accentColor.withValues(alpha: 0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(item.icon, color: item.accentColor),
+            child: Icon(icon, color: color),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -229,16 +257,15 @@ class _NotificationTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
-                    if (item.unread)
+                    if (!item.isRead)
                       Container(
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: item.accentColor,
+                          color: color,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -255,11 +282,11 @@ class _NotificationTile extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     _NotificationMetaChip(
-                      label: item.categoryLabel,
-                      color: item.accentColor,
+                      label: categoryLabel,
+                      color: color,
                     ),
                     _NotificationMetaChip(
-                      label: item.timeLabel,
+                      label: timeLabel,
                       color: AppColors.textSecondary,
                     ),
                   ],
@@ -270,6 +297,21 @@ class _NotificationTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatCategory(NotificationType type) => switch (type) {
+        NotificationType.order => 'Đơn hàng',
+        NotificationType.product => 'Giá sỉ',
+        NotificationType.chat => 'Tin nhắn',
+        NotificationType.system => 'Hệ thống',
+        NotificationType.promotion => 'Khuyến mãi',
+      };
+
+  String _formatTime(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+    return 'Hôm qua';
   }
 }
 
@@ -290,9 +332,9 @@ class _NotificationMetaChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
