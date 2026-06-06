@@ -42,9 +42,9 @@ public class NotificationController {
 
     @PutMapping("/{id}/read")
     @PreAuthorize("hasAnyRole('USER', 'STAFF', 'ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<java.lang.Void>> markAsRead(@PathVariable java.util.UUID id) {
         User currentUser = getCurrentUser();
-        notificationService.markAsRead(UUID.fromString(id), currentUser);
+        notificationService.markAsRead(id, currentUser);
         return ResponseEntity.ok(
                 ApiResponse.<Void>builder()
                         .success(true)

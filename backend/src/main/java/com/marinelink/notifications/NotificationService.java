@@ -53,6 +53,7 @@ public class NotificationService {
                 .body(n.getBody())
                 .relatedOrderId(n.getRelatedOrder() != null ? n.getRelatedOrder().getPublicId() : null)
                 .relatedProductId(n.getRelatedProduct() != null ? n.getRelatedProduct().getPublicId() : null)
+                .relatedChatRoomId(n.getRelatedChatRoomId()) // Bổ sung map trường này
                 .read(n.isRead())
                 .createdAt(n.getCreatedAt())
                 .readAt(n.getReadAt())

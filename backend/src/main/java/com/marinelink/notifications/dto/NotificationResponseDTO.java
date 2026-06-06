@@ -20,6 +20,7 @@ public class NotificationResponseDTO {
     private String body;
     private UUID relatedOrderId;
     private UUID relatedProductId;
+    private Long relatedChatRoomId; // Thêm trường này
     private boolean read;
     private Instant createdAt;
     private Instant readAt;
