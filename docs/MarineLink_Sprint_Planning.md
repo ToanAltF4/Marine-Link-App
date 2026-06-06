@@ -142,8 +142,13 @@ Quy ước code chung repo:
 | S2-03 | P0 | Checkout screen: form người nhận, số điện thoại, địa chỉ, payment method, ghi chú, validation client, summary selected cart items, empty cart state | Contract đã dùng `POST /api/orders`; không đổi request body | Không đổi | 4 pts | Cart state | Xong FE local |
 | S2-04 | P0 | `CheckoutBloc` + `CheckoutRepository`: validate cart active local/UI cache, gọi adapter tạo order, clear cart UI cache, màn success/error | `POST /api/orders`: tạo order từ active server-side cart hoặc request `items` fallback, tính lại giá, validate stock/min quantity, trả order code | `orders`, `order_items`, `order_status_history`, rule sinh order code, transaction clear cart items nếu dùng server cart | 4 pts | Checkout | Xong FE + API thật |
 | S2-05 | P0 | Orders list/detail cho Đại lý: status badge, timeline, empty/loading/error | `GET /api/orders`, `GET /api/orders/{id}` chỉ trả đơn của user hiện tại | Index `orders(user_id, created_at)`, `order_status_history(order_id, created_at)` | 4 pts | Order model/repository | Xong FE + API thật |
+
 | S2-06 | P1 | Notification list: đã đọc/chưa đọc, mở order/product/chat liên quan | `GET /api/notifications`, `PUT /api/notifications/{id}/read`, tạo notification từ order event | `notifications` với owner/link target, index unread | 3 pts | Order events | Xong |
 | S2-07 | P1 | Staff/Admin UI tối thiểu để đổi status đơn, guard theo role | `PUT /api/orders/{id}/status`, validate transition, role STAFF/ADMIN | Ghi `order_status_history`, cập nhật timestamp trạng thái trên `orders` | 3 pts | Role routing | Chưa làm |
+
+| S2-06 | P1 | Notification list: đã đọc/chưa đọc, mở order/product/chat liên quan | `GET /api/notifications`, `PUT /api/notifications/{id}/read`, tạo notification từ order event | `notifications` với owner/link target, index unread | 3 pts | Order events | Chưa làm |
+| S2-07 | P1 | Staff/Admin UI tối thiểu để đổi status đơn, guard theo role | `PUT /api/orders/{id}/status`, validate transition, role STAFF/ADMIN | Ghi `order_status_history`, cập nhật timestamp trạng thái trên `orders` | 3 pts | Role routing | Xong FE + API thật |
+
 | S2-08 | P0 | Cart remote repository gọi Cart API thật: load cart, add/update/remove/clear item, update selected; `/api/cart/sync` chỉ dùng merge local/offline/pre-login | Cart API BE: `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/{productId}`, `DELETE /api/cart/items/{productId}`, `DELETE /api/cart/items` là luồng chính; `POST /api/cart/sync` đã có để sync local cart trước checkout; BE tính lại totals và price tier | `carts`, `cart_items`, FK `price_tier_id`, unique `(cart_id, product_id)`, active cart theo user | 5 pts | Cart state + cart DB migration | Đang làm - `/api/cart/sync` xong, Cart API chính chưa |
 
 Ghi chú S2-01/S2-08: FE đã có `CartCubit` và domain `Cart/CartItem` cho add/update/remove/clear, selected items, tổng tiền, tổng số lượng, empty cart và tính lại price tier khi đổi số lượng. BE đã có `/api/cart/sync` để merge local cart lên server-side cart trước checkout; các endpoint Cart API chính load/add/update/remove/clear vẫn thuộc phần còn lại của S2-08.
@@ -152,7 +157,11 @@ Ghi chú S2-02: FE đã có `CartScreen` nối route `/cart`, hiển thị danh 
 
 Ghi chú S2-03/S2-04/S2-05: FE đã có `CheckoutScreen`, `CheckoutBloc`, `CheckoutRepository` adapter qua `OrderRepository`, client validation, payment method, success/error state và clear `CartCubit` sau khi tạo đơn thành công. Order API thật đã có `POST /api/orders`, `GET /api/orders`, `GET /api/orders/{id}` và `PUT /api/orders/{id}/status`; checkout remote hiện gọi `/api/cart/sync` best-effort trước `POST /api/orders` và gửi thêm selected `items` để tránh lỗi server cart rỗng khi Cart API chính chưa làm source of truth.
 
+
 Ghi chú S2-06: FE đã có `NotificationCubit`, domain `NotificationEntity`, `NotificationMockRepository` với dữ liệu demo tiếng Việt có dấu, và refactor `NotificationsScreen` để quản lý trạng thái (loading, unread count, mark as read). BE đã hoàn thiện khung chuẩn gồm Entity, Repository, Service (có unit test), Controller cho `/api/notifications` khớp với migration V005.
+
+Ghi chú S2-07: FE đã có `AdminDashboardScreen`, route `/admin/orders` và `/admin/orders/:id` dùng `AdminRoleGuard` theo `AuthBloc` để chỉ Staff/Admin xem được khu quản trị. Staff/Admin có thể mở chi tiết đơn, chọn transition hợp lệ từ `OrderStatus.allowedTransitions`, nhập ghi chú nội bộ và gọi `OrderRepository.updateOrderStatus` tới `PUT /api/orders/{id}/status`; sau khi cập nhật, detail refetch để hiển thị transition tiếp theo. BE đã có guard STAFF/ADMIN, validate transition và ghi `order_status_history`.
+
 
 **Tải khuyến nghị:** 19-20 pts P0, kéo P1 nếu còn thời gian.
 

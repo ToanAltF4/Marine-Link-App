@@ -12,28 +12,37 @@ class AppBackExitScope extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canPopRoute = Navigator.canPop(context);
-
-    return PopScope(
-      canPop: canPopRoute,
+    final popScope = PopScope(
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) {
-          return;
-        }
-
-        if (onFirstBack != null) {
-          await onFirstBack?.call(context);
-          return;
-        }
-
-        final didExit = await AppBackExitController.exitIfSecondPress();
-        if (didExit || !context.mounted) {
-          return;
-        }
-
-        AppBackExitController.showExitHint(context);
+        if (didPop) return;
+        await _handleBack(context);
       },
       child: child,
     );
+
+    if (Router.maybeOf(context) == null) {
+      return popScope;
+    }
+
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        await _handleBack(context);
+        return true;
+      },
+      child: popScope,
+    );
+  }
+
+  Future<void> _handleBack(BuildContext context) async {
+    if (onFirstBack != null) {
+      await onFirstBack?.call(context);
+      return;
+    }
+
+    final shouldExit = AppBackExitController.recordRootBackPress();
+    if (shouldExit) {
+      await AppBackExitController.exitApp();
+    }
   }
 }

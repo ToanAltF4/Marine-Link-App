@@ -9,11 +9,20 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/order_status_badge.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/order.dart';
 import '../bloc/order_bloc.dart';
 
 class OrderListScreen extends StatefulWidget {
-  const OrderListScreen({super.key});
+  final bool adminMode;
+  final bool staffMode;
+
+  const OrderListScreen({
+    super.key,
+    this.adminMode = false,
+    this.staffMode = false,
+  });
 
   @override
   State<OrderListScreen> createState() => _OrderListScreenState();
@@ -33,94 +42,138 @@ class _OrderListScreenState extends State<OrderListScreen> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<OrderBloc>()..add(const OrderListRequested()),
-      child: BuyerBackToHomeScope(
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF2F8FA),
-          appBar: AppBar(
-            title: const Text('Đơn hàng'),
-            centerTitle: true,
-            actions: [
-              IconButton(
-                tooltip: 'Lọc',
-                onPressed: () {},
-                icon: const Icon(Icons.filter_list),
-              ),
-            ],
-          ),
-          bottomNavigationBar: const BuyerBottomNav(
-            currentTab: BuyerBottomNavTab.profile,
-          ),
-          body: BlocBuilder<OrderBloc, OrderState>(
-            builder: (context, state) {
-              return RefreshIndicator(
-                onRefresh: () async {
-                  _reload(context);
-                  await context.read<OrderBloc>().stream.firstWhere(
-                    (next) => next is! OrderListLoading,
-                  );
-                },
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _SearchField(
-                              controller: _searchController,
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: 14),
-                            _StatusFilters(
-                              selectedStatus: _status,
-                              onSelected: (status) {
-                                setState(() => _status = status);
-                                _reload(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    switch (state) {
-                      OrderListLoading() => const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      OrderListError(:final message) => SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _MessageState(
-                          title: 'Không tải được đơn hàng',
-                          message: message,
-                          actionLabel: 'Thử lại',
-                          onAction: () => _reload(context),
-                        ),
-                      ),
-                      OrderListEmpty() => const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _MessageState(
-                          title: 'Chưa có đơn hàng',
-                          message: 'Các đơn đã đặt sẽ xuất hiện tại đây.',
-                        ),
-                      ),
-                      OrderListLoaded(:final orders) => _OrderList(
-                        orders: _filteredOrders(orders),
-                      ),
-                      _ => const SliverFillRemaining(hasScrollBody: false),
-                    },
-                  ],
+      child: Builder(
+        builder: (context) {
+          final scaffold = Scaffold(
+            key: Key(
+              widget.staffMode
+                  ? 'staffOrderListScreen'
+                  : widget.adminMode
+                  ? 'adminOrderListScreen'
+                  : 'buyerOrderListScreen',
+            ),
+            backgroundColor: const Color(0xFFF2F8FA),
+            appBar: AppBar(
+              title: Text(_screenTitle()),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  tooltip: 'Lọc',
+                  onPressed: () {},
+                  icon: const Icon(Icons.filter_list),
                 ),
-              );
-            },
-          ),
-        ),
+              ],
+            ),
+            bottomNavigationBar: widget.adminMode || widget.staffMode
+                ? _roleBottomNav()
+                : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
+            body: BlocBuilder<OrderBloc, OrderState>(
+              builder: (context, state) {
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    _reload(context);
+                    await context.read<OrderBloc>().stream.firstWhere(
+                      (next) => next is! OrderListLoading,
+                    );
+                  },
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _SearchField(
+                                controller: _searchController,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                              const SizedBox(height: 14),
+                              _StatusFilters(
+                                selectedStatus: _status,
+                                onSelected: (status) {
+                                  setState(() => _status = status);
+                                  _reload(context);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      switch (state) {
+                        OrderListLoading() => const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        OrderListError(:final message) => SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _MessageState(
+                            title: 'Không tải được đơn hàng',
+                            message: message,
+                            actionLabel: 'Thử lại',
+                            onAction: () => _reload(context),
+                          ),
+                        ),
+                        OrderListEmpty() => const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _MessageState(
+                            title: 'Chưa có đơn hàng',
+                            message: 'Các đơn đã đặt sẽ xuất hiện tại đây.',
+                          ),
+                        ),
+                        OrderListLoaded(:final orders) => _OrderList(
+                          orders: _filteredOrders(orders),
+                          adminMode: widget.adminMode,
+                          staffMode: widget.staffMode,
+                        ),
+                        _ => const SliverFillRemaining(hasScrollBody: false),
+                      },
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+
+          if (widget.adminMode || widget.staffMode) {
+            return RoleBackToDashboardScope(
+              dashboardLocation: _roleDashboardLocation(),
+              child: scaffold,
+            );
+          }
+
+          return BuyerBackToHomeScope(child: scaffold);
+        },
       ),
     );
   }
 
   void _reload(BuildContext context) {
     context.read<OrderBloc>().add(OrderListRequested(status: _status));
+  }
+
+  Widget _roleBottomNav() {
+    if (widget.staffMode) {
+      return const StaffBottomNav(currentTab: StaffBottomNavTab.orders);
+    }
+    return const AdminBottomNav(currentTab: AdminBottomNavTab.orders);
+  }
+
+  String _roleDashboardLocation() {
+    if (widget.staffMode) {
+      return AppRoutes.staffDashboard;
+    }
+    return AppRoutes.adminDashboard;
+  }
+
+  String _screenTitle() {
+    if (widget.staffMode) {
+      return 'Đơn cần xử lý';
+    }
+    if (widget.adminMode) {
+      return 'Giám sát đơn hàng';
+    }
+    return 'Đơn hàng';
   }
 
   List<Order> _filteredOrders(List<Order> orders) {
@@ -197,8 +250,14 @@ class _StatusFilters extends StatelessWidget {
 
 class _OrderList extends StatelessWidget {
   final List<Order> orders;
+  final bool adminMode;
+  final bool staffMode;
 
-  const _OrderList({required this.orders});
+  const _OrderList({
+    required this.orders,
+    required this.adminMode,
+    required this.staffMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +273,11 @@ class _OrderList extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       sliver: SliverList.separated(
-        itemBuilder: (context, index) => _OrderCard(order: orders[index]),
+        itemBuilder: (context, index) => _OrderCard(
+          order: orders[index],
+          adminMode: adminMode,
+          staffMode: staffMode,
+        ),
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemCount: orders.length,
       ),
@@ -224,8 +287,14 @@ class _OrderList extends StatelessWidget {
 
 class _OrderCard extends StatelessWidget {
   final Order order;
+  final bool adminMode;
+  final bool staffMode;
 
-  const _OrderCard({required this.order});
+  const _OrderCard({
+    required this.order,
+    required this.adminMode,
+    required this.staffMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -293,8 +362,14 @@ class _OrderCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: OutlinedButton(
-                onPressed: () =>
-                    context.go(AppRoutes.orderDetailPath(order.id)),
+                key: Key(
+                  staffMode
+                      ? 'staffOrderDetailButton_${order.id}'
+                      : adminMode
+                      ? 'adminOrderDetailButton_${order.id}'
+                      : 'buyerOrderDetailButton_${order.id}',
+                ),
+                onPressed: () => _openDetail(context),
                 child: const Text('Xem chi tiết'),
               ),
             ),
@@ -302,6 +377,25 @@ class _OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _openDetail(BuildContext context) {
+    final detailPath = _detailPath(order.id);
+    if (adminMode || staffMode) {
+      context.push(detailPath);
+      return;
+    }
+    context.go(detailPath);
+  }
+
+  String _detailPath(String orderId) {
+    if (staffMode) {
+      return AppRoutes.staffOrderDetailPath(orderId);
+    }
+    if (adminMode) {
+      return AppRoutes.adminOrderDetailPath(orderId);
+    }
+    return AppRoutes.orderDetailPath(orderId);
   }
 }
 
