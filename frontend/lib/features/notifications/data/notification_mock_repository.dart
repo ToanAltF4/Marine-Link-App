@@ -11,6 +11,7 @@ class NotificationMockRepository implements NotificationRepository {
       message: 'Kho Cà Mau đã xác nhận 120kg mực khô giao vào sáng mai.',
       createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
       isRead: false,
+      relatedId: 'order-123', //id giả định
     ),
     NotificationEntity(
       id: 'noti-002',
@@ -19,6 +20,7 @@ class NotificationMockRepository implements NotificationRepository {
       message: 'Mốc giá 5kg và 10kg đã được điều chỉnh cho kênh đại lý.',
       createdAt: DateTime.now().subtract(const Duration(minutes: 25)),
       isRead: false,
+      relatedId: 'prod-456',
     ),
     NotificationEntity(
       id: 'noti-003',
@@ -27,6 +29,7 @@ class NotificationMockRepository implements NotificationRepository {
       message: 'Bạn có tin nhắn mới trong phòng chat về đơn hàng đang giao.',
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       isRead: true,
+      relatedId: 'bon-bot',
     ),
     NotificationEntity(
       id: 'noti-004',
@@ -35,6 +38,7 @@ class NotificationMockRepository implements NotificationRepository {
       message: 'UI buyer đã đọc token mới từ Stitch kit Ocean B2B.',
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       isRead: true,
+      relatedId: 'sys-789',
     ),
   ];
 

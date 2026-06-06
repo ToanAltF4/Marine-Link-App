@@ -46,6 +46,7 @@ class NotificationServiceTest {
                 .title("Test Title")
                 .body("Test Body")
                 .read(false)
+                .relatedChatRoomId(101L)
                 .build();
     }
 

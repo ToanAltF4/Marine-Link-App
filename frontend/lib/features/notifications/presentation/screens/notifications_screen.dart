@@ -1,3 +1,6 @@
+import '../../../orders/presentation/screens/order_detail_screen.dart';
+import '../../../products/presentation/screens/product_detail_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -104,7 +107,7 @@ class _NotificationsView extends StatelessWidget {
                   const SizedBox(height: 12),
                   for (final item in unreadItems) ...[
                     GestureDetector(
-                      onTap: () => context.read<NotificationCubit>().markAsRead(item.id),
+                      onTap: () => _handleNotificationClick(context, item),
                       child: _NotificationTile(item: item),
                     ),
                     const SizedBox(height: 12),
@@ -120,8 +123,11 @@ class _NotificationsView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   for (final item in olderItems) ...[
-                    _NotificationTile(item: item),
-                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () => _handleNotificationClick(context, item),
+                      child: _NotificationTile(item: item),
+                    ),
+                    const SizedBox(height: 12), // Chỉ cần 1 dòng này thôi
                   ],
                 ],
                 if (state.notifications.isEmpty)
@@ -137,6 +143,28 @@ class _NotificationsView extends StatelessWidget {
         ),
       ),
     );
+  }
+  // Chèn vào khoảng dòng 128
+  void _handleNotificationClick(BuildContext context, NotificationEntity item) {
+    // 1. Đánh dấu đã đọc nếu là thông báo mới
+    if (!item.isRead) {
+      context.read<NotificationCubit>().markAsRead(item.id);
+    }
+
+    // 2. Điều hướng dựa trên loại thông báo
+    if (item.relatedId != null) {
+      if (item.type == NotificationType.order) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: item.relatedId!)),
+        );
+      } else if (item.type == NotificationType.product) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: item.relatedId!)),
+        );
+      }
+    }
   }
 }
 
@@ -204,7 +232,7 @@ class _NotificationTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: !item.isRead ? color.withValues(alpha: 0.24) : AppColors.border,
+          color: !item.isRead ? color.withOpacity(0.24) : AppColors.border,
         ),
       ),
       child: Row(
@@ -214,7 +242,7 @@ class _NotificationTile extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(icon, color: color),
@@ -298,7 +326,7 @@ class _NotificationMetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
