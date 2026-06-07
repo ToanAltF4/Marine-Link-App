@@ -3,6 +3,9 @@
 # Frontend-specific ignores also live in frontend/.gitignore
 # Backend-specific ignores also live in backend/.gitignore
 
+# Local AI handoff notes (never commit)
+.codex-notes/
+
 # ── Flutter / Dart (root-level artifacts from before monorepo split) ──────────
 .dart_tool/
 .packages

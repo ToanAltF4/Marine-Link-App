@@ -33,6 +33,11 @@ abstract class ApiEndpoints {
   // ── Chat ──────────────────────────────────────────────────────────────────
   static const String chatSend = '/api/chat/send';
   static String chatRoom(String roomId) => '/api/chat/$roomId';
+  static const String staffChatRooms = '/api/staff/chat/rooms';
+  static String staffChatRoomStatus(String roomId) =>
+      '/api/staff/chat/rooms/$roomId/status';
+  static String staffChatRoomComplaints(String roomId) =>
+      '/api/staff/chat/rooms/$roomId/complaints';
 
   // ── Notifications ─────────────────────────────────────────────────────────
   static const String notifications = '/api/notifications';
@@ -47,7 +52,7 @@ abstract class ApiEndpoints {
   static String adminProductDetail(String id) => '/api/admin/products/$id';
   static const String adminUsers = '/api/admin/users';
   static String adminUserDetail(String id) => '/api/admin/users/$id';
-  static String adminUserRoles(String id) => '/api/admin/users/$id/roles';
+  static String adminUserRoles(String id) => '/api/admin/users/$id/role';
 
   // ── Health ────────────────────────────────────────────────────────────────
   static const String health = '/api/health';

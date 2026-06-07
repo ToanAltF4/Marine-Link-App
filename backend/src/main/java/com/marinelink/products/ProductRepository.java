@@ -25,4 +25,16 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             + "and p.status = com.marinelink.products.ProductStatus.ACTIVE "
             + "and p.stockQuantity < :threshold")
     long countLowStock(@Param("threshold") int threshold);
+
+    @Query("select p from Product p where p.publicId = :publicId")
+    Optional<Product> findByPublicIdIncludingDeleted(@Param("publicId") UUID publicId);
+
+    boolean existsBySlugIgnoreCaseAndDeletedAtIsNull(String slug);
+
+    @Query("select case when count(p) > 0 then true else false end from Product p "
+            + "where lower(p.slug) = lower(:slug) and p.deletedAt is null "
+            + "and p.publicId <> :excludedPublicId")
+    boolean existsActiveSlugExcluding(
+            @Param("slug") String slug,
+            @Param("excludedPublicId") UUID excludedPublicId);
 }
