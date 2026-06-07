@@ -1,8 +1,6 @@
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
-import '../../../orders/presentation/screens/order_detail_screen.dart';
-import '../../../products/presentation/screens/product_detail_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
