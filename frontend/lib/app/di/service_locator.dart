@@ -29,6 +29,12 @@ import '../../features/notifications/data/notification_mock_repository.dart';
 import '../../features/notifications/data/notification_remote_repository.dart';
 import '../../features/notifications/presentation/bloc/notification_cubit.dart';
 
+// Warehouses
+import '../../features/warehouse_map/domain/warehouse_repository.dart';
+import '../../features/warehouse_map/data/warehouse_mock_repository.dart';
+import '../../features/warehouse_map/data/warehouse_remote_repository.dart';
+import '../../features/warehouse_map/presentation/cubit/warehouse_map_cubit.dart';
+
 // Chat
 import '../../features/chat/domain/chat_repository.dart';
 import '../../features/chat/data/chat_mock_repository.dart';
@@ -138,6 +144,16 @@ Future<void> setupServiceLocator() async {
   sl.registerFactory<NotificationCubit>(
     () =>
         NotificationCubit(notificationRepository: sl<NotificationRepository>()),
+  );
+
+  // Warehouses
+  sl.registerLazySingleton<WarehouseRepository>(
+    () => _useRemoteRepositories
+        ? WarehouseRemoteRepository(apiClient: sl<ApiClient>())
+        : WarehouseMockRepository(),
+  );
+  sl.registerFactory<WarehouseMapCubit>(
+    () => WarehouseMapCubit(repository: sl<WarehouseRepository>()),
   );
 
   // Chat
