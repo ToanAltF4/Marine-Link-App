@@ -35,6 +35,12 @@ import '../../features/profile/data/profile_mock_repository.dart';
 import '../../features/profile/data/profile_remote_repository.dart';
 import '../../features/profile/presentation/bloc/profile_cubit.dart';
 
+// Admin
+import '../../features/admin/domain/admin_dashboard_repository.dart';
+import '../../features/admin/data/admin_dashboard_mock_repository.dart';
+import '../../features/admin/data/admin_dashboard_remote_repository.dart';
+import '../../features/admin/presentation/cubit/admin_dashboard_cubit.dart';
+
 // Checkout
 import '../../features/checkout/domain/checkout_repository.dart';
 import '../../features/checkout/data/cart_sync_repository.dart';
@@ -141,5 +147,16 @@ Future<void> setupServiceLocator() async {
   );
   sl.registerFactory<ProfileCubit>(
     () => ProfileCubit(profileRepository: sl<ProfileRepository>()),
+  );
+
+  // ── Admin ────────────────────────────────────────────────────────────────────
+  // Sprint 5: swap AdminDashboardMockRepository → AdminDashboardRemoteRepository
+  sl.registerLazySingleton<AdminDashboardRepository>(
+    () => _useRemoteRepositories
+        ? AdminDashboardRemoteRepository(apiClient: sl<ApiClient>())
+        : AdminDashboardMockRepository(),
+  );
+  sl.registerFactory<AdminDashboardCubit>(
+    () => AdminDashboardCubit(repository: sl<AdminDashboardRepository>()),
   );
 }
