@@ -24,12 +24,10 @@ import '../../features/products/presentation/screens/product_list_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/staff/presentation/screens/staff_dashboard_screen.dart';
 import '../../features/staff/presentation/widgets/staff_role_guard.dart';
+import '../../features/warehouse_map/presentation/screens/warehouse_map_screen.dart';
 import '../../shared/navigation/app_back_exit_controller.dart';
 import '../../shared/navigation/buyer_navigation.dart';
 import '../../shared/widgets/app_back_exit_scope.dart';
-import '../../shared/widgets/buyer_back_to_home_scope.dart';
-import '../../shared/widgets/buyer_bottom_nav.dart';
-import '../../shared/widgets/role_bottom_nav.dart';
 
 abstract class AppRoutes {
   static const splash = '/';
@@ -207,8 +205,7 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.warehouseMap,
-        builder: (context, state) =>
-            const _PlaceholderPage(title: 'Warehouse Map'),
+        builder: (context, state) => const WarehouseMapScreen(),
       ),
       GoRoute(
         path: AppRoutes.staffDashboard,
@@ -265,13 +262,9 @@ class AppRouter {
           GoRoute(
             path: 'warehouses',
             builder: (context, state) => const StaffRoleGuard(
-              child: _RolePlaceholderPage(
+              child: WarehouseMapScreen(
                 key: Key('staffWarehousesScreen'),
-                title: 'Kho hàng nhân viên',
-                fallbackLocation: AppRoutes.staffDashboard,
-                bottomNavigationBar: StaffBottomNav(
-                  currentTab: StaffBottomNavTab.work,
-                ),
+                staffMode: true,
               ),
             ),
           ),
@@ -404,76 +397,6 @@ class _BuyerShellBackScope extends StatelessWidget {
         }
       },
       child: navigationShell,
-    );
-  }
-}
-
-class _PlaceholderPage extends StatelessWidget {
-  final String title;
-  final BuyerBottomNavTab? buyerBottomNavTab;
-
-  // ignore: unused_element_parameter
-  const _PlaceholderPage({required this.title, this.buyerBottomNavTab});
-
-  @override
-  Widget build(BuildContext context) {
-    final scaffold = Scaffold(
-      appBar: AppBar(title: Text(title)),
-      bottomNavigationBar: buyerBottomNavTab == null
-          ? null
-          : BuyerBottomNav(currentTab: buyerBottomNavTab),
-      body: Center(
-        child: Text(
-          '$title\n(Sprint 1 implementation pending)',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-      ),
-    );
-    if (buyerBottomNavTab != null) {
-      return BuyerBackToHomeScope(child: scaffold);
-    }
-    return AppBackExitScope(
-      onFirstBack: (context) {
-        final navigator = Navigator.of(context);
-        if (navigator.canPop()) {
-          navigator.pop();
-          return;
-        }
-        context.go(AppRoutes.home);
-      },
-      child: scaffold,
-    );
-  }
-}
-
-class _RolePlaceholderPage extends StatelessWidget {
-  final String title;
-  final String fallbackLocation;
-  final Widget bottomNavigationBar;
-
-  const _RolePlaceholderPage({
-    super.key,
-    required this.title,
-    required this.fallbackLocation,
-    required this.bottomNavigationBar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBackExitScope(
-      onFirstBack: (context) => context.go(fallbackLocation),
-      child: Scaffold(
-        appBar: AppBar(title: Text(title)),
-        bottomNavigationBar: bottomNavigationBar,
-        body: Center(
-          child: Text(
-            '$title\n(Sprint 2 implementation pending)',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-      ),
     );
   }
 }
