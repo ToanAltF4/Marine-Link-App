@@ -53,17 +53,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   : 'buyerOrderListScreen',
             ),
             backgroundColor: const Color(0xFFF2F8FA),
-            appBar: AppBar(
-              title: Text(_screenTitle()),
-              centerTitle: true,
-              actions: [
-                IconButton(
-                  tooltip: 'Lọc',
-                  onPressed: () {},
-                  icon: const Icon(Icons.filter_list),
-                ),
-              ],
-            ),
+            appBar: AppBar(title: Text(_screenTitle()), centerTitle: true),
             bottomNavigationBar: widget.adminMode || widget.staffMode
                 ? _roleBottomNav()
                 : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
@@ -96,6 +86,12 @@ class _OrderListScreenState extends State<OrderListScreen> {
                                   _reload(context);
                                 },
                               ),
+                              if (state is OrderListLoaded) ...[
+                                const SizedBox(height: 12),
+                                _ResultCount(
+                                  count: _filteredOrders(state.orders).length,
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -217,11 +213,10 @@ class _StatusFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filters = [
+    final filters = <({String label, String? value})>[
       (label: 'Tất cả', value: null),
-      (label: 'Chờ duyệt', value: OrderStatus.pending.apiValue),
-      (label: 'Đã duyệt', value: OrderStatus.confirmed.apiValue),
-      (label: 'Đang giao', value: OrderStatus.shipping.apiValue),
+      for (final status in OrderStatus.values)
+        (label: status.displayLabel, value: status.apiValue),
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -231,6 +226,7 @@ class _StatusFilters extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
+              key: Key('orderFilterChip_${filter.value ?? 'ALL'}'),
               selected: selected,
               label: Text(filter.label),
               onSelected: (_) => onSelected(filter.value),
@@ -243,6 +239,27 @@ class _StatusFilters extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _ResultCount extends StatelessWidget {
+  final int count;
+
+  const _ResultCount({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        '$count đơn',
+        key: const Key('orderListResultCount'),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
