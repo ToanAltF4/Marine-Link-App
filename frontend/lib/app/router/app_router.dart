@@ -6,6 +6,8 @@ import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/admin_products/presentation/screens/admin_product_management_screen.dart';
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
+import '../../features/chat/data/chat_mock_repository.dart';
+import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -166,15 +168,14 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.chat,
-                builder: (context, state) => const _PlaceholderPage(
-                  title: 'Chat',
-                  buyerBottomNavTab: BuyerBottomNavTab.chat,
-                ),
+                builder: (context, state) => const ChatScreen(),
                 routes: [
                   GoRoute(
                     path: ':roomId',
-                    builder: (context, state) => _PlaceholderPage(
-                      title: 'Chat Room: ${state.pathParameters['roomId']}',
+                    builder: (context, state) => ChatScreen(
+                      roomId:
+                          state.pathParameters['roomId'] ??
+                          ChatMockRepository.defaultRoomId,
                     ),
                   ),
                 ],
@@ -236,14 +237,7 @@ class AppRouter {
           GoRoute(
             path: 'chat',
             builder: (context, state) => const StaffRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('staffChatScreen'),
-                title: 'Tin nhắn nhân viên',
-                fallbackLocation: AppRoutes.staffDashboard,
-                bottomNavigationBar: StaffBottomNav(
-                  currentTab: StaffBottomNavTab.chat,
-                ),
-              ),
+              child: ChatScreen(key: Key('staffChatScreen'), staffMode: true),
             ),
           ),
           GoRoute(
@@ -401,6 +395,7 @@ class _PlaceholderPage extends StatelessWidget {
   final String title;
   final BuyerBottomNavTab? buyerBottomNavTab;
 
+  // ignore: unused_element_parameter
   const _PlaceholderPage({required this.title, this.buyerBottomNavTab});
 
   @override
