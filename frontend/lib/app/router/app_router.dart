@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/assets/app_assets.dart';
 import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
+import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -286,16 +287,8 @@ class AppRouter {
           ),
           GoRoute(
             path: 'users',
-            builder: (context, state) => const AdminRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('adminUsersScreen'),
-                title: 'Quản lý tài khoản',
-                fallbackLocation: AppRoutes.adminDashboard,
-                bottomNavigationBar: AdminBottomNav(
-                  currentTab: AdminBottomNavTab.users,
-                ),
-              ),
-            ),
+            builder: (context, state) =>
+                const AdminRoleGuard(child: AdminUserManagementScreen()),
           ),
           GoRoute(
             path: 'orders',
