@@ -5,6 +5,7 @@ import com.marinelink.cart.CartItem;
 import com.marinelink.cart.CartItemRepository;
 import com.marinelink.cart.CartRepository;
 import com.marinelink.common.exception.ResourceNotFoundException;
+import com.marinelink.notifications.NotificationService;
 import com.marinelink.products.Category;
 import com.marinelink.products.PriceTier;
 import com.marinelink.products.Product;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,12 +39,14 @@ class OrderServiceTest {
     private final CartItemRepository cartItemRepository = mock(CartItemRepository.class);
     private final ProductRepository productRepository = mock(ProductRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
     private final OrderService orderService = new OrderService(
             orderRepository,
             cartRepository,
             cartItemRepository,
             productRepository,
-            userRepository);
+            userRepository,
+            notificationService);
 
     @Test
     void createFromActiveCartSnapshotsSelectedItemsAndClearsCart() {
@@ -162,6 +167,34 @@ class OrderServiceTest {
         assertThrows(
                 ResourceNotFoundException.class,
                 () -> orderService.getOrderDetail(currentUser, false, orderId));
+    }
+
+    @Test
+    void updateStatus_ShouldSendNotification() {
+        UUID adminPublicId = UUID.randomUUID();
+        UUID orderPublicId = UUID.randomUUID();
+        User admin = user(adminPublicId);
+        User customer = user(UUID.randomUUID());
+        Order order = Order.builder()
+                .publicId(orderPublicId)
+                .orderCode("ML-20260604-0001")
+                .user(customer)
+                .status(OrderStatus.PENDING)
+                .build();
+
+        when(userRepository.findActiveByPublicId(adminPublicId)).thenReturn(Optional.of(admin));
+        when(orderRepository.findDetailByPublicId(orderPublicId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        orderService.updateStatus(adminPublicId, orderPublicId, OrderStatus.CONFIRMED, "Confirmed by admin");
+
+        verify(notificationService).createNotification(
+                eq(customer),
+                any(),
+                anyString(),
+                anyString(),
+                any()
+        );
     }
 
     private User user(UUID publicId) {

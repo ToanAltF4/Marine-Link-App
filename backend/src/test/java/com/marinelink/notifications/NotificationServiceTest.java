@@ -76,4 +76,17 @@ class NotificationServiceTest {
         assertThat(notification.getReadAt()).isNotNull();
         verify(notificationRepository).save(notification);
     }
+
+    @Test
+    void createNotification_ShouldSaveNewNotification() {
+        notificationService.createNotification(
+                user,
+                NotificationType.ORDER,
+                "New Title",
+                "New Body",
+                null
+        );
+
+        verify(notificationRepository).save(any(Notification.class));
+    }
 }

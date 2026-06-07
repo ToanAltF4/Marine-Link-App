@@ -6,6 +6,8 @@ import com.marinelink.cart.CartItemRepository;
 import com.marinelink.cart.CartRepository;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ResourceNotFoundException;
+import com.marinelink.notifications.NotificationService;
+import com.marinelink.notifications.NotificationType;
 import com.marinelink.products.PriceTier;
 import com.marinelink.products.Product;
 import com.marinelink.products.ProductRepository;
@@ -55,6 +57,7 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public OrderSummaryResponse createFromActiveCart(UUID userPublicId, OrderCreateRequest request) {
@@ -113,6 +116,16 @@ public class OrderService {
         if (orderSource.cartIdToClear() != null) {
             cartItemRepository.deleteSelectedByCartId(orderSource.cartIdToClear());
         }
+
+        // Send notification to user
+        notificationService.createNotification(
+                user,
+                NotificationType.ORDER,
+                "Đơn hàng mới đã được tạo",
+                "Đơn hàng " + saved.getOrderCode() + " đang chờ được xác nhận.",
+                saved
+        );
+
         return OrderSummaryResponse.from(saved);
     }
 
@@ -235,7 +248,35 @@ public class OrderService {
                 .changedBy(changedBy)
                 .note(trimToNull(note))
                 .build());
-        return OrderStatusUpdateResponse.from(orderRepository.save(order));
+
+        Order savedOrder = orderRepository.save(order);
+
+        // Send notification to user about status change
+        String title = switch (targetStatus) {
+            case CONFIRMED -> "Đơn hàng đã được xác nhận";
+            case SHIPPING -> "Đơn hàng đang được giao";
+            case COMPLETED -> "Đơn hàng đã hoàn thành";
+            case CANCELLED -> "Đơn hàng đã bị hủy";
+            default -> "Cập nhật trạng thái đơn hàng";
+        };
+        
+        String body = switch (targetStatus) {
+            case CONFIRMED -> "Đơn hàng " + savedOrder.getOrderCode() + " đã được hệ thống xác nhận.";
+            case SHIPPING -> "Đơn hàng " + savedOrder.getOrderCode() + " đang được vận chuyển đến bạn.";
+            case COMPLETED -> "Cảm ơn bạn đã mua hàng! Đơn hàng " + savedOrder.getOrderCode() + " đã hoàn tất.";
+            case CANCELLED -> "Đơn hàng " + savedOrder.getOrderCode() + " đã bị hủy.";
+            default -> "Đơn hàng " + savedOrder.getOrderCode() + " có sự thay đổi trạng thái.";
+        };
+
+        notificationService.createNotification(
+                savedOrder.getUser(),
+                NotificationType.ORDER,
+                title,
+                body,
+                savedOrder
+        );
+
+        return OrderStatusUpdateResponse.from(savedOrder);
     }
 
     private void validateItem(Product product, int quantity) {

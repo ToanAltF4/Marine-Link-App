@@ -46,6 +46,33 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void createNotification(
+            User user,
+            NotificationType type,
+            String title,
+            String body,
+            Object relatedEntity
+    ) {
+        Notification.NotificationBuilder builder = Notification.builder()
+                .publicId(UUID.randomUUID())
+                .user(user)
+                .type(type)
+                .title(title)
+                .body(body)
+                .read(false);
+
+        if (relatedEntity instanceof com.marinelink.orders.Order order) {
+            builder.relatedOrder(order);
+        } else if (relatedEntity instanceof com.marinelink.products.Product product) {
+            builder.relatedProduct(product);
+        } else if (relatedEntity instanceof Long chatRoomId) {
+            builder.relatedChatRoomId(chatRoomId);
+        }
+
+        notificationRepository.save(builder.build());
+    }
+
     private NotificationResponseDTO toDTO(Notification n) {
         return NotificationResponseDTO.builder()
                 .id(n.getPublicId())
