@@ -87,6 +87,19 @@ public class AuthService {
         return RegisterResponse.from(savedUser);
     }
 
+    @Transactional
+    public void changePassword(UUID publicId, ChangePasswordRequest request) {
+        User user = userRepository.findActiveByPublicId(publicId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {
+            throw new BusinessException("Mật khẩu hiện tại không chính xác", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
     private void requireLoginAllowed(User user) {
         if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
             throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);

@@ -36,6 +36,13 @@ void main() {
       );
       expect(const AuthCheckRequested().props, isEmpty);
       expect(const AuthLogoutRequested().props, isEmpty);
+      expect(
+        const AuthChangePasswordRequested(
+          oldPassword: 'old',
+          newPassword: 'new',
+        ).props,
+        ['old', 'new'],
+      );
     });
 
     test('initial state is AuthInitial', () {
@@ -174,6 +181,38 @@ void main() {
       expect: () => [
         const AuthLoading(),
         isA<AuthAuthenticated>().having((s) => s.user.isUser, 'isUser', true),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits [Loading, AuthPasswordChangeSuccess] on successful password change',
+      build: () => AuthBloc(authRepository: AuthMockRepository()),
+      act: (bloc) => bloc.add(
+        const AuthChangePasswordRequested(
+          oldPassword: 'correct',
+          newPassword: 'new-password',
+        ),
+      ),
+      wait: const Duration(milliseconds: 600),
+      expect: () => [
+        const AuthLoading(),
+        const AuthPasswordChangeSuccess(),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits [Loading, AuthFailure] on password change with wrong old password',
+      build: () => AuthBloc(authRepository: AuthMockRepository()),
+      act: (bloc) => bloc.add(
+        const AuthChangePasswordRequested(
+          oldPassword: 'wrong',
+          newPassword: 'new-password',
+        ),
+      ),
+      wait: const Duration(milliseconds: 600),
+      expect: () => [
+        const AuthLoading(),
+        isA<AuthFailure>(),
       ],
     );
   });

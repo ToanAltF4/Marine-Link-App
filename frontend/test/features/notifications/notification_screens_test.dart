@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
+import 'package:marinelink/features/auth/domain/user.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 import 'package:marinelink/features/notifications/data/notification_mock_repository.dart';
 import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
@@ -23,12 +27,33 @@ class MockProductBloc extends Mock implements ProductBloc {
   Future<void> close() async {}
 }
 
+class MockAuthBloc extends Mock implements AuthBloc {
+  @override
+  Future<void> close() async {}
+}
+
 class FakeRoute extends Fake implements Route<dynamic> {}
 
 void main() {
+  late MockAuthBloc mockAuthBloc;
+
   setUpAll(() {
     registerFallbackValue(FakeRoute());
     sl.allowReassignment = true;
+
+    mockAuthBloc = MockAuthBloc();
+    const tUser = User(
+      id: '1',
+      fullName: 'Test User',
+      email: 'test@example.com',
+      phone: '0123456789',
+      status: 'ACTIVE',
+      roles: ['USER'],
+    );
+    when(() => mockAuthBloc.state).thenReturn(
+      const AuthAuthenticated(user: tUser, token: 'token'),
+    );
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
     // Đăng ký dạng Factory để mỗi lần gọi sl<OrderBloc>() sẽ tạo một Mock mới sạch sẽ
     sl.registerFactory<OrderBloc>(() {
@@ -73,6 +98,10 @@ void main() {
         MaterialApp.router(
           theme: AppTheme.light(),
           routerConfig: router,
+          builder: (context, child) => BlocProvider<AuthBloc>.value(
+            value: mockAuthBloc,
+            child: child!,
+          ),
         ),
       );
 
@@ -117,6 +146,10 @@ void main() {
         MaterialApp.router(
           theme: AppTheme.light(),
           routerConfig: router,
+          builder: (context, child) => BlocProvider<AuthBloc>.value(
+            value: mockAuthBloc,
+            child: child!,
+          ),
         ),
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 800));

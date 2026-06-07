@@ -40,6 +40,11 @@ class AuthRegistrationSuccess extends AuthState {
   const AuthRegistrationSuccess();
 }
 
+/// Password changed successfully.
+class AuthPasswordChangeSuccess extends AuthState {
+  const AuthPasswordChangeSuccess();
+}
+
 /// Login/register failed.
 class AuthFailure extends AuthState {
   final String message;

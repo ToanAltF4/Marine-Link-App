@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/router/app_router.dart';
@@ -11,17 +12,26 @@ import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/auth/domain/user.dart';
 import 'package:marinelink/features/profile/domain/profile_repository.dart';
 import 'package:marinelink/features/profile/presentation/bloc/profile_cubit.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
+class MockAuthBloc extends Mock implements AuthBloc {
+  @override
+  Future<void> close() async {}
+}
+
 void main() {
   late MockProfileRepository mockRepository;
+  late MockAuthBloc mockAuthBloc;
 
   setUp(() {
     BuyerNavigation.resetForTesting();
     sl.allowReassignment = true;
     mockRepository = MockProfileRepository();
+    mockAuthBloc = MockAuthBloc();
 
     const tUser = User(
       id: '1',
@@ -35,6 +45,11 @@ void main() {
     when(() => mockRepository.getProfile()).thenAnswer(
       (_) async => const ApiResponse(success: true, message: 'OK', data: tUser),
     );
+
+    when(() => mockAuthBloc.state).thenReturn(
+      const AuthAuthenticated(user: tUser, token: 'token'),
+    );
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
     sl.registerSingleton<ProfileRepository>(mockRepository);
     sl.registerFactory<ProfileCubit>(
@@ -85,7 +100,14 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
+      MaterialApp.router(
+        theme: AppTheme.light(),
+        routerConfig: router,
+        builder: (context, child) => BlocProvider<AuthBloc>.value(
+          value: mockAuthBloc,
+          child: child!,
+        ),
+      ),
     );
 
     await tester.pumpAndSettle();
