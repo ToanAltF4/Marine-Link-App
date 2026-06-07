@@ -29,6 +29,12 @@ import '../../features/notifications/data/notification_mock_repository.dart';
 import '../../features/notifications/data/notification_remote_repository.dart';
 import '../../features/notifications/presentation/bloc/notification_cubit.dart';
 
+// Profile
+import '../../features/profile/domain/profile_repository.dart';
+import '../../features/profile/data/profile_mock_repository.dart';
+import '../../features/profile/data/profile_remote_repository.dart';
+import '../../features/profile/presentation/bloc/profile_cubit.dart';
+
 // Checkout
 import '../../features/checkout/domain/checkout_repository.dart';
 import '../../features/checkout/data/cart_sync_repository.dart';
@@ -125,5 +131,15 @@ Future<void> setupServiceLocator() async {
   );
   sl.registerFactory<CheckoutBloc>(
     () => CheckoutBloc(checkoutRepository: sl<CheckoutRepository>()),
+  );
+
+  // ── Profile ──────────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<ProfileRepository>(
+    () => _useRemoteRepositories
+        ? ProfileRemoteRepository(apiClient: sl<ApiClient>())
+        : ProfileMockRepository(),
+  );
+  sl.registerFactory<ProfileCubit>(
+    () => ProfileCubit(profileRepository: sl<ProfileRepository>()),
   );
 }

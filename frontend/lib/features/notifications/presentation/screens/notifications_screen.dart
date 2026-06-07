@@ -1,5 +1,6 @@
-import '../../../orders/presentation/screens/order_detail_screen.dart';
-import '../../../products/presentation/screens/product_detail_screen.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/app_router.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -149,18 +150,13 @@ class _NotificationsView extends StatelessWidget {
       context.read<NotificationCubit>().markAsRead(item.id);
     }
 
-    // 2. Điều hướng dựa trên loại thông báo
+    // 2. Điều hướng dựa trên loại thông báo sử dụng GoRouter
     if (item.relatedId != null) {
       if (item.type == NotificationType.order) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: item.relatedId!)),
-        );
+        // Dùng context.push để GoRouter quản lý lịch sử và URL
+        context.push(AppRoutes.orderDetailPath(item.relatedId!));
       } else if (item.type == NotificationType.product) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: item.relatedId!)),
-        );
+        context.push(AppRoutes.productDetailPath(item.relatedId!));
       }
     }
   }
