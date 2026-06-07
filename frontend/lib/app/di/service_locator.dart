@@ -41,6 +41,12 @@ import '../../features/admin/data/admin_dashboard_mock_repository.dart';
 import '../../features/admin/data/admin_dashboard_remote_repository.dart';
 import '../../features/admin/presentation/cubit/admin_dashboard_cubit.dart';
 
+// Admin Products
+import '../../features/admin_products/domain/admin_product_repository.dart';
+import '../../features/admin_products/data/admin_product_mock_repository.dart';
+import '../../features/admin_products/data/admin_product_remote_repository.dart';
+import '../../features/admin_products/presentation/cubit/admin_product_cubit.dart';
+
 // Admin Users
 import '../../features/admin_users/domain/admin_user_repository.dart';
 import '../../features/admin_users/data/admin_user_mock_repository.dart';
@@ -123,7 +129,8 @@ Future<void> setupServiceLocator() async {
         : NotificationMockRepository(),
   );
   sl.registerFactory<NotificationCubit>(
-    () => NotificationCubit(notificationRepository: sl<NotificationRepository>()),
+    () =>
+        NotificationCubit(notificationRepository: sl<NotificationRepository>()),
   );
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.
@@ -168,6 +175,15 @@ Future<void> setupServiceLocator() async {
 
   // ── Admin Users ─────────────────────────────────────────────────────────────
   // Sprint 5: swap AdminUserMockRepository → AdminUserRemoteRepository
+  sl.registerLazySingleton<AdminProductRepository>(
+    () => _useRemoteRepositories
+        ? AdminProductRemoteRepository(apiClient: sl<ApiClient>())
+        : AdminProductMockRepository(),
+  );
+  sl.registerFactory<AdminProductCubit>(
+    () => AdminProductCubit(repository: sl<AdminProductRepository>()),
+  );
+
   sl.registerLazySingleton<AdminUserRepository>(
     () => _useRemoteRepositories
         ? AdminUserRemoteRepository(apiClient: sl<ApiClient>())

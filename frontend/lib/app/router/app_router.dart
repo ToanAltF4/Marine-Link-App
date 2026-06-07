@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/assets/app_assets.dart';
 import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
+import '../../features/admin_products/presentation/screens/admin_product_management_screen.dart';
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -229,9 +230,8 @@ class AppRouter {
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) => const StaffRoleGuard(
-              child: NotificationsScreen(),
-            ),
+            builder: (context, state) =>
+                const StaffRoleGuard(child: NotificationsScreen()),
           ),
           GoRoute(
             path: 'chat',
@@ -248,9 +248,8 @@ class AppRouter {
           ),
           GoRoute(
             path: 'profile',
-            builder: (context, state) => const StaffRoleGuard(
-              child: ProfileScreen(),
-            ),
+            builder: (context, state) =>
+                const StaffRoleGuard(child: ProfileScreen()),
           ),
           GoRoute(
             path: 'warehouses',
@@ -274,16 +273,8 @@ class AppRouter {
         routes: [
           GoRoute(
             path: 'products',
-            builder: (context, state) => const AdminRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('adminProductsScreen'),
-                title: 'Quản lý sản phẩm',
-                fallbackLocation: AppRoutes.adminDashboard,
-                bottomNavigationBar: AdminBottomNav(
-                  currentTab: AdminBottomNavTab.products,
-                ),
-              ),
-            ),
+            builder: (context, state) =>
+                const AdminRoleGuard(child: AdminProductManagementScreen()),
           ),
           GoRoute(
             path: 'users',
@@ -308,15 +299,13 @@ class AppRouter {
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) => const AdminRoleGuard(
-              child: NotificationsScreen(),
-            ),
+            builder: (context, state) =>
+                const AdminRoleGuard(child: NotificationsScreen()),
           ),
           GoRoute(
             path: 'profile',
-            builder: (context, state) => const AdminRoleGuard(
-              child: ProfileScreen(),
-            ),
+            builder: (context, state) =>
+                const AdminRoleGuard(child: ProfileScreen()),
           ),
         ],
       ),
