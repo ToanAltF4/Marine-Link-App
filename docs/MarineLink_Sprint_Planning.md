@@ -160,15 +160,15 @@ Ghi chú S2-07: FE đã có `AdminDashboardScreen`, route `/admin/orders` và `/
 **Mục tiêu sprint:** Bổ sung các chức năng hỗ trợ sau bán hàng: chat, hồ sơ cá nhân, kho hàng và điều hướng thông báo.
 
 | Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
-|---|---|---|---|---|---:|---|---|
-| S3-01 | P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar tạm, validation, loading/error | `GET /api/users/me`, `PUT /api/users/me`, validate ownership và field profile | Cột profile trong `users`, index email/phone giữ unique | 4 pts | Auth state | Xong                                                  |
-| S3-02 | P0 | Logout flow, clear token/session local, đổi mật khẩu tạm nếu có UI | `POST /api/auth/logout` nếu cần, `POST /api/auth/change-password` hoặc giữ mock nếu chưa có | Không đổi, trừ khi lưu token/session server-side | 2 pts | Profile | Chưa làm |
-| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff, timestamp, scroll state | `POST /api/chat/send`, `GET /api/chat/{roomId}`, tạo/lấy room theo user | `chat_rooms`, `chat_messages`, `chat_attachments` nếu có metadata file | 5 pts | Chat model/repository | Chưa làm |
-| S3-04 | P0 | Client validation chặn tin nhắn rỗng, loading/error/retry cho chat | Server validation chặn content rỗng, response lỗi dễ hiểu | Check constraint/rule message content nếu áp dụng | 2 pts | Chat screen | Chưa làm |
-| S3-05 | P1 | Staff reply UI hoặc quick reply view có ngữ cảnh sản phẩm/đơn | API staff reply, lookup product/order context theo quyền | Query `chat_messages`, `products`, `orders`, liên kết `complaints` nếu tạo ticket | 4 pts | Product/order data | Chưa làm |
-| S3-06 | P1 | Warehouse map/list: marker, thông tin kho, mở Google Maps | `GET /api/warehouses`, filter kho active | `warehouses`, tọa độ lat/lng, seed kho demo, active index | 4 pts | Warehouse data | Chưa làm |
-| S3-07 | P1 | Permission flow vị trí hiện tại nếu dùng, fallback khi bị từ chối | Không đổi | Không đổi | 3 pts | Map plugin | Chưa làm |
-| S3-08 | P2 | Deep link/router từ notification sang order/product/chat, preserve back stack | Notification payload contract có `targetType`, `targetId`, ownership check | `notifications` lưu target type/id và read state | 3 pts | Notifications | Chưa làm |
+|---|---|---|---|---|---:|---|------------|
+| S3-01 | P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar tạm, validation, loading/error | `GET /api/users/me`, `PUT /api/users/me`, validate ownership và field profile | Cột profile trong `users`, index email/phone giữ unique | 4 pts | Auth state | Xong       |
+| S3-02 | P0 | Logout flow, clear token/session local, đổi mật khẩu tạm nếu có UI | `POST /api/auth/logout` nếu cần, `POST /api/auth/change-password` hoặc giữ mock nếu chưa có | Không đổi, trừ khi lưu token/session server-side | 2 pts | Profile | Xong       |
+| S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff, timestamp, scroll state | `POST /api/chat/send`, `GET /api/chat/{roomId}`, tạo/lấy room theo user | `chat_rooms`, `chat_messages`, `chat_attachments` nếu có metadata file | 5 pts | Chat model/repository | Chưa làm   |
+| S3-04 | P0 | Client validation chặn tin nhắn rỗng, loading/error/retry cho chat | Server validation chặn content rỗng, response lỗi dễ hiểu | Check constraint/rule message content nếu áp dụng | 2 pts | Chat screen | Chưa làm   |
+| S3-05 | P1 | Staff reply UI hoặc quick reply view có ngữ cảnh sản phẩm/đơn | API staff reply, lookup product/order context theo quyền | Query `chat_messages`, `products`, `orders`, liên kết `complaints` nếu tạo ticket | 4 pts | Product/order data | Chưa làm   |
+| S3-06 | P1 | Warehouse map/list: marker, thông tin kho, mở Google Maps | `GET /api/warehouses`, filter kho active | `warehouses`, tọa độ lat/lng, seed kho demo, active index | 4 pts | Warehouse data | Chưa làm   |
+| S3-07 | P1 | Permission flow vị trí hiện tại nếu dùng, fallback khi bị từ chối | Không đổi | Không đổi | 3 pts | Map plugin | Chưa làm   |
+| S3-08 | P2 | Deep link/router từ notification sang order/product/chat, preserve back stack | Notification payload contract có `targetType`, `targetId`, ownership check | `notifications` lưu target type/id và read state | 3 pts | Notifications | Chưa làm   |
 
 **Tải khuyến nghị:** 18-20 pts, tránh kéo cả phần tích hợp phức tạp và permission nâng cao nếu map/chat chưa ổn.
 
