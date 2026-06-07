@@ -1,12 +1,13 @@
 package com.marinelink.users;
 
+import com.marinelink.auth.AuthUserResponse;
 import com.marinelink.common.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
@@ -17,17 +18,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class UserControllerTest {
 
-    private final UserRepository userRepository = mock(UserRepository.class);
+    private final UserService userService = mock(UserService.class);
     private final MockMvc mockMvc = MockMvcBuilders
-            .standaloneSetup(new UserController(userRepository))
+            .standaloneSetup(new UserController(userService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
     @Test
     void getCurrentUserReturnsAuthenticatedUserEnvelope() throws Exception {
         UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
-        User user = demoUser(userId, "USER");
-        when(userRepository.findActiveByPublicId(userId)).thenReturn(Optional.of(user));
+        AuthUserResponse response = new AuthUserResponse(
+                userId,
+                "Dai ly Demo",
+                "daily-a@marinelink.demo",
+                "0912345678",
+                "ACTIVE",
+                List.of("USER"),
+                null,
+                null,
+                null,
+                null
+        );
+        when(userService.getProfile(userId)).thenReturn(response);
 
         mockMvc.perform(get("/api/users/me")
                         .principal(new TestingAuthenticationToken(userId.toString(), null)))

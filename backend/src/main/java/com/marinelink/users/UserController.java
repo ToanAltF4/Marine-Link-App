@@ -7,9 +7,7 @@ import com.marinelink.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -18,26 +16,31 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @GetMapping("/me")
     public ApiResponse<AuthUserResponse> getCurrentUser(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            throw new BusinessException("Authentication required", HttpStatus.UNAUTHORIZED);
-        }
-
-        UUID publicId = parsePublicId(authentication.getName());
-        User user = userRepository.findActiveByPublicId(publicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nguoi dung"));
-
-        return ApiResponse.ok(AuthUserResponse.from(user));
+        UUID publicId = getPublicId(authentication);
+        return ApiResponse.ok(userService.getProfile(publicId));
     }
 
-    private UUID parsePublicId(String subject) {
+    @PutMapping("/me")
+    public ApiResponse<AuthUserResponse> updateProfile(
+            @jakarta.validation.Valid @RequestBody UpdateProfileRequest request,
+            Authentication authentication
+    ) {
+        UUID publicId = getPublicId(authentication);
+        return ApiResponse.ok(userService.updateProfile(publicId, request));
+    }
+
+    private UUID getPublicId(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            throw new com.marinelink.common.exception.BusinessException("Authentication required", HttpStatus.UNAUTHORIZED);
+        }
         try {
-            return UUID.fromString(subject);
+            return UUID.fromString(auth.getName());
         } catch (IllegalArgumentException ex) {
-            throw new BusinessException("Invalid authentication subject", HttpStatus.UNAUTHORIZED);
+            throw new com.marinelink.common.exception.BusinessException("Invalid authentication subject", HttpStatus.UNAUTHORIZED);
         }
     }
 }

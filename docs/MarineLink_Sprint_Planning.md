@@ -161,7 +161,7 @@ Ghi chú S2-07: FE đã có `AdminDashboardScreen`, route `/admin/orders` và `/
 
 | Mã | Ưu tiên | FE | BE/API | DB | Ước lượng | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|---:|---|---|
-| S3-01 | P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar tạm, validation, loading/error | `GET /api/users/me`, `PUT /api/users/me`, validate ownership và field profile | Cột profile trong `users`, index email/phone giữ unique | 4 pts | Auth state | Chưa làm |
+| S3-01 | P0 | Profile screen: xem/sửa số điện thoại, địa chỉ, avatar tạm, validation, loading/error | `GET /api/users/me`, `PUT /api/users/me`, validate ownership và field profile | Cột profile trong `users`, index email/phone giữ unique | 4 pts | Auth state | Xong                                                  |
 | S3-02 | P0 | Logout flow, clear token/session local, đổi mật khẩu tạm nếu có UI | `POST /api/auth/logout` nếu cần, `POST /api/auth/change-password` hoặc giữ mock nếu chưa có | Không đổi, trừ khi lưu token/session server-side | 2 pts | Profile | Chưa làm |
 | S3-03 | P0 | Chat screen: gửi tin nhắn, lịch sử, phân biệt user/staff, timestamp, scroll state | `POST /api/chat/send`, `GET /api/chat/{roomId}`, tạo/lấy room theo user | `chat_rooms`, `chat_messages`, `chat_attachments` nếu có metadata file | 5 pts | Chat model/repository | Chưa làm |
 | S3-04 | P0 | Client validation chặn tin nhắn rỗng, loading/error/retry cho chat | Server validation chặn content rỗng, response lỗi dễ hiểu | Check constraint/rule message content nếu áp dụng | 2 pts | Chat screen | Chưa làm |

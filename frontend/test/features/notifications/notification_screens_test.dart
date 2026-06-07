@@ -1,14 +1,15 @@
-import 'package:mocktail/mocktail.dart';
-import 'package:marinelink/app/di/service_locator.dart';
-import 'package:marinelink/features/orders/presentation/bloc/order_bloc.dart';
-import 'package:marinelink/features/products/presentation/bloc/product_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
-import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/data/notification_mock_repository.dart';
+import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 import 'package:marinelink/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:marinelink/features/orders/presentation/bloc/order_bloc.dart';
+import 'package:marinelink/features/products/presentation/bloc/product_bloc.dart';
+import 'package:mocktail/mocktail.dart';
 
 // Định nghĩa các class giả lập ngay trong file test này
 // 1. Thêm stub cho hàm close trong các class Mock
@@ -51,8 +52,6 @@ void main() {
     ));
   });
 
-  // ... (giữ nguyên phần group và các testWidgets bên dưới của cậu)
-
   group('NotificationsScreen', () {
     testWidgets('renders the notifications list with mock data', (tester) async {
       // Set a larger viewport to ensure all items are rendered and visible
@@ -60,10 +59,20 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
+      final router = GoRouter(
+        initialLocation: '/notifications',
+        routes: [
+          GoRoute(
+            path: '/notifications',
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+        ],
+      );
+
       await tester.pumpWidget(
-        MaterialApp(
+        MaterialApp.router(
           theme: AppTheme.light(),
-          home: const NotificationsScreen(),
+          routerConfig: router,
         ),
       );
 
@@ -90,10 +99,24 @@ void main() {
     });
 
     testWidgets('nhấn vào thông báo đã đọc cũng phải thực hiện hành động', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/notifications',
+        routes: [
+          GoRoute(
+            path: '/notifications',
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/orders/:id',
+            builder: (context, state) => const Scaffold(body: Text('Order Detail Probe')),
+          ),
+        ],
+      );
+
       await tester.pumpWidget(
-        MaterialApp(
+        MaterialApp.router(
           theme: AppTheme.light(),
-          home: const NotificationsScreen(),
+          routerConfig: router,
         ),
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 800));
