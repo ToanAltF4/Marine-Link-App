@@ -72,6 +72,8 @@ public class SecurityConfig {
                     "/actuator/health").permitAll()
                 // Admin-only
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Staff workspace
+                .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                 // Staff + Admin for order status updates
                 .requestMatchers(HttpMethod.PUT, "/api/orders/*/status")
                     .hasAnyRole("STAFF", "ADMIN")

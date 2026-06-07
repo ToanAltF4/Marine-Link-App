@@ -32,12 +32,32 @@ class _FakeRepo implements ChatRepository {
       threadResponder(roomId);
 
   @override
+  Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
+    StaffChatRoomFilter filter = StaffChatRoomFilter.open,
+    String? query,
+  }) async => const ApiResponse(success: true, message: 'OK', data: []);
+
+  @override
   Future<ApiResponse<ChatMessage>> sendMessage({
     required String roomId,
     required String content,
     bool sendAsStaff = false,
   }) =>
       sendResponder(roomId: roomId, content: content, sendAsStaff: sendAsStaff);
+
+  @override
+  Future<ApiResponse<StaffChatRoom>> setRoomClosed({
+    required String roomId,
+    required bool isClosed,
+  }) async => const ApiResponse(success: false, message: 'Unsupported');
+
+  @override
+  Future<ApiResponse<StaffChatComplaint>> createComplaint({
+    required String roomId,
+    required String title,
+    required String description,
+    String? messageId,
+  }) async => const ApiResponse(success: false, message: 'Unsupported');
 }
 
 final _thread = ChatThread(

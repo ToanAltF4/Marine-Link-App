@@ -34,6 +34,7 @@ import '../../features/chat/domain/chat_repository.dart';
 import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/data/chat_remote_repository.dart';
 import '../../features/chat/presentation/cubit/chat_cubit.dart';
+import '../../features/chat/presentation/cubit/staff_chat_cubit.dart';
 
 // Profile
 import '../../features/profile/domain/profile_repository.dart';
@@ -147,6 +148,9 @@ Future<void> setupServiceLocator() async {
   );
   sl.registerFactory<ChatCubit>(
     () => ChatCubit(repository: sl<ChatRepository>()),
+  );
+  sl.registerFactory<StaffChatCubit>(
+    () => StaffChatCubit(repository: sl<ChatRepository>()),
   );
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.

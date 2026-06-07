@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 enum ChatSenderType { user, staff, aiSample }
 
+enum StaffChatRoomFilter { open, closed, all }
+
 class ChatAttachment extends Equatable {
   final String id;
   final String storageBucket;
@@ -83,4 +85,125 @@ class ChatThread extends Equatable {
 
   @override
   List<Object?> get props => [roomId, isClosed, messages];
+}
+
+class StaffChatCustomer extends Equatable {
+  final String id;
+  final String fullName;
+  final String email;
+  final String phone;
+
+  const StaffChatCustomer({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.phone,
+  });
+
+  @override
+  List<Object?> get props => [id, fullName, email, phone];
+}
+
+class StaffChatAssignee extends Equatable {
+  final String id;
+  final String fullName;
+
+  const StaffChatAssignee({required this.id, required this.fullName});
+
+  @override
+  List<Object?> get props => [id, fullName];
+}
+
+class StaffChatRoom extends Equatable {
+  final String roomId;
+  final StaffChatCustomer customer;
+  final StaffChatAssignee? assignedStaff;
+  final bool isClosed;
+  final DateTime? lastMessageAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final int messageCount;
+  final ChatMessage? lastMessage;
+  final String summary;
+
+  const StaffChatRoom({
+    required this.roomId,
+    required this.customer,
+    this.assignedStaff,
+    required this.isClosed,
+    this.lastMessageAt,
+    this.createdAt,
+    this.updatedAt,
+    required this.messageCount,
+    this.lastMessage,
+    required this.summary,
+  });
+
+  StaffChatRoom copyWith({
+    StaffChatAssignee? assignedStaff,
+    bool? isClosed,
+    DateTime? lastMessageAt,
+    DateTime? updatedAt,
+    int? messageCount,
+    ChatMessage? lastMessage,
+    String? summary,
+  }) {
+    return StaffChatRoom(
+      roomId: roomId,
+      customer: customer,
+      assignedStaff: assignedStaff ?? this.assignedStaff,
+      isClosed: isClosed ?? this.isClosed,
+      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      messageCount: messageCount ?? this.messageCount,
+      lastMessage: lastMessage ?? this.lastMessage,
+      summary: summary ?? this.summary,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    roomId,
+    customer,
+    assignedStaff,
+    isClosed,
+    lastMessageAt,
+    createdAt,
+    updatedAt,
+    messageCount,
+    lastMessage,
+    summary,
+  ];
+}
+
+class StaffChatComplaint extends Equatable {
+  final String id;
+  final String roomId;
+  final String? messageId;
+  final String title;
+  final String description;
+  final String status;
+  final DateTime? createdAt;
+
+  const StaffChatComplaint({
+    required this.id,
+    required this.roomId,
+    this.messageId,
+    required this.title,
+    required this.description,
+    required this.status,
+    this.createdAt,
+  });
+
+  @override
+  List<Object?> get props => [
+    id,
+    roomId,
+    messageId,
+    title,
+    description,
+    status,
+    createdAt,
+  ];
 }
