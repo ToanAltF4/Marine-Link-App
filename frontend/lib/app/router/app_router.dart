@@ -7,6 +7,7 @@ import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/change_password_screen.dart';
 import '../../features/cart/presentation/screens/cart_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
@@ -29,6 +30,7 @@ abstract class AppRoutes {
   static const splash = '/';
   static const login = '/login';
   static const register = '/register';
+  static const changePassword = '/change-password';
   static const home = '/home';
   static const productList = '/products';
   static const productDetail = '/products/:id';
@@ -104,6 +106,10 @@ class AppRouter {
           onFirstBack: (context) => context.go(AppRoutes.login),
           child: const RegisterScreen(),
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.changePassword,
+        builder: (context, state) => const ChangePasswordScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -223,14 +229,7 @@ class AppRouter {
           GoRoute(
             path: 'notifications',
             builder: (context, state) => const StaffRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('staffNotificationsScreen'),
-                title: 'Thông báo nhân viên',
-                fallbackLocation: AppRoutes.staffDashboard,
-                bottomNavigationBar: StaffBottomNav(
-                  currentTab: StaffBottomNavTab.work,
-                ),
-              ),
+              child: NotificationsScreen(),
             ),
           ),
           GoRoute(
@@ -249,14 +248,7 @@ class AppRouter {
           GoRoute(
             path: 'profile',
             builder: (context, state) => const StaffRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('staffProfileScreen'),
-                title: 'Hồ sơ nhân viên',
-                fallbackLocation: AppRoutes.staffDashboard,
-                bottomNavigationBar: StaffBottomNav(
-                  currentTab: StaffBottomNavTab.profile,
-                ),
-              ),
+              child: ProfileScreen(),
             ),
           ),
           GoRoute(
@@ -324,27 +316,13 @@ class AppRouter {
           GoRoute(
             path: 'notifications',
             builder: (context, state) => const AdminRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('adminNotificationsScreen'),
-                title: 'Thông báo quản trị',
-                fallbackLocation: AppRoutes.adminDashboard,
-                bottomNavigationBar: AdminBottomNav(
-                  currentTab: AdminBottomNavTab.dashboard,
-                ),
-              ),
+              child: NotificationsScreen(),
             ),
           ),
           GoRoute(
             path: 'profile',
             builder: (context, state) => const AdminRoleGuard(
-              child: _RolePlaceholderPage(
-                key: Key('adminProfileScreen'),
-                title: 'Hồ sơ quản trị',
-                fallbackLocation: AppRoutes.adminDashboard,
-                bottomNavigationBar: AdminBottomNav(
-                  currentTab: AdminBottomNavTab.profile,
-                ),
-              ),
+              child: ProfileScreen(),
             ),
           ),
         ],

@@ -7,6 +7,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/notification.dart';
 import '../bloc/notification_cubit.dart';
 
@@ -31,6 +35,18 @@ class _NotificationsView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FBFF),
+      bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final user = state is AuthAuthenticated ? state.user : null;
+          if (user?.isStaff == true) {
+            return const StaffBottomNav(currentTab: StaffBottomNavTab.work);
+          }
+          if (user?.isAdmin == true) {
+            return const AdminBottomNav(currentTab: AdminBottomNavTab.dashboard);
+          }
+          return const BuyerBottomNav(currentTab: BuyerBottomNavTab.home);
+        },
+      ),
       body: SafeArea(
         bottom: false,
         child: BlocBuilder<NotificationCubit, NotificationState>(

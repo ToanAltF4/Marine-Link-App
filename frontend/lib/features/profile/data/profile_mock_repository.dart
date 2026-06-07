@@ -1,9 +1,14 @@
 import '../../../core/api/api_response.dart';
+import '../../auth/domain/auth_repository.dart';
 import '../../auth/domain/user.dart';
 import '../domain/profile_repository.dart';
 
 class ProfileMockRepository implements ProfileRepository {
-  User _mockUser = const User(
+  final AuthRepository _authRepository;
+
+  ProfileMockRepository(this._authRepository);
+
+  static const _dealerFallback = User(
     id: 'user-001',
     fullName: 'Đại lý Hải Sản Cà Mau',
     email: 'daily-camau@marinelink.vn',
@@ -14,10 +19,22 @@ class ProfileMockRepository implements ProfileRepository {
     storeName: 'Hải Sản Cam Mau Store',
   );
 
+  User? _updatedUser;
+
   @override
   Future<ApiResponse<User>> getProfile() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return ApiResponse(success: true, message: 'OK', data: _mockUser);
+
+    if (_updatedUser != null) {
+      return ApiResponse(success: true, message: 'OK', data: _updatedUser);
+    }
+
+    final currentUser = await _authRepository.getCurrentUser();
+    if (currentUser != null) {
+      return ApiResponse(success: true, message: 'OK', data: currentUser);
+    }
+
+    return ApiResponse(success: true, message: 'OK', data: _dealerFallback);
   }
 
   @override
@@ -27,18 +44,22 @@ class ProfileMockRepository implements ProfileRepository {
     String? businessAddress,
   }) async {
     await Future.delayed(const Duration(seconds: 1));
-    _mockUser = User(
-      id: _mockUser.id,
+    final base =
+        _updatedUser ?? await _authRepository.getCurrentUser() ?? _dealerFallback;
+
+    _updatedUser = User(
+      id: base.id,
       fullName: fullName,
-      email: _mockUser.email,
+      email: base.email,
       phone: phone,
-      status: _mockUser.status,
-      roles: _mockUser.roles,
+      status: base.status,
+      roles: base.roles,
       businessAddress: businessAddress,
-      storeName: _mockUser.storeName,
-      taxCode: _mockUser.taxCode,
-      avatarUrl: _mockUser.avatarUrl,
+      storeName: base.storeName,
+      taxCode: base.taxCode,
+      avatarUrl: base.avatarUrl,
     );
-    return ApiResponse(success: true, message: 'Cập nhật thành công', data: _mockUser);
+    return ApiResponse(
+        success: true, message: 'Cập nhật thành công', data: _updatedUser);
   }
 }

@@ -92,6 +92,28 @@ class AuthRemoteRepository implements AuthRepository {
   Future<void> logout() => tokenStorage.clearAll();
 
   @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.changePassword,
+      data: {
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      },
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? 'Đổi mật khẩu thất bại',
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
+
+  @override
   Future<User?> getCurrentUser() async {
     if (!await tokenStorage.hasToken()) {
       return null;

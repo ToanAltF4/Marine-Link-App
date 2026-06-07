@@ -36,4 +36,10 @@ public class AuthController {
     public void logout() {
         // Stateless JWT MVP: frontend deletes the local token.
     }
+
+    @PostMapping("/change-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(com.marinelink.common.security.CurrentUser.publicId(), request);
+    }
 }

@@ -6,6 +6,10 @@ import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../../../shared/widgets/role_bottom_nav.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/profile_cubit.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -74,7 +78,18 @@ class _ProfileViewState extends State<_ProfileView> {
             ),
         ],
       ),
-      bottomNavigationBar: const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
+      bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final user = state is AuthAuthenticated ? state.user : null;
+          if (user?.isStaff == true) {
+            return const StaffBottomNav(currentTab: StaffBottomNavTab.profile);
+          }
+          if (user?.isAdmin == true) {
+            return const AdminBottomNav(currentTab: AdminBottomNavTab.profile);
+          }
+          return const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile);
+        },
+      ),
       body: BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
           if (state.status == ProfileStatus.updateSuccess) {
@@ -121,6 +136,10 @@ class _ProfileViewState extends State<_ProfileView> {
   }
 
   Widget _buildNavigationTiles(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final user = authState is AuthAuthenticated ? authState.user : null;
+    final isBuyer = user?.isUser ?? true;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -129,18 +148,67 @@ class _ProfileViewState extends State<_ProfileView> {
       ),
       child: Column(
         children: [
-          _ProfileActionTile(
-            icon: Icons.receipt_long_outlined,
-            title: 'Đơn hàng của tôi',
-            subtitle: 'Theo dõi đơn đã đặt và trạng thái giao hàng',
-            onTap: () => context.push(AppRoutes.orders),
-          ),
-          const Divider(height: 1, indent: 64),
+          if (isBuyer) ...[
+            _ProfileActionTile(
+              icon: Icons.receipt_long_outlined,
+              title: 'Đơn hàng của tôi',
+              subtitle: 'Theo dõi đơn đã đặt và trạng thái giao hàng',
+              onTap: () => context.push(AppRoutes.orders),
+            ),
+            const Divider(height: 1, indent: 64),
+          ],
           _ProfileActionTile(
             icon: Icons.support_agent_outlined,
             title: 'Hỗ trợ',
-            subtitle: 'Chat với nhân viên MarineLink',
-            onTap: () => context.push(AppRoutes.chat),
+            subtitle: isBuyer ? 'Chat với nhân viên MarineLink' : 'Hỗ trợ kỹ thuật nội bộ',
+            onTap: () {
+              if (user?.isStaff == true) {
+                context.push(AppRoutes.staffChat);
+              } else if (user?.isAdmin == true) {
+                context.push(AppRoutes.adminDashboard); // Admin has no chat yet
+              } else {
+                context.push(AppRoutes.chat);
+              }
+            },
+          ),
+          const Divider(height: 1, indent: 64),
+          _ProfileActionTile(
+            icon: Icons.lock_outline_rounded,
+            title: 'Đổi mật khẩu',
+            subtitle: 'Thay đổi mật khẩu đăng nhập',
+            onTap: () => context.push(AppRoutes.changePassword),
+          ),
+          const Divider(height: 1, indent: 64),
+          _ProfileActionTile(
+            icon: Icons.logout_rounded,
+            title: 'Đăng xuất',
+            subtitle: 'Thoát khỏi tài khoản hiện tại',
+            onTap: () => _showLogoutConfirmation(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Đăng xuất?'),
+        content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi MarineLink?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
+              context.go(AppRoutes.login);
+            },
+            child: const Text('Đăng xuất', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

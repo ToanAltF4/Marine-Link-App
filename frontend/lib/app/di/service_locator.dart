@@ -137,7 +137,7 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<ProfileRepository>(
     () => _useRemoteRepositories
         ? ProfileRemoteRepository(apiClient: sl<ApiClient>())
-        : ProfileMockRepository(),
+        : ProfileMockRepository(sl<AuthRepository>()),
   );
   sl.registerFactory<ProfileCubit>(
     () => ProfileCubit(profileRepository: sl<ProfileRepository>()),

@@ -19,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthChangePasswordRequested>(_onChangePasswordRequested);
   }
 
   Future<void> _onCheckRequested(
@@ -83,5 +84,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authRepository.logout();
     } catch (_) {}
     emit(const AuthUnauthenticated());
+  }
+
+  Future<void> _onChangePasswordRequested(
+    AuthChangePasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final currentState = state;
+    emit(const AuthLoading());
+    try {
+      await _authRepository.changePassword(
+        oldPassword: event.oldPassword,
+        newPassword: event.newPassword,
+      );
+      emit(const AuthPasswordChangeSuccess());
+
+      // After success, if we were authenticated, keep user info but it's better to
+      // let UI handle navigation or just show success.
+      // Usually, stay on same state but with success flag.
+      // But since we use sealed classes, we return to authenticated after success
+      // OR stay on success state and let UI pop.
+      if (currentState is AuthAuthenticated) {
+        // We emit success, UI pops, and UI still has access to AuthBloc's state
+        // if it needs. However, the state is now AuthPasswordChangeSuccess.
+        // We might want to restore AuthAuthenticated after a brief moment or UI pop.
+        emit(currentState);
+      }
+    } catch (e) {
+      emit(AuthFailure(e.toString()));
+      if (currentState is AuthAuthenticated) {
+        emit(currentState);
+      }
+    }
   }
 }

@@ -108,6 +108,17 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (oldPassword == 'wrong') {
+      throw Exception('Mật khẩu hiện tại không chính xác');
+    }
+  }
+
+  @override
   Future<User?> getCurrentUser() async {
     if (_currentToken == null) return null;
     return _currentUser;

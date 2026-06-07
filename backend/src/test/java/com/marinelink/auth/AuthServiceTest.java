@@ -98,6 +98,33 @@ class AuthServiceTest {
         verify(userRepository).save(any(User.class));
     }
 
+    @Test
+    void changePasswordUpdatesPasswordWhenOldMatches() {
+        User user = activeUser("USER");
+        UUID publicId = user.getPublicId();
+        when(userRepository.findActiveByPublicId(publicId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass123", user.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.encode("NewPass123")).thenReturn("new-bcrypt-hash");
+
+        authService.changePassword(publicId, new ChangePasswordRequest("OldPass123", "NewPass123"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-bcrypt-hash");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void changePasswordThrowsWhenOldPasswordIncorrect() {
+        User user = activeUser("USER");
+        UUID publicId = user.getPublicId();
+        when(userRepository.findActiveByPublicId(publicId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("WrongPass", user.getPasswordHash())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.changePassword(
+                publicId, new ChangePasswordRequest("WrongPass", "NewPass123")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không chính xác");
+    }
+
     private User activeUser(String roleCode) {
         Role role = Role.builder().id(1L).code(roleCode).name(roleCode).build();
         return User.builder()
