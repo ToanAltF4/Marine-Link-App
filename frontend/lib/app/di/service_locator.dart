@@ -23,6 +23,12 @@ import '../../features/orders/data/order_mock_repository.dart';
 import '../../features/orders/data/order_remote_repository.dart';
 import '../../features/orders/presentation/bloc/order_bloc.dart';
 
+// Notifications
+import '../../features/notifications/domain/notification_repository.dart';
+import '../../features/notifications/data/notification_mock_repository.dart';
+import '../../features/notifications/data/notification_remote_repository.dart';
+import '../../features/notifications/presentation/bloc/notification_cubit.dart';
+
 // Checkout
 import '../../features/checkout/domain/checkout_repository.dart';
 import '../../features/checkout/data/cart_sync_repository.dart';
@@ -90,6 +96,16 @@ Future<void> setupServiceLocator() async {
   );
   sl.registerFactory<OrderBloc>(
     () => OrderBloc(orderRepository: sl<OrderRepository>()),
+  );
+
+  // ── Notifications ────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<NotificationRepository>(
+    () => _useRemoteRepositories
+        ? NotificationRemoteRepository(apiClient: sl<ApiClient>())
+        : NotificationMockRepository(),
+  );
+  sl.registerFactory<NotificationCubit>(
+    () => NotificationCubit(notificationRepository: sl<NotificationRepository>()),
   );
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.

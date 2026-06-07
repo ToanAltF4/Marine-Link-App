@@ -4,9 +4,9 @@ import '../../../products/presentation/screens/product_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/di/service_locator.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/notification.dart';
-import '../../data/notification_mock_repository.dart';
 import '../bloc/notification_cubit.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -15,9 +15,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => NotificationCubit(
-        notificationRepository: NotificationMockRepository(),
-      )..loadNotifications(),
+      create: (context) => sl<NotificationCubit>()..loadNotifications(),
       child: const _NotificationsView(),
     );
   }

@@ -5,6 +5,9 @@ import 'package:marinelink/features/products/presentation/bloc/product_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
+import 'package:marinelink/features/notifications/domain/notification_repository.dart';
+import 'package:marinelink/features/notifications/data/notification_mock_repository.dart';
+import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 import 'package:marinelink/features/notifications/presentation/screens/notifications_screen.dart';
 
 // Định nghĩa các class giả lập ngay trong file test này
@@ -40,6 +43,12 @@ void main() {
       when(() => mock.state).thenReturn(const ProductInitial());
       return mock;
     });
+
+    // Đăng ký NotificationRepository và NotificationCubit để NotificationsScreen có thể dùng sl<NotificationCubit>()
+    sl.registerLazySingleton<NotificationRepository>(() => NotificationMockRepository());
+    sl.registerFactory<NotificationCubit>(() => NotificationCubit(
+      notificationRepository: sl<NotificationRepository>(),
+    ));
   });
 
   // ... (giữ nguyên phần group và các testWidgets bên dưới của cậu)
