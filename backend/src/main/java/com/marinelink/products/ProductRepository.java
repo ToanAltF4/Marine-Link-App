@@ -21,6 +21,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("select p from Product p where p.publicId = :publicId and p.deletedAt is null")
     Optional<Product> findDetailByPublicId(@Param("publicId") UUID publicId);
 
+    @Query("select count(p) from Product p where p.deletedAt is null "
+            + "and p.status = com.marinelink.products.ProductStatus.ACTIVE "
+            + "and p.stockQuantity < :threshold")
+    long countLowStock(@Param("threshold") int threshold);
+
     @Query("select p from Product p where p.publicId = :publicId")
     Optional<Product> findByPublicIdIncludingDeleted(@Param("publicId") UUID publicId);
 
