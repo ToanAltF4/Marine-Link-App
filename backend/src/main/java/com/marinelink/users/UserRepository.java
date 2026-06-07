@@ -20,4 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u WHERE u.phone = :phone AND u.deletedAt IS NULL")
     boolean existsActiveByPhone(@Param("phone") String phone);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.deletedAt IS NULL "
+            + "AND u.status = com.marinelink.users.UserStatus.ACTIVE "
+            + "AND u.role.code = 'USER'")
+    long countActiveDealers();
 }
