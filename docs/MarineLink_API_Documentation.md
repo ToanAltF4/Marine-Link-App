@@ -169,6 +169,9 @@ Orders:
 | PUT | `/api/orders/{id}/status` | STAFF, ADMIN |
 | POST | `/api/chat/send` | All roles |
 | GET | `/api/chat/{roomId}` | Participant, STAFF, ADMIN |
+| GET | `/api/staff/chat/rooms` | STAFF, ADMIN |
+| PUT | `/api/staff/chat/rooms/{roomId}/status` | STAFF, ADMIN |
+| POST | `/api/staff/chat/rooms/{roomId}/complaints` | STAFF, ADMIN |
 | GET | `/api/notifications` | Authenticated |
 | PUT | `/api/notifications/{id}/read` | Owner |
 | GET | `/api/warehouses` | All roles |
@@ -836,6 +839,115 @@ Response `200`:
         "attachments": []
       }
     ]
+  }
+}
+```
+
+### GET `/api/staff/chat/rooms`
+
+Query params:
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `status` | `OPEN` \| `CLOSED` \| `ALL` | `OPEN` | `OPEN` = chưa xử lý, `CLOSED` = đã xử lý |
+| `q` | string | optional | Tìm theo tên/email/số điện thoại đại lý |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440003",
+        "fullName": "Đại lý A",
+        "email": "daily-a@marinelink.demo",
+        "phone": "0901000001"
+      },
+      "assignedStaff": {
+        "id": "550e8400-e29b-41d4-a716-446655440004",
+        "fullName": "Staff Demo"
+      },
+      "isClosed": false,
+      "lastMessageAt": "2026-05-28T08:30:00Z",
+      "createdAt": "2026-05-28T08:00:00Z",
+      "updatedAt": "2026-05-28T08:30:00Z",
+      "messageCount": 3,
+      "lastMessage": {
+        "id": "550e8400-e29b-41d4-a716-44665544000b",
+        "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+        "senderType": "USER",
+        "content": "Cho tôi hỏi đơn hàng...",
+        "createdAt": "2026-05-28T08:30:00Z",
+        "attachments": []
+      },
+      "summary": "Đại lý hỏi thời gian giao đơn; staff cần kiểm tra trạng thái vận chuyển."
+    }
+  ]
+}
+```
+
+Rules:
+
+- STAFF/ADMIN xem được danh sách phòng chat để xử lý hỗ trợ.
+- Staff trả lời một phòng chưa assign sẽ tự được gán làm `assignedStaff`.
+- `summary` là tóm tắt ngắn từ vài tin mới nhất, phục vụ inbox; không phải phản hồi AI thật.
+
+### PUT `/api/staff/chat/rooms/{roomId}/status`
+
+Request:
+
+```json
+{ "isClosed": true }
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Chat room status updated",
+  "data": {
+    "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+    "isClosed": true
+  }
+}
+```
+
+Rules:
+
+- `isClosed = true` tương ứng "Đã xử lý".
+- `isClosed = false` mở lại phòng khi cần trao đổi tiếp.
+
+### POST `/api/staff/chat/rooms/{roomId}/complaints`
+
+Request:
+
+```json
+{
+  "title": "Khách báo giao thiếu hàng",
+  "description": "Tạo khiếu nại từ đoạn chat để staff theo dõi xử lý.",
+  "messageId": "550e8400-e29b-41d4-a716-44665544000b"
+}
+```
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "message": "Complaint created",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440077",
+    "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+    "messageId": "550e8400-e29b-41d4-a716-44665544000b",
+    "title": "Khách báo giao thiếu hàng",
+    "description": "Tạo khiếu nại từ đoạn chat để staff theo dõi xử lý.",
+    "status": "OPEN",
+    "createdAt": "2026-05-28T08:40:00Z"
   }
 }
 ```

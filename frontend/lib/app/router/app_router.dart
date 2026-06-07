@@ -8,6 +8,7 @@ import '../../features/admin_products/presentation/screens/admin_product_managem
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
 import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
+import '../../features/chat/presentation/screens/staff_chat_management_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -64,6 +65,7 @@ abstract class AppRoutes {
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
   static String staffOrderDetailPath(String id) => '$staffOrders/$id';
+  static String staffChatRoomPath(String roomId) => '$staffChat/$roomId';
   static String adminOrderDetailPath(String id) => '$adminOrders/$id';
 
   static String productListLocation({String? query, String? categoryId}) {
@@ -237,8 +239,23 @@ class AppRouter {
           GoRoute(
             path: 'chat',
             builder: (context, state) => const StaffRoleGuard(
-              child: ChatScreen(key: Key('staffChatScreen'), staffMode: true),
+              child: StaffChatManagementScreen(key: Key('staffChatScreen')),
             ),
+            routes: [
+              GoRoute(
+                path: ':roomId',
+                builder: (context, state) => StaffRoleGuard(
+                  child: ChatScreen(
+                    key: const Key('staffChatThreadScreen'),
+                    roomId:
+                        state.pathParameters['roomId'] ??
+                        ChatMockRepository.defaultRoomId,
+                    staffMode: true,
+                    staffBackLocation: AppRoutes.staffChat,
+                  ),
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'profile',

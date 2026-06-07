@@ -69,4 +69,49 @@ void main() {
     expect(response.success, false);
     expect(response.message, isNotEmpty);
   });
+
+  test('getStaffRooms filters open and closed rooms', () async {
+    final repository = ChatMockRepository();
+
+    final openResponse = await repository.getStaffRooms();
+    final closedResponse = await repository.getStaffRooms(
+      filter: StaffChatRoomFilter.closed,
+    );
+
+    expect(openResponse.success, true);
+    expect(openResponse.data, isNotEmpty);
+    expect(openResponse.data!.every((room) => !room.isClosed), true);
+    expect(closedResponse.data, isNotEmpty);
+    expect(closedResponse.data!.every((room) => room.isClosed), true);
+  });
+
+  test('setRoomClosed updates room and thread status', () async {
+    final repository = ChatMockRepository();
+
+    final response = await repository.setRoomClosed(
+      roomId: ChatMockRepository.defaultRoomId,
+      isClosed: true,
+    );
+    final threadResponse = await repository.getThread(
+      ChatMockRepository.defaultRoomId,
+    );
+
+    expect(response.success, true);
+    expect(response.data!.isClosed, true);
+    expect(threadResponse.data!.isClosed, true);
+  });
+
+  test('createComplaint creates complaint from room', () async {
+    final repository = ChatMockRepository();
+
+    final response = await repository.createComplaint(
+      roomId: ChatMockRepository.defaultRoomId,
+      title: 'Giao thieu hang',
+      description: 'Khach bao giao thieu hang',
+    );
+
+    expect(response.success, true);
+    expect(response.data!.status, 'OPEN');
+    expect(response.data!.roomId, ChatMockRepository.defaultRoomId);
+  });
 }

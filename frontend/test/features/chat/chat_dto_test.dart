@@ -77,4 +77,63 @@ void main() {
     expect(thread.messages.single.senderType, ChatSenderType.aiSample);
     expect(thread.messages.single.attachments.single.fileSizeBytes, 2048);
   });
+
+  test('staffChatRoomsFromJson parses room summary payload', () {
+    final rooms = staffChatRoomsFromJson([
+      {
+        'roomId': 'room-001',
+        'customer': {
+          'id': 'user-001',
+          'fullName': 'Dai ly A',
+          'email': 'daily-a@demo.test',
+          'phone': '0901000001',
+        },
+        'assignedStaff': {'id': 'staff-001', 'fullName': 'Staff Demo'},
+        'isClosed': false,
+        'lastMessageAt': '2026-05-28T08:30:00Z',
+        'messageCount': '3',
+        'lastMessage': {
+          'id': 'message-001',
+          'roomId': 'room-001',
+          'senderType': 'USER',
+          'content': 'Can ho tro',
+        },
+        'summary': 'Dai ly: Can ho tro',
+      },
+    ]);
+
+    expect(rooms, hasLength(1));
+    expect(rooms.single.customer.fullName, 'Dai ly A');
+    expect(rooms.single.assignedStaff!.fullName, 'Staff Demo');
+    expect(rooms.single.messageCount, 3);
+    expect(rooms.single.lastMessage!.senderType, ChatSenderType.user);
+  });
+
+  test('staffChatRoomFromJson tolerates missing nested fields', () {
+    final room = staffChatRoomFromJson(<String, dynamic>{});
+
+    expect(room.roomId, '');
+    expect(room.customer.fullName, '');
+    expect(room.assignedStaff, isNull);
+    expect(room.messageCount, 0);
+    expect(room.summary, '');
+  });
+
+  test('staffChatComplaintFromJson parses complaint payload', () {
+    final complaint = staffChatComplaintFromJson({
+      'id': 'complaint-001',
+      'room_id': 'room-001',
+      'message_id': 'message-001',
+      'title': 'Giao thieu hang',
+      'description': 'Khach bao giao thieu hang',
+      'status': 'OPEN',
+      'created_at': '2026-05-28T08:40:00Z',
+    });
+
+    expect(complaint.id, 'complaint-001');
+    expect(complaint.roomId, 'room-001');
+    expect(complaint.messageId, 'message-001');
+    expect(complaint.status, 'OPEN');
+    expect(complaint.createdAt, isNotNull);
+  });
 }

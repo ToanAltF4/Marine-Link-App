@@ -18,26 +18,32 @@ import '../cubit/chat_cubit.dart';
 class ChatScreen extends StatelessWidget {
   final String roomId;
   final bool staffMode;
+  final String staffBackLocation;
 
   const ChatScreen({
     super.key,
     this.roomId = ChatMockRepository.defaultRoomId,
     this.staffMode = false,
+    this.staffBackLocation = AppRoutes.staffDashboard,
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ChatCubit>(
       create: (_) => sl<ChatCubit>()..load(roomId),
-      child: _ChatView(staffMode: staffMode),
+      child: _ChatView(
+        staffMode: staffMode,
+        staffBackLocation: staffBackLocation,
+      ),
     );
   }
 }
 
 class _ChatView extends StatefulWidget {
   final bool staffMode;
+  final String staffBackLocation;
 
-  const _ChatView({required this.staffMode});
+  const _ChatView({required this.staffMode, required this.staffBackLocation});
 
   @override
   State<_ChatView> createState() => _ChatViewState();
@@ -71,6 +77,16 @@ class _ChatViewState extends State<_ChatView> {
           key: const Key('chatScreen'),
           backgroundColor: AppColors.background,
           appBar: AppBar(
+            leading:
+                widget.staffMode &&
+                    widget.staffBackLocation != AppRoutes.staffDashboard
+                ? IconButton(
+                    key: const Key('staffChatBackButton'),
+                    tooltip: 'Quay l\u1ea1i',
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => context.go(widget.staffBackLocation),
+                  )
+                : null,
             title: Text(
               widget.staffMode
                   ? 'Tin nh\u1eafn kh\u00e1ch h\u00e0ng'
@@ -88,6 +104,7 @@ class _ChatViewState extends State<_ChatView> {
               _ChatComposer(
                 controller: _controller,
                 sending: state.sending,
+                closed: state.thread?.isClosed ?? false,
                 errorMessage: state.sendErrorMessage,
                 onSend: _send,
               ),
@@ -97,7 +114,7 @@ class _ChatViewState extends State<_ChatView> {
 
         if (widget.staffMode) {
           return AppBackExitScope(
-            onFirstBack: (context) => context.go(AppRoutes.staffDashboard),
+            onFirstBack: (context) => context.go(widget.staffBackLocation),
             child: scaffold,
           );
         }
@@ -282,12 +299,14 @@ class _ChatBubble extends StatelessWidget {
 class _ChatComposer extends StatelessWidget {
   final TextEditingController controller;
   final bool sending;
+  final bool closed;
   final String? errorMessage;
   final VoidCallback onSend;
 
   const _ChatComposer({
     required this.controller,
     required this.sending,
+    required this.closed,
     required this.errorMessage,
     required this.onSend,
   });
@@ -315,9 +334,12 @@ class _ChatComposer extends StatelessWidget {
                       controller: controller,
                       minLines: 1,
                       maxLines: 4,
+                      enabled: !closed,
                       textInputAction: TextInputAction.newline,
-                      decoration: const InputDecoration(
-                        hintText: 'Nh\u1eadp tin nh\u1eafn...',
+                      decoration: InputDecoration(
+                        hintText: closed
+                            ? 'Ph\u00f2ng chat \u0111\u00e3 x\u1eed l\u00fd'
+                            : 'Nh\u1eadp tin nh\u1eafn...',
                       ),
                     ),
                   ),
@@ -327,7 +349,7 @@ class _ChatComposer extends StatelessWidget {
                     height: 48,
                     child: FilledButton(
                       key: const Key('chatSendButton'),
-                      onPressed: sending ? null : onSend,
+                      onPressed: sending || closed ? null : onSend,
                       style: FilledButton.styleFrom(
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
@@ -348,6 +370,17 @@ class _ChatComposer extends StatelessWidget {
                   ),
                 ],
               ),
+              if (closed) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Ph\u00f2ng chat \u0111\u00e3 \u0111\u00f3ng. Staff c\u00f3 th\u1ec3 m\u1edf l\u1ea1i t\u1eeb danh s\u00e1ch chat.',
+                  key: const Key('chatClosedNotice'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
               if (errorMessage != null) ...[
                 const SizedBox(height: 8),
                 Text(

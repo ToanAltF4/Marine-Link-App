@@ -1,6 +1,8 @@
 package com.marinelink.chat;
 
 import com.marinelink.common.exception.BusinessException;
+import com.marinelink.complaints.Complaint;
+import com.marinelink.complaints.ComplaintRepository;
 import com.marinelink.users.Role;
 import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
@@ -26,10 +28,12 @@ class ChatServiceTest {
     private final ChatRoomRepository chatRoomRepository = mock(ChatRoomRepository.class);
     private final ChatMessageRepository chatMessageRepository = mock(ChatMessageRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
+    private final ComplaintRepository complaintRepository = mock(ComplaintRepository.class);
     private final ChatService chatService = new ChatService(
             chatRoomRepository,
             chatMessageRepository,
-            userRepository);
+            userRepository,
+            complaintRepository);
 
     @Test
     void getThreadReturnsMessagesForRoomOwner() {
@@ -97,7 +101,88 @@ class ChatServiceTest {
         assertEquals(ChatSenderType.STAFF, response.senderType());
         assertEquals("Don hang se duoc giao hom nay", response.content());
         assertNotNull(room.getLastMessageAt());
+        assertEquals(staff, room.getAssignedStaff());
         verify(chatRoomRepository).save(room);
+    }
+
+    @Test
+    void listStaffRoomsFiltersOpenRoomsAndReturnsSummary() {
+        UUID staffPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440004");
+        UUID roomPublicId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        User owner = user(21L, UUID.fromString("550e8400-e29b-41d4-a716-446655440003"), "USER");
+        User staff = user(22L, staffPublicId, "STAFF");
+        ChatRoom room = room(roomPublicId, owner, staff);
+        ChatMessage message = message(room, owner, ChatSenderType.USER, "Can kiem tra don hang");
+
+        when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
+        when(chatRoomRepository.findStaffRooms(false, "daily")).thenReturn(List.of(room));
+        when(chatMessageRepository.findTopByRoomOrderByCreatedAtDesc(room)).thenReturn(Optional.of(message));
+        when(chatMessageRepository.countByRoom(room)).thenReturn(1L);
+        when(chatMessageRepository.findByRoomOrderByCreatedAtAsc(room)).thenReturn(List.of(message));
+
+        List<StaffChatRoomResponse> response = chatService.listStaffRooms(
+                staffPublicId,
+                true,
+                "OPEN",
+                "daily");
+
+        assertEquals(1, response.size());
+        assertEquals(roomPublicId, response.getFirst().roomId());
+        assertEquals("Nguyen Van A", response.getFirst().customer().fullName());
+        assertEquals(ChatSenderType.USER, response.getFirst().lastMessage().senderType());
+    }
+
+    @Test
+    void updateRoomStatusClosesRoomAndAssignsStaff() {
+        UUID staffPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440004");
+        UUID roomPublicId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        User owner = user(21L, UUID.fromString("550e8400-e29b-41d4-a716-446655440003"), "USER");
+        User staff = user(22L, staffPublicId, "STAFF");
+        ChatRoom room = room(roomPublicId, owner, null);
+
+        when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
+        when(chatRoomRepository.findByPublicId(roomPublicId)).thenReturn(Optional.of(room));
+        when(chatRoomRepository.save(room)).thenReturn(room);
+
+        StaffChatRoomStatusResponse response = chatService.updateRoomStatus(
+                staffPublicId,
+                true,
+                roomPublicId,
+                true);
+
+        assertEquals(roomPublicId, response.roomId());
+        assertEquals(true, response.isClosed());
+        assertEquals(staff, room.getAssignedStaff());
+    }
+
+    @Test
+    void createComplaintLinksRoomAndMessage() {
+        UUID staffPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440004");
+        UUID roomPublicId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        UUID messagePublicId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000b");
+        User owner = user(21L, UUID.fromString("550e8400-e29b-41d4-a716-446655440003"), "USER");
+        User staff = user(22L, staffPublicId, "STAFF");
+        ChatRoom room = room(roomPublicId, owner, staff);
+        ChatMessage message = message(room, owner, ChatSenderType.USER, "Giao thieu hang");
+        StaffChatComplaintRequest request = new StaffChatComplaintRequest(
+                "Giao thieu hang",
+                "Khach bao giao thieu hang tu chat",
+                messagePublicId);
+
+        when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
+        when(chatRoomRepository.findByPublicId(roomPublicId)).thenReturn(Optional.of(room));
+        when(chatMessageRepository.findByPublicId(messagePublicId)).thenReturn(Optional.of(message));
+        when(complaintRepository.save(any(Complaint.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        StaffChatComplaintResponse response = chatService.createComplaint(
+                staffPublicId,
+                true,
+                roomPublicId,
+                request);
+
+        assertEquals(roomPublicId, response.roomId());
+        assertEquals(messagePublicId, response.messageId());
+        assertEquals("Giao thieu hang", response.title());
     }
 
     @Test
