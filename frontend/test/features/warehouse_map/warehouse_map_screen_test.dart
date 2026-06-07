@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/warehouse_map/domain/warehouse.dart';
+import 'package:marinelink/features/warehouse_map/domain/warehouse_location_service.dart';
 import 'package:marinelink/features/warehouse_map/domain/warehouse_repository.dart';
+import 'package:marinelink/features/warehouse_map/domain/warehouse_user_location.dart';
 import 'package:marinelink/features/warehouse_map/presentation/cubit/warehouse_map_cubit.dart';
 import 'package:marinelink/features/warehouse_map/presentation/screens/warehouse_map_screen.dart';
 
@@ -26,7 +28,9 @@ void _registerRepo(WarehouseRepository repository) {
 
 Future<void> _pumpScreen(
   WidgetTester tester, {
-  Future<bool> Function(Warehouse warehouse)? mapLauncher,
+  Future<bool> Function(Warehouse warehouse, WarehouseUserLocation? location)?
+  mapLauncher,
+  WarehouseLocationService? locationService,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(430, 1000);
@@ -36,7 +40,10 @@ Future<void> _pumpScreen(
   });
   await tester.pumpWidget(
     MaterialApp(
-      home: WarehouseMapScreen(mapLauncher: mapLauncher ?? (_) async => true),
+      home: WarehouseMapScreen(
+        mapLauncher: mapLauncher ?? (_, _) async => true,
+        locationService: locationService ?? _FakeLocationService.denied(),
+      ),
     ),
   );
 }
@@ -76,7 +83,7 @@ void main() {
 
     await _pumpScreen(
       tester,
-      mapLauncher: (warehouse) async {
+      mapLauncher: (warehouse, _) async {
         openedWarehouseId = warehouse.id;
         return true;
       },
@@ -95,6 +102,72 @@ void main() {
 
     expect(openedWarehouseId, 'warehouse-001');
   });
+
+  testWidgets('keeps warehouse list available when location is denied', (
+    tester,
+  ) async {
+    final locationService = _FakeLocationService.denied();
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_warehouse]),
+      ),
+    );
+
+    await _pumpScreen(tester, locationService: locationService);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('warehouseLocationDenied')), findsOneWidget);
+    expect(find.byKey(const Key('warehouseMapList')), findsOneWidget);
+    expect(
+      find.byKey(const Key('warehouseOpenMapsButton_warehouse-001')),
+      findsOneWidget,
+    );
+
+    locationService.requestResult = WarehouseLocationPermission.whileInUse;
+    await tester.tap(find.byKey(const Key('warehouseLocationRequestButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('warehouseLocationGranted')), findsOneWidget);
+  });
+
+  testWidgets(
+    'passes current location to map launcher when permission granted',
+    (tester) async {
+      WarehouseUserLocation? launcherLocation;
+      _registerRepo(
+        _FakeRepo(
+          () async => const ApiResponse(
+            success: true,
+            message: 'OK',
+            data: [_warehouse],
+          ),
+        ),
+      );
+
+      await _pumpScreen(
+        tester,
+        locationService: _FakeLocationService.granted(),
+        mapLauncher: (_, location) async {
+          launcherLocation = location;
+          return true;
+        },
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('warehouseLocationGranted')), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const Key('warehouseOpenMapsButton_warehouse-001')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        launcherLocation,
+        const WarehouseUserLocation(latitude: 10.02, longitude: 105.78),
+      );
+    },
+  );
 
   testWidgets('shows empty state when no active warehouse exists', (
     tester,
@@ -152,3 +225,64 @@ const _warehouse = Warehouse(
   longitude: 105.7469,
   isActive: true,
 );
+
+class _FakeLocationService implements WarehouseLocationService {
+  bool serviceEnabled;
+  WarehouseLocationPermission permission;
+  WarehouseLocationPermission requestResult;
+  WarehouseUserLocation location;
+  bool openedAppSettings = false;
+  bool openedLocationSettings = false;
+
+  _FakeLocationService({
+    required this.serviceEnabled,
+    required this.permission,
+    required this.requestResult,
+    required this.location,
+  });
+
+  factory _FakeLocationService.denied() {
+    return _FakeLocationService(
+      serviceEnabled: true,
+      permission: WarehouseLocationPermission.denied,
+      requestResult: WarehouseLocationPermission.denied,
+      location: const WarehouseUserLocation(latitude: 10.02, longitude: 105.78),
+    );
+  }
+
+  factory _FakeLocationService.granted() {
+    return _FakeLocationService(
+      serviceEnabled: true,
+      permission: WarehouseLocationPermission.whileInUse,
+      requestResult: WarehouseLocationPermission.whileInUse,
+      location: const WarehouseUserLocation(latitude: 10.02, longitude: 105.78),
+    );
+  }
+
+  @override
+  Future<bool> isLocationServiceEnabled() async => serviceEnabled;
+
+  @override
+  Future<WarehouseLocationPermission> checkPermission() async => permission;
+
+  @override
+  Future<WarehouseLocationPermission> requestPermission() async {
+    permission = requestResult;
+    return requestResult;
+  }
+
+  @override
+  Future<WarehouseUserLocation> getCurrentLocation() async => location;
+
+  @override
+  Future<bool> openAppSettings() async {
+    openedAppSettings = true;
+    return true;
+  }
+
+  @override
+  Future<bool> openLocationSettings() async {
+    openedLocationSettings = true;
+    return true;
+  }
+}
