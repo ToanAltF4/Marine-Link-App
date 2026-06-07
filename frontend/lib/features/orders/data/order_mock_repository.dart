@@ -122,6 +122,83 @@ class OrderMockRepository implements OrderRepository {
         ),
       ],
     ),
+    OrderDetail(
+      id: 'order-004',
+      orderCode: 'ML-20260526-0001',
+      status: OrderStatus.completed,
+      totalAmount: 7800000,
+      createdAt: DateTime.parse('2026-05-26T06:45:00Z'),
+      receiverName: 'Đại lý Nguyễn Văn A',
+      receiverPhone: '0912345678',
+      shippingAddress: 'Cần Thơ',
+      paymentMethod: PaymentMethod.bankTransfer,
+      paymentStatus: 'PAID',
+      subtotalAmount: 7800000,
+      shippingFee: 0,
+      discountAmount: 0,
+      items: const [
+        OrderItem(
+          productId: 'prod-004',
+          productNameSnapshot: 'Khô cá lóc',
+          productUnitSnapshot: 'kg',
+          unitPrice: 390000,
+          quantity: 20,
+        ),
+      ],
+      statusHistory: [
+        OrderStatusHistory(
+          fromStatus: null,
+          toStatus: 'PENDING',
+          note: 'Order created',
+          createdAt: DateTime.parse('2026-05-26T06:45:00Z'),
+        ),
+        OrderStatusHistory(
+          fromStatus: 'SHIPPING',
+          toStatus: 'COMPLETED',
+          note: 'Đại lý đã nhận hàng',
+          createdAt: DateTime.parse('2026-05-27T15:20:00Z'),
+        ),
+      ],
+    ),
+    OrderDetail(
+      id: 'order-005',
+      orderCode: 'ML-20260525-0001',
+      status: OrderStatus.cancelled,
+      totalAmount: 1500000,
+      createdAt: DateTime.parse('2026-05-25T10:10:00Z'),
+      receiverName: 'Đại lý Nguyễn Văn A',
+      receiverPhone: '0912345678',
+      shippingAddress: 'Cần Thơ',
+      paymentMethod: PaymentMethod.cod,
+      paymentStatus: 'UNPAID',
+      subtotalAmount: 1500000,
+      shippingFee: 0,
+      discountAmount: 0,
+      note: 'Đại lý đổi kế hoạch nhập hàng',
+      items: const [
+        OrderItem(
+          productId: 'prod-005',
+          productNameSnapshot: 'Mực một nắng',
+          productUnitSnapshot: 'kg',
+          unitPrice: 500000,
+          quantity: 3,
+        ),
+      ],
+      statusHistory: [
+        OrderStatusHistory(
+          fromStatus: null,
+          toStatus: 'PENDING',
+          note: 'Order created',
+          createdAt: DateTime.parse('2026-05-25T10:10:00Z'),
+        ),
+        OrderStatusHistory(
+          fromStatus: 'PENDING',
+          toStatus: 'CANCELLED',
+          note: 'Đại lý yêu cầu huỷ đơn',
+          createdAt: DateTime.parse('2026-05-25T11:00:00Z'),
+        ),
+      ],
+    ),
   ];
 
   @override
