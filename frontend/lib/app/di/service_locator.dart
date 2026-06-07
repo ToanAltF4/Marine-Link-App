@@ -29,6 +29,12 @@ import '../../features/notifications/data/notification_mock_repository.dart';
 import '../../features/notifications/data/notification_remote_repository.dart';
 import '../../features/notifications/presentation/bloc/notification_cubit.dart';
 
+// Chat
+import '../../features/chat/domain/chat_repository.dart';
+import '../../features/chat/data/chat_mock_repository.dart';
+import '../../features/chat/data/chat_remote_repository.dart';
+import '../../features/chat/presentation/cubit/chat_cubit.dart';
+
 // Profile
 import '../../features/profile/domain/profile_repository.dart';
 import '../../features/profile/data/profile_mock_repository.dart';
@@ -131,6 +137,16 @@ Future<void> setupServiceLocator() async {
   sl.registerFactory<NotificationCubit>(
     () =>
         NotificationCubit(notificationRepository: sl<NotificationRepository>()),
+  );
+
+  // Chat
+  sl.registerLazySingleton<ChatRepository>(
+    () => _useRemoteRepositories
+        ? ChatRemoteRepository(apiClient: sl<ApiClient>())
+        : ChatMockRepository(),
+  );
+  sl.registerFactory<ChatCubit>(
+    () => ChatCubit(repository: sl<ChatRepository>()),
   );
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.
