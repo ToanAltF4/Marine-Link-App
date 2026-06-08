@@ -1,5 +1,8 @@
 package com.marinelink.notifications;
 
+import com.marinelink.chat.ChatRoom;
+import com.marinelink.chat.ChatRoomRepository;
+import com.marinelink.common.exception.BusinessException;
 import com.marinelink.notifications.dto.NotificationResponseDTO;
 import com.marinelink.users.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,16 +30,21 @@ class NotificationServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @Mock
+    private ChatRoomRepository chatRoomRepository;
+
     @InjectMocks
     private NotificationService notificationService;
 
     private User user;
+    private UUID chatRoomPublicId;
     private Notification notification;
 
     @BeforeEach
     void setUp() {
         user = new User();
         user.setId(1L);
+        chatRoomPublicId = UUID.randomUUID();
 
         notification = Notification.builder()
                 .id(1L)
@@ -57,11 +65,16 @@ class NotificationServiceTest {
         
         when(notificationRepository.findByUserOrderByCreatedAtDesc(any(User.class), any(Pageable.class)))
                 .thenReturn(page);
+        when(chatRoomRepository.findById(101L)).thenReturn(Optional.of(ChatRoom.builder()
+                .id(101L)
+                .publicId(chatRoomPublicId)
+                .build()));
 
         Page<NotificationResponseDTO> result = notificationService.getNotifications(user, null, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Test Title");
+        assertThat(result.getContent().get(0).getRelatedChatRoomId()).isEqualTo(chatRoomPublicId);
         verify(notificationRepository).findByUserOrderByCreatedAtDesc(user, pageable);
     }
 
@@ -75,6 +88,19 @@ class NotificationServiceTest {
         assertThat(notification.isRead()).isTrue();
         assertThat(notification.getReadAt()).isNotNull();
         verify(notificationRepository).save(notification);
+    }
+
+    @Test
+    void markAsRead_WhenNotificationBelongsToAnotherUser_ShouldThrowForbidden() {
+        UUID publicId = notification.getPublicId();
+        User otherUser = new User();
+        otherUser.setId(2L);
+        when(notificationRepository.findByPublicId(publicId)).thenReturn(Optional.of(notification));
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                BusinessException.class,
+                () -> notificationService.markAsRead(publicId, otherUser)
+        );
     }
 
     @Test

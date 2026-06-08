@@ -28,7 +28,9 @@ class NotificationEntity extends Equatable {
   final String message;
   final DateTime createdAt;
   final bool isRead;
-  final String? relatedId;
+  final String? relatedOrderId;
+  final String? relatedProductId;
+  final String? relatedChatRoomId;
 
   const NotificationEntity({
     required this.id,
@@ -37,8 +39,13 @@ class NotificationEntity extends Equatable {
     required this.message,
     required this.createdAt,
     this.isRead = false,
-    this.relatedId,
+    this.relatedOrderId,
+    this.relatedProductId,
+    this.relatedChatRoomId,
   });
+
+  String? get relatedId =>
+      relatedOrderId ?? relatedProductId ?? relatedChatRoomId;
 
   NotificationEntity copyWith({bool? isRead}) {
     return NotificationEntity(
@@ -48,10 +55,22 @@ class NotificationEntity extends Equatable {
       message: message,
       createdAt: createdAt,
       isRead: isRead ?? this.isRead,
-      relatedId: relatedId,
+      relatedOrderId: relatedOrderId,
+      relatedProductId: relatedProductId,
+      relatedChatRoomId: relatedChatRoomId,
     );
   }
 
   @override
-  List<Object?> get props => [id, isRead];
+  List<Object?> get props => [
+    id,
+    type,
+    title,
+    message,
+    createdAt,
+    isRead,
+    relatedOrderId,
+    relatedProductId,
+    relatedChatRoomId,
+  ];
 }

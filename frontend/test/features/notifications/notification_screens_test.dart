@@ -1,166 +1,303 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
+import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/auth/domain/user.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
-import 'package:marinelink/features/notifications/data/notification_mock_repository.dart';
+import 'package:marinelink/features/notifications/domain/notification.dart';
 import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 import 'package:marinelink/features/notifications/presentation/screens/notifications_screen.dart';
-import 'package:marinelink/features/orders/presentation/bloc/order_bloc.dart';
-import 'package:marinelink/features/products/presentation/bloc/product_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Định nghĩa các class giả lập ngay trong file test này
-// 1. Thêm stub cho hàm close trong các class Mock
-class MockOrderBloc extends Mock implements OrderBloc {
-  @override
-  Future<void> close() async {} // Cách viết async này đảm bảo trả về Future<void> chuẩn
-}
+class _FakeNotificationRepository implements NotificationRepository {
+  List<NotificationEntity> items;
+  bool failLoad;
+  final Completer<ApiResponse<List<NotificationEntity>>>? loadCompleter;
+  final List<bool?> requestedReadFilters = [];
+  final List<String> markedIds = [];
 
-class MockProductBloc extends Mock implements ProductBloc {
-  @override
-  Future<void> close() async {}
-}
-
-class MockAuthBloc extends Mock implements AuthBloc {
-  @override
-  Future<void> close() async {}
-}
-
-class FakeRoute extends Fake implements Route<dynamic> {}
-
-void main() {
-  late MockAuthBloc mockAuthBloc;
-
-  setUpAll(() {
-    registerFallbackValue(FakeRoute());
-    sl.allowReassignment = true;
-
-    mockAuthBloc = MockAuthBloc();
-    const tUser = User(
-      id: '1',
-      fullName: 'Test User',
-      email: 'test@example.com',
-      phone: '0123456789',
-      status: 'ACTIVE',
-      roles: ['USER'],
-    );
-    when(() => mockAuthBloc.state).thenReturn(
-      const AuthAuthenticated(user: tUser, token: 'token'),
-    );
-    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-
-    // Đăng ký dạng Factory để mỗi lần gọi sl<OrderBloc>() sẽ tạo một Mock mới sạch sẽ
-    sl.registerFactory<OrderBloc>(() {
-      final mock = MockOrderBloc();
-      when(() => mock.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mock.state).thenReturn(const OrderInitial());
-      return mock;
-    });
-
-    sl.registerFactory<ProductBloc>(() {
-      final mock = MockProductBloc();
-      when(() => mock.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mock.state).thenReturn(const ProductInitial());
-      return mock;
-    });
-
-    // Đăng ký NotificationRepository và NotificationCubit để NotificationsScreen có thể dùng sl<NotificationCubit>()
-    sl.registerLazySingleton<NotificationRepository>(() => NotificationMockRepository());
-    sl.registerFactory<NotificationCubit>(() => NotificationCubit(
-      notificationRepository: sl<NotificationRepository>(),
-    ));
+  _FakeNotificationRepository({
+    this.items = const [],
+    this.failLoad = false,
+    this.loadCompleter,
   });
 
-  group('NotificationsScreen', () {
-    testWidgets('renders the notifications list with mock data', (tester) async {
-      // Set a larger viewport to ensure all items are rendered and visible
-      tester.view.physicalSize = const Size(400, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      final router = GoRouter(
-        initialLocation: '/notifications',
-        routes: [
-          GoRoute(
-            path: '/notifications',
-            builder: (context, state) => const NotificationsScreen(),
-          ),
-        ],
+  @override
+  Future<ApiResponse<List<NotificationEntity>>> getNotifications({
+    int page = 0,
+    int size = 20,
+    bool? isRead,
+  }) async {
+    requestedReadFilters.add(isRead);
+    if (loadCompleter != null) {
+      return loadCompleter!.future;
+    }
+    if (failLoad) {
+      return const ApiResponse(
+        success: false,
+        message: 'Không tải được thông báo.',
       );
+    }
+    final filtered = isRead == null
+        ? items
+        : items.where((item) => item.isRead == isRead).toList();
+    return ApiResponse(success: true, message: 'OK', data: filtered);
+  }
 
-      await tester.pumpWidget(
-        MaterialApp.router(
-          theme: AppTheme.light(),
-          routerConfig: router,
-          builder: (context, child) => BlocProvider<AuthBloc>.value(
-            value: mockAuthBloc,
-            child: child!,
-          ),
+  @override
+  Future<ApiResponse<void>> markAsRead(String id) async {
+    markedIds.add(id);
+    items = items
+        .map((item) => item.id == id ? item.copyWith(isRead: true) : item)
+        .toList();
+    return const ApiResponse(success: true, message: 'OK');
+  }
+}
+
+class _MockAuthBloc extends Mock implements AuthBloc {
+  @override
+  Future<void> close() async {}
+}
+
+const _buyer = User(
+  id: 'user-001',
+  fullName: 'Đại lý A',
+  email: 'daily-a@marinelink.demo',
+  phone: '0901000001',
+  status: 'ACTIVE',
+  roles: ['USER'],
+);
+
+const _staff = User(
+  id: 'staff-001',
+  fullName: 'Nhân viên',
+  email: 'staff@marinelink.demo',
+  phone: '0901000002',
+  status: 'ACTIVE',
+  roles: ['STAFF'],
+);
+
+final _notifications = [
+  NotificationEntity(
+    id: 'noti-order',
+    type: NotificationType.order,
+    title: 'Đơn hàng đã xác nhận',
+    message: 'Đơn ML-20260528-0001 đã được xác nhận.',
+    createdAt: DateTime.utc(2026, 5, 28, 8, 30),
+    relatedOrderId: 'order-001',
+  ),
+  NotificationEntity(
+    id: 'noti-product',
+    type: NotificationType.product,
+    title: 'Giá sản phẩm đã đổi',
+    message: 'Tôm khô đã có giá mới.',
+    createdAt: DateTime.utc(2026, 5, 28, 8, 10),
+    relatedProductId: 'prod-002',
+  ),
+  NotificationEntity(
+    id: 'noti-chat',
+    type: NotificationType.chat,
+    title: 'Chat có phản hồi mới',
+    message: 'Nhân viên đã trả lời câu hỏi của bạn.',
+    createdAt: DateTime.utc(2026, 5, 28, 7, 30),
+    isRead: true,
+    relatedChatRoomId: 'room-001',
+  ),
+];
+
+void _registerNotificationRepo(_FakeNotificationRepository repository) {
+  sl.registerLazySingleton<NotificationRepository>(() => repository);
+  sl.registerFactory<NotificationCubit>(
+    () =>
+        NotificationCubit(notificationRepository: sl<NotificationRepository>()),
+  );
+}
+
+AuthBloc _authBlocFor(User user) {
+  final bloc = _MockAuthBloc();
+  when(
+    () => bloc.state,
+  ).thenReturn(AuthAuthenticated(user: user, token: 'token'));
+  when(() => bloc.stream).thenAnswer((_) => const Stream.empty());
+  return bloc;
+}
+
+GoRouter _router() {
+  return GoRouter(
+    initialLocation: '/notifications',
+    routes: [
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/orders/:id',
+        builder: (context, state) =>
+            Scaffold(body: Text('Order Detail ${state.pathParameters['id']}')),
+      ),
+      GoRoute(
+        path: '/products/:id',
+        builder: (context, state) => Scaffold(
+          body: Text('Product Detail ${state.pathParameters['id']}'),
         ),
-      );
-
-      // Wait for loading indicator to disappear and mock data to load
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 800));
-
-      expect(find.text('Thông báo'), findsOneWidget);
-      
-      // Check for unread count in summary card
-      expect(find.text('Chưa đọc'), findsOneWidget);
-      expect(find.text('2'), findsWidgets); // Might find multiple if count appears in multiple places
-
-      // Check for specific notification titles from mock repository
-      expect(find.textContaining('Đơn hàng #OD2305'), findsOneWidget);
-      expect(find.textContaining('Giá tôm khô'), findsOneWidget);
-      
-      // Ensure we can find items in the "Earlier" section
-      await tester.scrollUntilVisible(find.textContaining('Nhân viên hỗ trợ'), 500);
-      expect(find.textContaining('Nhân viên hỗ trợ'), findsOneWidget);
-
-      // Verify the back button exists
-      expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
-    });
-
-    testWidgets('nhấn vào thông báo đã đọc cũng phải thực hiện hành động', (tester) async {
-      final router = GoRouter(
-        initialLocation: '/notifications',
-        routes: [
-          GoRoute(
-            path: '/notifications',
-            builder: (context, state) => const NotificationsScreen(),
-          ),
-          GoRoute(
-            path: '/orders/:id',
-            builder: (context, state) => const Scaffold(body: Text('Order Detail Probe')),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        MaterialApp.router(
-          theme: AppTheme.light(),
-          routerConfig: router,
-          builder: (context, child) => BlocProvider<AuthBloc>.value(
-            value: mockAuthBloc,
-            child: child!,
-          ),
+      ),
+      GoRoute(
+        path: '/chat/:roomId',
+        builder: (context, state) => Scaffold(
+          body: Text('Buyer Chat ${state.pathParameters['roomId']}'),
         ),
-      );
-      await tester.pumpAndSettle(const Duration(milliseconds: 800));
+      ),
+      GoRoute(
+        path: '/staff/chat/:roomId',
+        builder: (context, state) => Scaffold(
+          body: Text('Staff Chat ${state.pathParameters['roomId']}'),
+        ),
+      ),
+    ],
+  );
+}
 
-      // Tìm và nhấn vào thông báo cũ (đã đọc)
-      final olderItem = find.textContaining('Nhân viên hỗ trợ');
-      await tester.scrollUntilVisible(olderItem, 500);
-      await tester.tap(olderItem);
-      await tester.pumpAndSettle();
+Future<void> _pumpScreen(
+  WidgetTester tester, {
+  required _FakeNotificationRepository repository,
+  User user = _buyer,
+}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(390, 900);
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
 
-      // Nếu không có lỗi gì xảy ra là đạt (vì logic điều hướng cần Navigator observer để check kĩ hơn)
-    });
+  _registerNotificationRepo(repository);
+  await tester.pumpWidget(
+    MaterialApp.router(
+      theme: AppTheme.light(),
+      routerConfig: _router(),
+      builder: (context, child) => BlocProvider<AuthBloc>.value(
+        value: _authBlocFor(user),
+        child: child!,
+      ),
+    ),
+  );
+}
+
+void main() {
+  setUp(() async {
+    await sl.reset();
+    sl.allowReassignment = true;
+  });
+
+  tearDown(() async => sl.reset());
+
+  testWidgets('renders loading state while notifications are loading', (
+    tester,
+  ) async {
+    final completer = Completer<ApiResponse<List<NotificationEntity>>>();
+
+    await _pumpScreen(
+      tester,
+      repository: _FakeNotificationRepository(loadCompleter: completer),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('notificationsLoading')), findsOneWidget);
+
+    completer.complete(
+      ApiResponse(success: true, message: 'OK', data: _notifications),
+    );
+  });
+
+  testWidgets('renders error state and retries loading', (tester) async {
+    final repository = _FakeNotificationRepository(failLoad: true);
+
+    await _pumpScreen(tester, repository: repository);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('notificationsError')), findsOneWidget);
+    expect(find.text('Không tải được thông báo.'), findsOneWidget);
+
+    repository.failLoad = false;
+    repository.items = _notifications;
+    await tester.tap(find.byKey(const Key('appErrorStateRetryButton')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Đơn hàng đã xác nhận'), findsOneWidget);
+  });
+
+  testWidgets('renders empty state when no notification exists', (
+    tester,
+  ) async {
+    await _pumpScreen(
+      tester,
+      repository: _FakeNotificationRepository(items: const []),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('notificationsEmpty')), findsOneWidget);
+    expect(find.text('Chưa có thông báo phù hợp.'), findsOneWidget);
+  });
+
+  testWidgets('filters unread notifications and marks order as read on tap', (
+    tester,
+  ) async {
+    final repository = _FakeNotificationRepository(items: _notifications);
+
+    await _pumpScreen(tester, repository: repository);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Đơn hàng đã xác nhận'), findsOneWidget);
+    expect(find.text('Chat có phản hồi mới'), findsOneWidget);
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const Key('notificationsReadFilter')),
+            matching: find.text('Chưa đọc'),
+          )
+          .first,
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.requestedReadFilters.last, isFalse);
+    expect(find.text('Chat có phản hồi mới'), findsNothing);
+
+    await tester.tap(find.text('Đơn hàng đã xác nhận'));
+    await tester.pumpAndSettle();
+
+    expect(repository.markedIds, contains('noti-order'));
+    expect(find.text('Order Detail order-001'), findsOneWidget);
+  });
+
+  testWidgets('opens staff chat route for staff chat notifications', (
+    tester,
+  ) async {
+    final repository = _FakeNotificationRepository(items: _notifications);
+
+    await _pumpScreen(tester, repository: repository, user: _staff);
+    await tester.pump();
+    await tester.pump();
+
+    await tester.drag(
+      find.byKey(const Key('notificationsScrollView')),
+      const Offset(0, -320),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chat có phản hồi mới'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Staff Chat room-001'), findsOneWidget);
   });
 }

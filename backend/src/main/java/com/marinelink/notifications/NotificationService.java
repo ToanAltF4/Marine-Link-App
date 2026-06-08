@@ -1,10 +1,13 @@
 package com.marinelink.notifications;
 
+import com.marinelink.chat.ChatRoomRepository;
+import com.marinelink.common.exception.BusinessException;
 import com.marinelink.notifications.dto.NotificationResponseDTO;
 import com.marinelink.users.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.marinelink.common.exception.ResourceNotFoundException;
@@ -18,6 +21,7 @@ import java.util.UUID;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     public Page<NotificationResponseDTO> getNotifications(User user, Boolean isRead, Pageable pageable) {
         Page<Notification> page;
@@ -36,7 +40,7 @@ public class NotificationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
 
         if (!notification.getUser().getId().equals(user.getId())) {
-            throw new SecurityException("Not authorized to read this notification");
+            throw new BusinessException("Bạn không có quyền đọc thông báo này.", HttpStatus.FORBIDDEN);
         }
 
         if (!notification.isRead()) {
@@ -81,10 +85,19 @@ public class NotificationService {
                 .body(n.getBody())
                 .relatedOrderId(n.getRelatedOrder() != null ? n.getRelatedOrder().getPublicId() : null)
                 .relatedProductId(n.getRelatedProduct() != null ? n.getRelatedProduct().getPublicId() : null)
-                .relatedChatRoomId(n.getRelatedChatRoomId()) // Bổ sung map trường này
+                .relatedChatRoomId(resolveChatRoomPublicId(n.getRelatedChatRoomId()))
                 .read(n.isRead())
                 .createdAt(n.getCreatedAt())
                 .readAt(n.getReadAt())
                 .build();
+    }
+
+    private UUID resolveChatRoomPublicId(Long chatRoomId) {
+        if (chatRoomId == null) {
+            return null;
+        }
+        return chatRoomRepository.findById(chatRoomId)
+                .map(room -> room.getPublicId())
+                .orElse(null);
     }
 }

@@ -7,20 +7,18 @@ class NotificationMockRepository implements NotificationRepository {
     NotificationEntity(
       id: 'noti-001',
       type: NotificationType.order,
-      title: 'Đơn hàng #OD2305 đã được xác nhận',
+      title: 'Đơn hàng ML-20260528-0001 đã được xác nhận',
       message: 'Kho Cà Mau đã xác nhận 120kg mực khô giao vào sáng mai.',
       createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      isRead: false,
-      relatedId: 'order-123', //id giả định
+      relatedOrderId: 'order-001',
     ),
     NotificationEntity(
       id: 'noti-002',
       type: NotificationType.product,
-      title: 'Giá tôm khô đã cập nhật theo tier mới',
+      title: 'Giá tôm khô đã cập nhật theo bậc mới',
       message: 'Mốc giá 5kg và 10kg đã được điều chỉnh cho kênh đại lý.',
       createdAt: DateTime.now().subtract(const Duration(minutes: 25)),
-      isRead: false,
-      relatedId: 'prod-456',
+      relatedProductId: 'prod-002',
     ),
     NotificationEntity(
       id: 'noti-003',
@@ -29,16 +27,15 @@ class NotificationMockRepository implements NotificationRepository {
       message: 'Bạn có tin nhắn mới trong phòng chat về đơn hàng đang giao.',
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       isRead: true,
-      relatedId: 'bon-bot',
+      relatedChatRoomId: 'bon-bot',
     ),
     NotificationEntity(
       id: 'noti-004',
       type: NotificationType.system,
-      title: 'Lịch seed catalog đã đồng bộ',
-      message: 'UI buyer đã đọc token mới từ Stitch kit Ocean B2B.',
+      title: 'Hệ thống đã đồng bộ dữ liệu mới',
+      message: 'Thông tin đơn hàng và kho đã được cập nhật cho tài khoản.',
       createdAt: DateTime.now().subtract(const Duration(days: 1)),
       isRead: true,
-      relatedId: 'sys-789',
     ),
   ];
 
@@ -48,24 +45,23 @@ class NotificationMockRepository implements NotificationRepository {
     int size = 20,
     bool? isRead,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    var filtered = _items;
-    if (isRead != null) {
-      filtered = _items.where((i) => i.isRead == isRead).toList();
-    }
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    final filtered = isRead == null
+        ? _items
+        : _items.where((item) => item.isRead == isRead).toList();
 
     return ApiResponse(
       success: true,
       message: 'OK',
-      data: filtered,
+      data: filtered.skip(page * size).take(size).toList(),
     );
   }
 
   @override
   Future<ApiResponse<void>> markAsRead(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final index = _items.indexWhere((i) => i.id == id);
+    await Future.delayed(const Duration(milliseconds: 400));
+    final index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
       _items[index] = _items[index].copyWith(isRead: true);
     }
