@@ -1,92 +1,106 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:bloc_test/bloc_test.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/notifications/domain/notification.dart';
 import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 
-class MockNotificationRepository extends Mock implements NotificationRepository {}
+class _NotificationRepo implements NotificationRepository {
+  List<NotificationEntity> items;
+  bool fail;
+  final List<bool?> requestedReadFilters = [];
+
+  _NotificationRepo({required this.items, this.fail = false});
+
+  @override
+  Future<ApiResponse<List<NotificationEntity>>> getNotifications({
+    int page = 0,
+    int size = 20,
+    bool? isRead,
+  }) async {
+    requestedReadFilters.add(isRead);
+    if (fail) {
+      return const ApiResponse(success: false, message: 'Lỗi tải thông báo.');
+    }
+    final data = isRead == null
+        ? items
+        : items.where((item) => item.isRead == isRead).toList();
+    return ApiResponse(success: true, message: 'OK', data: data);
+  }
+
+  @override
+  Future<ApiResponse<void>> markAsRead(String id) async {
+    items = items
+        .map((item) => item.id == id ? item.copyWith(isRead: true) : item)
+        .toList();
+    return const ApiResponse(success: true, message: 'OK');
+  }
+}
+
+final _items = [
+  NotificationEntity(
+    id: 'noti-001',
+    type: NotificationType.order,
+    title: 'Đơn hàng',
+    message: 'Đơn đã xác nhận.',
+    createdAt: DateTime.utc(2026, 5, 28),
+    relatedOrderId: 'order-001',
+  ),
+  NotificationEntity(
+    id: 'noti-002',
+    type: NotificationType.chat,
+    title: 'Chat',
+    message: 'Có phản hồi mới.',
+    createdAt: DateTime.utc(2026, 5, 28),
+    isRead: true,
+    relatedChatRoomId: 'room-001',
+  ),
+];
 
 void main() {
-  late NotificationRepository notificationRepository;
-  late NotificationCubit notificationCubit;
+  test(
+    'loadNotifications emits success and keeps unread/read groups',
+    () async {
+      final repo = _NotificationRepo(items: _items);
+      final cubit = NotificationCubit(notificationRepository: repo);
 
-  final tNotifications = [
-    NotificationEntity(
-      id: '1',
-      type: NotificationType.order,
-      title: 'Title 1',
-      message: 'Message 1',
-      createdAt: DateTime.now(),
-      isRead: false,
-    ),
-  ];
+      await cubit.loadNotifications();
 
-  setUp(() {
-    notificationRepository = MockNotificationRepository();
-    notificationCubit = NotificationCubit(notificationRepository: notificationRepository);
-  });
-
-  tearDown(() {
-    notificationCubit.close();
-  });
-
-  test('initial state is correct', () {
-    expect(notificationCubit.state, const NotificationState());
-  });
-
-  blocTest<NotificationCubit, NotificationState>(
-    'emits [loading, success] when loadNotifications is successful',
-    build: () {
-      when(() => notificationRepository.getNotifications()).thenAnswer(
-        (_) async => ApiResponse(success: true, message: 'OK', data: tNotifications),
-      );
-      return notificationCubit;
+      expect(cubit.state.status, NotificationStatus.success);
+      expect(cubit.state.unreadNotifications, hasLength(1));
+      expect(cubit.state.readNotifications, hasLength(1));
+      expect(repo.requestedReadFilters.single, isNull);
     },
-    act: (cubit) => cubit.loadNotifications(),
-    expect: () => [
-      const NotificationState(status: NotificationStatus.loading),
-      NotificationState(
-        status: NotificationStatus.success,
-        notifications: tNotifications,
-      ),
-    ],
   );
 
-  blocTest<NotificationCubit, NotificationState>(
-    'emits [loading, failure] when loadNotifications fails',
-    build: () {
-      when(() => notificationRepository.getNotifications()).thenAnswer(
-        (_) async => const ApiResponse(success: false, message: 'Error', data: null),
-      );
-      return notificationCubit;
-    },
-    act: (cubit) => cubit.loadNotifications(),
-    expect: () => [
-      const NotificationState(status: NotificationStatus.loading),
-      const NotificationState(status: NotificationStatus.failure),
-    ],
-  );
+  test('changeFilter loads unread notifications only', () async {
+    final repo = _NotificationRepo(items: _items);
+    final cubit = NotificationCubit(notificationRepository: repo);
 
-  blocTest<NotificationCubit, NotificationState>(
-    'updates notification read state when markAsRead is successful',
-    seed: () => NotificationState(
-      status: NotificationStatus.success,
-      notifications: tNotifications,
-    ),
-    build: () {
-      when(() => notificationRepository.markAsRead('1')).thenAnswer(
-        (_) async => const ApiResponse(success: true, message: 'OK'),
-      );
-      return notificationCubit;
-    },
-    act: (cubit) => cubit.markAsRead('1'),
-    expect: () => [
-      NotificationState(
-        status: NotificationStatus.success,
-        notifications: [tNotifications[0].copyWith(isRead: true)],
-      ),
-    ],
-  );
+    await cubit.changeFilter(NotificationReadFilter.unread);
+
+    expect(cubit.state.filter, NotificationReadFilter.unread);
+    expect(cubit.state.notifications, hasLength(1));
+    expect(cubit.state.notifications.single.id, 'noti-001');
+    expect(repo.requestedReadFilters.single, isFalse);
+  });
+
+  test('markAsRead updates local state', () async {
+    final repo = _NotificationRepo(items: _items);
+    final cubit = NotificationCubit(notificationRepository: repo);
+
+    await cubit.loadNotifications();
+    await cubit.markAsRead('noti-001');
+
+    expect(cubit.state.notifications.first.isRead, isTrue);
+  });
+
+  test('loadNotifications emits failure with Vietnamese message', () async {
+    final repo = _NotificationRepo(items: const [], fail: true);
+    final cubit = NotificationCubit(notificationRepository: repo);
+
+    await cubit.loadNotifications();
+
+    expect(cubit.state.status, NotificationStatus.failure);
+    expect(cubit.state.errorMessage, 'Lỗi tải thông báo.');
+  });
 }

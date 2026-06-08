@@ -62,6 +62,7 @@ abstract class AppRoutes {
 
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
+  static String chatRoomPath(String roomId) => '$chat/$roomId';
   static String staffOrderDetailPath(String id) => '$staffOrders/$id';
   static String staffChatRoomPath(String roomId) => '$staffChat/$roomId';
   static String adminOrderDetailPath(String id) => '$adminOrders/$id';
