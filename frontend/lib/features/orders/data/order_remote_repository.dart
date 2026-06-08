@@ -55,6 +55,8 @@ class OrderRemoteRepository implements OrderRepository {
         'receiverName': receiverName,
         'receiverPhone': receiverPhone,
         'shippingAddress': shippingAddress,
+        if (shippingAddressId != null && shippingAddressId.trim().isNotEmpty)
+          'shippingAddressId': shippingAddressId.trim(),
         'paymentMethod': paymentMethod,
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
         if (items != null && items.isNotEmpty)
