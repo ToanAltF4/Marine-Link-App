@@ -74,6 +74,7 @@ import '../../features/checkout/domain/checkout_repository.dart';
 import '../../features/checkout/data/cart_sync_repository.dart';
 import '../../features/checkout/data/order_checkout_repository.dart';
 import '../../features/checkout/domain/shipping_address_repository.dart';
+import '../../features/checkout/data/shipping_address_mock_repository.dart';
 import '../../features/checkout/data/shipping_address_remote_repository.dart';
 import '../../features/checkout/presentation/bloc/checkout_bloc.dart';
 
@@ -180,7 +181,9 @@ Future<void> setupServiceLocator() async {
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.
   sl.registerLazySingleton<ShippingAddressRepository>(
-    () => ShippingAddressRemoteRepository(apiClient: sl<ApiClient>()),
+    () => _useRemoteRepositories
+        ? ShippingAddressRemoteRepository(apiClient: sl<ApiClient>())
+        : ShippingAddressMockRepository(),
   );
   sl.registerLazySingleton<CartSyncRepository>(
     () => CartSyncRemoteRepository(apiClient: sl<ApiClient>()),
