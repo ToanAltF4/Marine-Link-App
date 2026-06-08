@@ -28,8 +28,8 @@ class DashboardHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 10, 14, 10),
           child: Row(
             children: [
-              const _BrandMark(),
-              const Spacer(),
+              const Expanded(child: _BrandMark()),
+              const SizedBox(width: 8),
               _HeaderIconButton(
                 tooltip: 'Thông báo',
                 onPressed: onNotificationPressed,
@@ -89,14 +89,16 @@ class _BrandMark extends StatelessWidget {
           child: Image.asset(AppAssets.logoCircle, fit: BoxFit.contain),
         ),
         const SizedBox(width: 10),
-        Text(
-          'MarineLink',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w900,
-            height: 1,
+        Flexible(
+          child: Text(
+            'MarineLink',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
           ),
         ),
       ],

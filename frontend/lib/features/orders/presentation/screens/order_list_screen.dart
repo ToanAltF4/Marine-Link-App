@@ -59,6 +59,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 : const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile),
             body: BlocBuilder<OrderBloc, OrderState>(
               builder: (context, state) {
+                final stateKeyPrefix = _stateKeyPrefix();
                 return RefreshIndicator(
                   onRefresh: () async {
                     _reload(context);
@@ -97,22 +98,27 @@ class _OrderListScreenState extends State<OrderListScreen> {
                         ),
                       ),
                       switch (state) {
-                        OrderListLoading() => const SliverFillRemaining(
+                        OrderListLoading() => SliverFillRemaining(
                           hasScrollBody: false,
-                          child: Center(child: CircularProgressIndicator()),
+                          child: Center(
+                            key: Key('${stateKeyPrefix}Loading'),
+                            child: const CircularProgressIndicator(),
+                          ),
                         ),
                         OrderListError(:final message) => SliverFillRemaining(
                           hasScrollBody: false,
                           child: _MessageState(
+                            key: Key('${stateKeyPrefix}Error'),
                             title: 'Không tải được đơn hàng',
                             message: message,
                             actionLabel: 'Thử lại',
                             onAction: () => _reload(context),
                           ),
                         ),
-                        OrderListEmpty() => const SliverFillRemaining(
+                        OrderListEmpty() => SliverFillRemaining(
                           hasScrollBody: false,
                           child: _MessageState(
+                            key: Key('${stateKeyPrefix}Empty'),
                             title: 'Chưa có đơn hàng',
                             message: 'Các đơn đã đặt sẽ xuất hiện tại đây.',
                           ),
@@ -121,6 +127,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                           orders: _filteredOrders(orders),
                           adminMode: widget.adminMode,
                           staffMode: widget.staffMode,
+                          stateKeyPrefix: stateKeyPrefix,
                         ),
                         _ => const SliverFillRemaining(hasScrollBody: false),
                       },
@@ -146,6 +153,12 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   void _reload(BuildContext context) {
     context.read<OrderBloc>().add(OrderListRequested(status: _status));
+  }
+
+  String _stateKeyPrefix() {
+    if (widget.staffMode) return 'staffOrders';
+    if (widget.adminMode) return 'adminOrders';
+    return 'buyerOrders';
   }
 
   Widget _roleBottomNav() {
@@ -269,19 +282,22 @@ class _OrderList extends StatelessWidget {
   final List<Order> orders;
   final bool adminMode;
   final bool staffMode;
+  final String stateKeyPrefix;
 
   const _OrderList({
     required this.orders,
     required this.adminMode,
     required this.staffMode,
+    required this.stateKeyPrefix,
   });
 
   @override
   Widget build(BuildContext context) {
     if (orders.isEmpty) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         hasScrollBody: false,
         child: _MessageState(
+          key: Key('${stateKeyPrefix}FilteredEmpty'),
           title: 'Không tìm thấy đơn hàng',
           message: 'Thử mã đơn khác hoặc đổi bộ lọc.',
         ),
@@ -469,6 +485,7 @@ class _MessageState extends StatelessWidget {
   final VoidCallback? onAction;
 
   const _MessageState({
+    super.key,
     required this.title,
     required this.message,
     this.actionLabel,
