@@ -7,6 +7,7 @@ class ChatState extends Equatable {
   final String? roomId;
   final ChatThread? thread;
   final bool sending;
+  final bool canRetrySend;
   final String? errorMessage;
   final String? sendErrorMessage;
 
@@ -15,6 +16,7 @@ class ChatState extends Equatable {
     this.roomId,
     this.thread,
     this.sending = false,
+    this.canRetrySend = false,
     this.errorMessage,
     this.sendErrorMessage,
   });
@@ -26,6 +28,7 @@ class ChatState extends Equatable {
     String? roomId,
     ChatThread? thread,
     bool? sending,
+    bool? canRetrySend,
     String? errorMessage,
     bool clearErrorMessage = false,
     String? sendErrorMessage,
@@ -36,6 +39,7 @@ class ChatState extends Equatable {
       roomId: roomId ?? this.roomId,
       thread: thread ?? this.thread,
       sending: sending ?? this.sending,
+      canRetrySend: canRetrySend ?? this.canRetrySend,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -51,6 +55,7 @@ class ChatState extends Equatable {
     roomId,
     thread,
     sending,
+    canRetrySend,
     errorMessage,
     sendErrorMessage,
   ];

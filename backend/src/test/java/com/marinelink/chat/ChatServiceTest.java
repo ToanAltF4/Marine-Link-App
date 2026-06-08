@@ -197,6 +197,18 @@ class ChatServiceTest {
         verify(chatMessageRepository, never()).save(any(ChatMessage.class));
     }
 
+    @Test
+    void sendMessageRejectsNullContentBeforeSaving() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID roomPublicId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        ChatSendRequest request = new ChatSendRequest(roomPublicId, null, null);
+
+        assertThrows(
+                BusinessException.class,
+                () -> chatService.sendMessage(userPublicId, false, request));
+        verify(chatMessageRepository, never()).save(any(ChatMessage.class));
+    }
+
     private ChatRoom room(UUID publicId, User owner, User assignedStaff) {
         return ChatRoom.builder()
                 .id(31L)

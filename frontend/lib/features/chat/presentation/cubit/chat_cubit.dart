@@ -16,6 +16,7 @@ class ChatCubit extends Cubit<ChatState> {
       state.copyWith(
         status: ChatStatus.loading,
         roomId: roomId,
+        canRetrySend: false,
         clearErrorMessage: true,
         clearSendErrorMessage: true,
       ),
@@ -61,6 +62,7 @@ class ChatCubit extends Cubit<ChatState> {
         state.copyWith(
           sendErrorMessage:
               'Vui l\u00f2ng nh\u1eadp n\u1ed9i dung tin nh\u1eafn.',
+          canRetrySend: false,
         ),
       );
       return;
@@ -71,12 +73,19 @@ class ChatCubit extends Cubit<ChatState> {
         state.copyWith(
           sendErrorMessage:
               'Ch\u01b0a c\u00f3 ph\u00f2ng chat \u0111\u1ec3 g\u1eedi tin.',
+          canRetrySend: false,
         ),
       );
       return;
     }
 
-    emit(state.copyWith(sending: true, clearSendErrorMessage: true));
+    emit(
+      state.copyWith(
+        sending: true,
+        canRetrySend: false,
+        clearSendErrorMessage: true,
+      ),
+    );
     try {
       final response = await repository.sendMessage(
         roomId: roomId,
@@ -95,6 +104,7 @@ class ChatCubit extends Cubit<ChatState> {
             status: ChatStatus.success,
             thread: updatedThread,
             sending: false,
+            canRetrySend: false,
             clearSendErrorMessage: true,
           ),
         );
@@ -102,6 +112,7 @@ class ChatCubit extends Cubit<ChatState> {
         emit(
           state.copyWith(
             sending: false,
+            canRetrySend: true,
             sendErrorMessage:
                 response.message ??
                 'Kh\u00f4ng g\u1eedi \u0111\u01b0\u1ee3c tin nh\u1eafn.',
@@ -112,6 +123,7 @@ class ChatCubit extends Cubit<ChatState> {
       emit(
         state.copyWith(
           sending: false,
+          canRetrySend: true,
           sendErrorMessage:
               '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi g\u1eedi tin nh\u1eafn.',
         ),

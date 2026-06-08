@@ -106,4 +106,18 @@ class ChatControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
     }
+
+    @Test
+    void sendMessageRejectsMissingContent() throws Exception {
+        UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID roomId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+
+        mockMvc.perform(post("/api/chat/send")
+                        .principal(new TestingAuthenticationToken(userId.toString(), null, "ROLE_USER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "roomId", roomId.toString()))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
 }

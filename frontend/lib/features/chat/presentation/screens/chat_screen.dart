@@ -104,6 +104,7 @@ class _ChatViewState extends State<_ChatView> {
               _ChatComposer(
                 controller: _controller,
                 sending: state.sending,
+                canRetrySend: state.canRetrySend,
                 closed: state.thread?.isClosed ?? false,
                 errorMessage: state.sendErrorMessage,
                 onSend: _send,
@@ -299,6 +300,7 @@ class _ChatBubble extends StatelessWidget {
 class _ChatComposer extends StatelessWidget {
   final TextEditingController controller;
   final bool sending;
+  final bool canRetrySend;
   final bool closed;
   final String? errorMessage;
   final VoidCallback onSend;
@@ -306,6 +308,7 @@ class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
     required this.controller,
     required this.sending,
+    required this.canRetrySend,
     required this.closed,
     required this.errorMessage,
     required this.onSend,
@@ -383,13 +386,28 @@ class _ChatComposer extends StatelessWidget {
               ],
               if (errorMessage != null) ...[
                 const SizedBox(height: 8),
-                Text(
-                  errorMessage!,
-                  key: const Key('chatInputError'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        errorMessage!,
+                        key: const Key('chatInputError'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (canRetrySend) ...[
+                      const SizedBox(width: 10),
+                      OutlinedButton.icon(
+                        key: const Key('chatRetrySendButton'),
+                        onPressed: sending || closed ? null : onSend,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Thử gửi lại'),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ],
