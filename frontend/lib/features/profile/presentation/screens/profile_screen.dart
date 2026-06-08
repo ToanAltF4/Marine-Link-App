@@ -374,28 +374,52 @@ class _ProfileViewState extends State<_ProfileView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: const Text('Đăng xuất?'),
-        content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi MarineLink?'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Đăng xuất?',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn đăng xuất khỏi MarineLink?',
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             key: const Key('profileLogoutCancelButton'),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text(
+              'Hủy',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
           ),
-          TextButton(
+          const SizedBox(width: 8),
+          ElevatedButton(
             key: const Key('profileLogoutConfirmButton'),
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AuthBloc>().add(const AuthLogoutRequested());
               context.go(AppRoutes.login);
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Text(
               'Đăng xuất',
-              style: TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],

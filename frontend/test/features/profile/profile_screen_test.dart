@@ -8,6 +8,7 @@ import 'package:marinelink/app/theme/app_theme.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/auth/domain/user.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_event.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 import 'package:marinelink/features/profile/domain/profile.dart';
 import 'package:marinelink/features/profile/domain/profile_repository.dart';
@@ -24,6 +25,10 @@ class MockAuthBloc extends Mock implements AuthBloc {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(const AuthLogoutRequested());
+  });
+
   late MockProfileRepository mockRepository;
   late MockAuthBloc mockAuthBloc;
 
@@ -201,6 +206,41 @@ void main() {
 
     expect(find.text('Orders route probe'), findsOneWidget);
   });
+
+  testWidgets('shows logout confirmation dialog and handles confirm',
+      (tester) async {
+    await _pumpProfile(tester, mockAuthBloc);
+    await tester.pumpAndSettle();
+
+    // Scroll to find logout tile if needed
+    await tester.drag(
+      find.byKey(const Key('profileScrollView')),
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('profileLogoutTile')));
+    await tester.pumpAndSettle();
+
+    // Verify dialog content
+    expect(find.text('Đăng xuất?'), findsOneWidget);
+    expect(
+      find.text('Bạn có chắc chắn muốn đăng xuất khỏi MarineLink?'),
+      findsOneWidget,
+    );
+
+    // Verify buttons
+    expect(find.byKey(const Key('profileLogoutCancelButton')), findsOneWidget);
+    expect(find.byKey(const Key('profileLogoutConfirmButton')), findsOneWidget);
+
+    // Tap confirm
+    await tester.tap(find.byKey(const Key('profileLogoutConfirmButton')));
+    await tester.pumpAndSettle();
+
+    // Verify navigation and auth event
+    verify(() => mockAuthBloc.add(any())).called(1);
+    expect(find.text('Login route probe'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpProfile(WidgetTester tester, AuthBloc authBloc) async {
@@ -225,6 +265,11 @@ Future<void> _pumpProfile(WidgetTester tester, AuthBloc authBloc) async {
         path: AppRoutes.changePassword,
         builder: (context, state) =>
             const Scaffold(body: Text('Change password route probe')),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) =>
+            const Scaffold(body: Text('Login route probe')),
       ),
       GoRoute(
         path: AppRoutes.home,
