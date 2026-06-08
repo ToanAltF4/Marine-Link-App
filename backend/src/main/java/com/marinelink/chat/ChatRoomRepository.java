@@ -20,9 +20,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             WHERE (:closed IS NULL OR r.closed = :closed)
               AND (
                 :query IS NULL
-                OR lower(u.fullName) LIKE lower(concat('%', :query, '%'))
-                OR lower(u.email) LIKE lower(concat('%', :query, '%'))
-                OR u.phone LIKE concat('%', :query, '%')
+                OR lower(u.fullName) LIKE lower(concat('%', cast(:query as string), '%'))
+                OR lower(u.email) LIKE lower(concat('%', cast(:query as string), '%'))
+                OR u.phone LIKE concat('%', cast(:query as string), '%')
               )
             ORDER BY COALESCE(r.lastMessageAt, r.createdAt) DESC
             """)
