@@ -71,7 +71,28 @@ StaffChatRoom staffChatRoomFromJson(dynamic json) {
     lastMessage: map['lastMessage'] == null && map['last_message'] == null
         ? null
         : chatMessageFromJson(map['lastMessage'] ?? map['last_message']),
+    context: map['context'] == null
+        ? null
+        : staffChatContextFromJson(map['context']),
     summary: _stringOrEmpty(map['summary']),
+  );
+}
+
+StaffChatContext staffChatContextFromJson(dynamic json) {
+  final map = json as Map<String, dynamic>? ?? const <String, dynamic>{};
+  return StaffChatContext(
+    orderId: _nullableString(map['orderId'] ?? map['order_id']),
+    orderCode: _nullableString(map['orderCode'] ?? map['order_code']),
+    orderStatus: _nullableString(map['orderStatus'] ?? map['order_status']),
+    orderTotalAmount:
+        map['orderTotalAmount'] == null && map['order_total_amount'] == null
+        ? null
+        : _toNum(map['orderTotalAmount'] ?? map['order_total_amount']),
+    productId: _nullableString(map['productId'] ?? map['product_id']),
+    productName: _nullableString(map['productName'] ?? map['product_name']),
+    productImageUrl: _nullableString(
+      map['productImageUrl'] ?? map['product_image_url'],
+    ),
   );
 }
 

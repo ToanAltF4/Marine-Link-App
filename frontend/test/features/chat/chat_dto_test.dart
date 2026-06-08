@@ -98,6 +98,15 @@ void main() {
           'senderType': 'USER',
           'content': 'Can ho tro',
         },
+        'context': {
+          'order_id': 'order-001',
+          'order_code': 'ML-20260528-0001',
+          'order_status': 'PENDING',
+          'order_total_amount': '4200000',
+          'product_id': 'product-001',
+          'product_name': 'Muc kho loai 1',
+          'product_image_url': 'https://example.com/product.png',
+        },
         'summary': 'Dai ly: Can ho tro',
       },
     ]);
@@ -107,6 +116,9 @@ void main() {
     expect(rooms.single.assignedStaff!.fullName, 'Staff Demo');
     expect(rooms.single.messageCount, 3);
     expect(rooms.single.lastMessage!.senderType, ChatSenderType.user);
+    expect(rooms.single.context!.orderCode, 'ML-20260528-0001');
+    expect(rooms.single.context!.orderTotalAmount, 4200000);
+    expect(rooms.single.context!.productName, 'Muc kho loai 1');
   });
 
   test('staffChatRoomFromJson tolerates missing nested fields', () {

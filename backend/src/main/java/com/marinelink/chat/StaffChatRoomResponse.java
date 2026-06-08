@@ -13,6 +13,7 @@ public record StaffChatRoomResponse(
         Instant updatedAt,
         long messageCount,
         ChatMessageResponse lastMessage,
+        StaffChatContextResponse context,
         String summary
 ) {
     static StaffChatRoomResponse from(
@@ -30,6 +31,7 @@ public record StaffChatRoomResponse(
                 room.getUpdatedAt(),
                 messageCount,
                 lastMessage == null ? null : ChatMessageResponse.from(lastMessage),
+                StaffChatContextResponse.from(room),
                 summary);
     }
 }

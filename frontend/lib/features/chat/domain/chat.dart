@@ -114,6 +114,41 @@ class StaffChatAssignee extends Equatable {
   List<Object?> get props => [id, fullName];
 }
 
+class StaffChatContext extends Equatable {
+  final String? orderId;
+  final String? orderCode;
+  final String? orderStatus;
+  final num? orderTotalAmount;
+  final String? productId;
+  final String? productName;
+  final String? productImageUrl;
+
+  const StaffChatContext({
+    this.orderId,
+    this.orderCode,
+    this.orderStatus,
+    this.orderTotalAmount,
+    this.productId,
+    this.productName,
+    this.productImageUrl,
+  });
+
+  bool get hasOrder => orderId != null || orderCode != null;
+
+  bool get hasProduct => productId != null || productName != null;
+
+  @override
+  List<Object?> get props => [
+    orderId,
+    orderCode,
+    orderStatus,
+    orderTotalAmount,
+    productId,
+    productName,
+    productImageUrl,
+  ];
+}
+
 class StaffChatRoom extends Equatable {
   final String roomId;
   final StaffChatCustomer customer;
@@ -124,6 +159,7 @@ class StaffChatRoom extends Equatable {
   final DateTime? updatedAt;
   final int messageCount;
   final ChatMessage? lastMessage;
+  final StaffChatContext? context;
   final String summary;
 
   const StaffChatRoom({
@@ -136,6 +172,7 @@ class StaffChatRoom extends Equatable {
     this.updatedAt,
     required this.messageCount,
     this.lastMessage,
+    this.context,
     required this.summary,
   });
 
@@ -146,6 +183,7 @@ class StaffChatRoom extends Equatable {
     DateTime? updatedAt,
     int? messageCount,
     ChatMessage? lastMessage,
+    StaffChatContext? context,
     String? summary,
   }) {
     return StaffChatRoom(
@@ -158,6 +196,7 @@ class StaffChatRoom extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
       messageCount: messageCount ?? this.messageCount,
       lastMessage: lastMessage ?? this.lastMessage,
+      context: context ?? this.context,
       summary: summary ?? this.summary,
     );
   }
@@ -173,6 +212,7 @@ class StaffChatRoom extends Equatable {
     updatedAt,
     messageCount,
     lastMessage,
+    context,
     summary,
   ];
 }

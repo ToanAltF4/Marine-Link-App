@@ -1,5 +1,7 @@
 package com.marinelink.chat;
 
+import com.marinelink.orders.Order;
+import com.marinelink.products.Product;
 import com.marinelink.users.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,6 +48,14 @@ public class ChatRoom {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_staff_id")
     private User assignedStaff;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_order_id")
+    private Order relatedOrder;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "related_product_id")
+    private Product relatedProduct;
 
     @Column(name = "last_message_at")
     private Instant lastMessageAt;

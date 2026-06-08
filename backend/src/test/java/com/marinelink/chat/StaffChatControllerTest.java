@@ -52,6 +52,14 @@ class StaffChatControllerTest {
                 Instant.parse("2026-05-28T08:30:00Z"),
                 2,
                 null,
+                new StaffChatContextResponse(
+                        UUID.fromString("550e8400-e29b-41d4-a716-446655440009"),
+                        "ML-20260528-0001",
+                        "PENDING",
+                        java.math.BigDecimal.valueOf(4200000),
+                        UUID.fromString("550e8400-e29b-41d4-a716-446655440003"),
+                        "Muc kho loai 1",
+                        "https://example.com/product.png"),
                 "Dai ly: Can ho tro don hang");
 
         when(chatService.listStaffRooms(staffId, true, "OPEN", "daily"))
@@ -68,6 +76,8 @@ class StaffChatControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].roomId").value(roomId.toString()))
                 .andExpect(jsonPath("$.data[0].customer.fullName").value("Dai ly A"))
+                .andExpect(jsonPath("$.data[0].context.orderCode").value("ML-20260528-0001"))
+                .andExpect(jsonPath("$.data[0].context.productName").value("Muc kho loai 1"))
                 .andExpect(jsonPath("$.data[0].isClosed").value(false));
 
         verify(chatService).listStaffRooms(staffId, true, "OPEN", "daily");

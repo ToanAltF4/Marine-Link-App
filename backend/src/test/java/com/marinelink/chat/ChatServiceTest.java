@@ -3,12 +3,16 @@ package com.marinelink.chat;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.complaints.Complaint;
 import com.marinelink.complaints.ComplaintRepository;
+import com.marinelink.orders.Order;
+import com.marinelink.orders.OrderStatus;
+import com.marinelink.products.Product;
 import com.marinelink.users.Role;
 import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -112,6 +116,19 @@ class ChatServiceTest {
         User owner = user(21L, UUID.fromString("550e8400-e29b-41d4-a716-446655440003"), "USER");
         User staff = user(22L, staffPublicId, "STAFF");
         ChatRoom room = room(roomPublicId, owner, staff);
+        room.setRelatedOrder(Order.builder()
+                .id(41L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440009"))
+                .orderCode("ML-20260528-0001")
+                .status(OrderStatus.PENDING)
+                .totalAmount(BigDecimal.valueOf(4200000))
+                .build());
+        room.setRelatedProduct(Product.builder()
+                .id(42L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440003"))
+                .name("Muc kho loai 1")
+                .imageUrl("https://example.com/product.png")
+                .build());
         ChatMessage message = message(room, owner, ChatSenderType.USER, "Can kiem tra don hang");
 
         when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
@@ -130,6 +147,8 @@ class ChatServiceTest {
         assertEquals(roomPublicId, response.getFirst().roomId());
         assertEquals("Nguyen Van A", response.getFirst().customer().fullName());
         assertEquals(ChatSenderType.USER, response.getFirst().lastMessage().senderType());
+        assertEquals("ML-20260528-0001", response.getFirst().context().orderCode());
+        assertEquals("Muc kho loai 1", response.getFirst().context().productName());
     }
 
     @Test
