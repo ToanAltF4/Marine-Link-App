@@ -1,9 +1,9 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_response.dart';
-import '../../auth/data/auth_dto.dart';
-import '../../auth/domain/user.dart';
+import '../domain/profile.dart';
 import '../domain/profile_repository.dart';
+import 'profile_dto.dart';
 
 class ProfileRemoteRepository implements ProfileRepository {
   final ApiClient apiClient;
@@ -11,27 +11,29 @@ class ProfileRemoteRepository implements ProfileRepository {
   ProfileRemoteRepository({required this.apiClient});
 
   @override
-  Future<ApiResponse<User>> getProfile() async {
-    return await apiClient.get<User>(
+  Future<ApiResponse<Profile>> getProfile() async {
+    return await apiClient.get<Profile>(
       ApiEndpoints.me,
-      fromJson: (json) => UserDto.fromJson(json).toDomain(),
+      fromJson: profileFromJson,
     );
   }
 
   @override
-  Future<ApiResponse<User>> updateProfile({
+  Future<ApiResponse<Profile>> updateProfile({
     required String fullName,
     required String phone,
     String? businessAddress,
+    String? avatarUrl,
   }) async {
-    return await apiClient.put<User>(
+    return await apiClient.put<Profile>(
       ApiEndpoints.me,
       data: {
         'fullName': fullName,
         'phone': phone,
         'businessAddress': businessAddress,
+        'avatarUrl': avatarUrl,
       },
-      fromJson: (json) => UserDto.fromJson(json).toDomain(),
+      fromJson: profileFromJson,
     );
   }
 }

@@ -14,5 +14,8 @@ public record UpdateProfileRequest(
     String phone,
 
     @Size(max = 255, message = "Địa chỉ không quá 255 ký tự")
-    String businessAddress
+    String businessAddress,
+
+    @Size(max = 500, message = "Avatar URL không quá 500 ký tự")
+    String avatarUrl
 ) {}

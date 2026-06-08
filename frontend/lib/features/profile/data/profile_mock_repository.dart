@@ -1,6 +1,6 @@
 import '../../../core/api/api_response.dart';
 import '../../auth/domain/auth_repository.dart';
-import '../../auth/domain/user.dart';
+import '../domain/profile.dart';
 import '../domain/profile_repository.dart';
 
 class ProfileMockRepository implements ProfileRepository {
@@ -8,7 +8,7 @@ class ProfileMockRepository implements ProfileRepository {
 
   ProfileMockRepository(this._authRepository);
 
-  static const _dealerFallback = User(
+  static const _dealerFallback = Profile(
     id: 'user-001',
     fullName: 'Đại lý Hải Sản Cà Mau',
     email: 'daily-camau@marinelink.vn',
@@ -16,38 +16,47 @@ class ProfileMockRepository implements ProfileRepository {
     status: 'ACTIVE',
     roles: ['USER'],
     businessAddress: '123 Đường Hải Sản, TP. Cà Mau',
-    storeName: 'Hải Sản Cam Mau Store',
+    storeName: 'Hải Sản Cà Mau Store',
+    avatarUrl: 'https://example.com/avatar.png',
   );
 
-  User? _updatedUser;
+  Profile? _updatedProfile;
 
   @override
-  Future<ApiResponse<User>> getProfile() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<ApiResponse<Profile>> getProfile() async {
+    await Future.delayed(const Duration(milliseconds: 400));
 
-    if (_updatedUser != null) {
-      return ApiResponse(success: true, message: 'OK', data: _updatedUser);
+    if (_updatedProfile != null) {
+      return ApiResponse(success: true, message: 'OK', data: _updatedProfile);
     }
 
     final currentUser = await _authRepository.getCurrentUser();
     if (currentUser != null) {
-      return ApiResponse(success: true, message: 'OK', data: currentUser);
+      return ApiResponse(
+        success: true,
+        message: 'OK',
+        data: Profile.fromUser(currentUser),
+      );
     }
 
     return ApiResponse(success: true, message: 'OK', data: _dealerFallback);
   }
 
   @override
-  Future<ApiResponse<User>> updateProfile({
+  Future<ApiResponse<Profile>> updateProfile({
     required String fullName,
     required String phone,
     String? businessAddress,
+    String? avatarUrl,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 400));
+    final currentUser = await _authRepository.getCurrentUser();
     final base =
-        _updatedUser ?? await _authRepository.getCurrentUser() ?? _dealerFallback;
+        _updatedProfile ??
+        (currentUser == null ? null : Profile.fromUser(currentUser)) ??
+        _dealerFallback;
 
-    _updatedUser = User(
+    _updatedProfile = Profile(
       id: base.id,
       fullName: fullName,
       email: base.email,
@@ -57,9 +66,12 @@ class ProfileMockRepository implements ProfileRepository {
       businessAddress: businessAddress,
       storeName: base.storeName,
       taxCode: base.taxCode,
-      avatarUrl: base.avatarUrl,
+      avatarUrl: avatarUrl,
     );
     return ApiResponse(
-        success: true, message: 'Cập nhật thành công', data: _updatedUser);
+      success: true,
+      message: 'Cập nhật thành công',
+      data: _updatedProfile,
+    );
   }
 }
