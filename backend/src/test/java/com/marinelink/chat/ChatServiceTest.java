@@ -137,7 +137,7 @@ class ChatServiceTest {
         ChatMessage message = message(room, owner, ChatSenderType.USER, "Can kiem tra don hang");
 
         when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
-        when(chatRoomRepository.findStaffRooms(false, "daily")).thenReturn(List.of(room));
+        when(chatRoomRepository.searchStaffRooms(false, "%daily%")).thenReturn(List.of(room));
         when(chatMessageRepository.findTopByRoomOrderByCreatedAtDesc(room)).thenReturn(Optional.of(message));
         when(chatMessageRepository.countByRoom(room)).thenReturn(1L);
         when(chatMessageRepository.findByRoomOrderByCreatedAtAsc(room)).thenReturn(List.of(message));
@@ -146,7 +146,7 @@ class ChatServiceTest {
                 staffPublicId,
                 true,
                 "OPEN",
-                "daily");
+                "Daily");
 
         assertEquals(1, response.size());
         assertEquals(roomPublicId, response.getFirst().roomId());
@@ -157,14 +157,14 @@ class ChatServiceTest {
     }
 
     @Test
-    void listStaffRoomsWithoutSearchUsesNullQueryParam() {
-        // No-search path (query == null) — regression for the lower(bytea) bug
-        // on real Postgres when the staff opens the inbox without filtering.
+    void listStaffRoomsWithoutSearchUsesListQuery() {
+        // No-search path avoids nullable text parameters in LIKE expressions on
+        // real Postgres.
         UUID staffPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440004");
         User staff = user(22L, staffPublicId, "STAFF");
 
         when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
-        when(chatRoomRepository.findStaffRooms(null, null)).thenReturn(List.of());
+        when(chatRoomRepository.findStaffRooms(null)).thenReturn(List.of());
 
         List<StaffChatRoomResponse> response = chatService.listStaffRooms(
                 staffPublicId,
@@ -173,7 +173,7 @@ class ChatServiceTest {
                 null);
 
         assertEquals(0, response.size());
-        verify(chatRoomRepository).findStaffRooms(null, null);
+        verify(chatRoomRepository).findStaffRooms(null);
     }
 
     @Test

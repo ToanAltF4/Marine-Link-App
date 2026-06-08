@@ -238,7 +238,11 @@ public class ChatService {
         };
         String normalizedQuery = normalizeQuery(query);
 
-        return chatRoomRepository.findStaffRooms(closed, normalizedQuery)
+        List<ChatRoom> rooms = normalizedQuery == null
+                ? chatRoomRepository.findStaffRooms(closed)
+                : chatRoomRepository.searchStaffRooms(closed, "%" + normalizedQuery + "%");
+
+        return rooms
                 .stream()
                 .map(this::toStaffRoomResponse)
                 .toList();
@@ -368,7 +372,7 @@ public class ChatService {
         if (query == null || query.trim().isEmpty()) {
             return null;
         }
-        return query.trim();
+        return query.trim().toLowerCase(Locale.ROOT);
     }
 
     private String label(ChatSenderType type) {
