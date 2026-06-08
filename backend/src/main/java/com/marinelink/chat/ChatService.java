@@ -6,6 +6,11 @@ import com.marinelink.common.exception.ResourceNotFoundException;
 import com.marinelink.complaints.Complaint;
 import com.marinelink.complaints.ComplaintRepository;
 import com.marinelink.complaints.ComplaintStatus;
+import com.marinelink.orders.Order;
+import com.marinelink.orders.OrderItem;
+import com.marinelink.orders.OrderRepository;
+import com.marinelink.orders.OrderStatus;
+import com.marinelink.products.Product;
 import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -28,18 +34,140 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final ComplaintRepository complaintRepository;
+    private final OrderRepository orderRepository;
 
     public ChatThreadResponse getThread(UUID currentUserPublicId, boolean canAccessStaffRooms, UUID roomPublicId) {
         User currentUser = getCurrentUser(currentUserPublicId);
         ChatRoom room = getRoom(roomPublicId);
         assertCanAccess(room, currentUser, canAccessStaffRooms);
 
+        return toThreadResponse(room);
+    }
+
+    /**
+     * Trả về phòng hỗ trợ chung của user hiện tại, tạo mới nếu chưa có.
+     * Dùng cho tab Chat của buyer (không cần biết trước roomId).
+     */
+    @Transactional
+    public ChatThreadResponse getOrCreateMyRoom(UUID currentUserPublicId) {
+        User currentUser = getCurrentUser(currentUserPublicId);
+        if (!"USER".equals(currentUser.getRoleCode())) {
+            throw new BusinessException("Chỉ đại lý mới có phòng chat hỗ trợ riêng.", HttpStatus.FORBIDDEN);
+        }
+        ChatRoom room = chatRoomRepository
+                .findFirstByUserAndRelatedOrderIsNullAndRelatedProductIsNullOrderByCreatedAtAsc(currentUser)
+                .orElseGet(() -> createSupportRoom(currentUser));
+        return toThreadResponse(room);
+    }
+
+    private ChatRoom createSupportRoom(User user) {
+        Instant now = Instant.now();
+        ChatRoom room = ChatRoom.builder()
+                .publicId(UUID.randomUUID())
+                .user(user)
+                .closed(false)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        return chatRoomRepository.save(room);
+    }
+
+    @Transactional
+    public ChatThreadResponse getOrCreateOrderComplaintRoom(UUID currentUserPublicId, UUID orderPublicId) {
+        User currentUser = getCurrentUser(currentUserPublicId);
+        if (!"USER".equals(currentUser.getRoleCode())) {
+            throw new BusinessException("Chỉ đại lý mới có thể tạo khiếu nại đơn hàng.", HttpStatus.FORBIDDEN);
+        }
+
+        Order order = orderRepository.findDetailByPublicId(orderPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+        if (!sameUser(order.getUser(), currentUser)) {
+            throw new ResourceNotFoundException("Không tìm thấy đơn hàng");
+        }
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new BusinessException("Chỉ có thể khiếu nại đơn hàng đã hoàn thành.", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        ChatRoom room = chatRoomRepository
+                .findFirstByUserAndRelatedOrderOrderByCreatedAtAsc(currentUser, order)
+                .orElseGet(() -> createOrderComplaintRoom(currentUser, order));
+        if (room.isClosed()) {
+            room.setClosed(false);
+            chatRoomRepository.save(room);
+        }
+        ensureOrderComplaintSeedMessage(room, order);
+        return toThreadResponse(room);
+    }
+
+    private ChatRoom createOrderComplaintRoom(User user, Order order) {
+        Instant now = Instant.now();
+        ChatRoom room = ChatRoom.builder()
+                .publicId(UUID.randomUUID())
+                .user(user)
+                .relatedOrder(order)
+                .relatedProduct(primaryProduct(order))
+                .closed(false)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        return chatRoomRepository.save(room);
+    }
+
+    private Product primaryProduct(Order order) {
+        return order.getItems()
+                .stream()
+                .map(OrderItem::getProduct)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void ensureOrderComplaintSeedMessage(ChatRoom room, Order order) {
+        if (chatMessageRepository.countByRoom(room) > 0) {
+            return;
+        }
+        Instant now = Instant.now();
+        ChatMessage message = ChatMessage.builder()
+                .publicId(UUID.randomUUID())
+                .room(room)
+                .senderType(ChatSenderType.AI_SAMPLE)
+                .content(orderComplaintSeedContent(order, room.getRelatedProduct()))
+                .createdAt(now)
+                .build();
+        chatMessageRepository.save(message);
+        room.setLastMessageAt(now);
+        chatRoomRepository.save(room);
+    }
+
+    private String orderComplaintSeedContent(Order order, Product product) {
+        String productLine = product == null
+                ? "Sản phẩm: Chưa xác định"
+                : "Sản phẩm: " + product.getName();
+        return """
+                Khiếu nại đơn hàng %s
+                %s
+                Tổng tiền: %s VND
+                Trạng thái: %s
+                Vui lòng mô tả vấn đề cần hỗ trợ.
+                """.formatted(
+                order.getOrderCode(),
+                productLine,
+                formatMoney(order.getTotalAmount()),
+                order.getStatus().name()).trim();
+    }
+
+    private String formatMoney(BigDecimal value) {
+        if (value == null) {
+            return "0";
+        }
+        return value.stripTrailingZeros().toPlainString();
+    }
+
+    private ChatThreadResponse toThreadResponse(ChatRoom room) {
         List<ChatMessageResponse> messages = chatMessageRepository
                 .findByRoomOrderByCreatedAtAsc(room)
                 .stream()
                 .map(ChatMessageResponse::from)
                 .toList();
-
         return new ChatThreadResponse(room.getPublicId(), room.isClosed(), messages);
     }
 
@@ -110,7 +238,11 @@ public class ChatService {
         };
         String normalizedQuery = normalizeQuery(query);
 
-        return chatRoomRepository.findStaffRooms(closed, normalizedQuery)
+        List<ChatRoom> rooms = normalizedQuery == null
+                ? chatRoomRepository.findStaffRooms(closed)
+                : chatRoomRepository.searchStaffRooms(closed, "%" + normalizedQuery + "%");
+
+        return rooms
                 .stream()
                 .map(this::toStaffRoomResponse)
                 .toList();
@@ -240,7 +372,7 @@ public class ChatService {
         if (query == null || query.trim().isEmpty()) {
             return null;
         }
-        return query.trim();
+        return query.trim().toLowerCase(Locale.ROOT);
     }
 
     private String label(ChatSenderType type) {

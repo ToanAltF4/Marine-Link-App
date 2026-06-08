@@ -168,6 +168,8 @@ Orders:
 | GET | `/api/orders/{id}` | Owner, STAFF, ADMIN |
 | PUT | `/api/orders/{id}/status` | STAFF, ADMIN |
 | POST | `/api/chat/send` | All roles |
+| GET | `/api/chat/room` | USER (get-or-create phòng hỗ trợ của chính mình) |
+| GET | `/api/chat/orders/{orderId}/room` | USER owner, order `COMPLETED` |
 | GET | `/api/chat/{roomId}` | Participant, STAFF, ADMIN |
 | GET | `/api/staff/chat/rooms` | STAFF, ADMIN |
 | PUT | `/api/staff/chat/rooms/{roomId}/status` | STAFF, ADMIN |
@@ -720,6 +722,7 @@ Response `200`:
         "productId": "550e8400-e29b-41d4-a716-446655440003",
         "productNameSnapshot": "Muc kho loai 1",
         "productUnitSnapshot": "kg",
+        "productImageUrl": "https://storage.example.com/products/muc.png",
         "unitPrice": 420000,
         "quantity": 10,
         "lineTotal": 4200000
@@ -819,6 +822,73 @@ Rules:
 - `senderType` là `USER`, `STAFF`, hoặc `AI_SAMPLE`.
 - Demo phase dùng sample response theo keyword, chưa gọi LLM thật.
 
+### GET `/api/chat/room`
+
+Buyer opens the Chat tab with this endpoint to get the current user's general
+support room. If the room does not exist yet, backend creates it and returns an
+empty thread instead of `404`.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+    "isClosed": false,
+    "messages": []
+  }
+}
+```
+
+Rules:
+
+- Only the authenticated `USER` uses this endpoint for the general support room
+  that is not tied to an order or product.
+- A room with no chat history is valid and returns `messages: []`.
+- After receiving `roomId`, client sends messages through `POST /api/chat/send`.
+
+### GET `/api/chat/orders/{orderId}/room`
+
+Buyer opens a complaint chat room from a completed order detail screen. Backend
+gets or creates one open room linked to that order and its first product so
+Staff/Admin inbox can immediately show order code, product context, amount, and
+customer information.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "roomId": "550e8400-e29b-41d4-a716-4466554400dd",
+    "isClosed": false,
+    "messages": [
+      {
+        "id": "550e8400-e29b-41d4-a716-4466554400de",
+        "roomId": "550e8400-e29b-41d4-a716-4466554400dd",
+        "senderType": "AI_SAMPLE",
+        "content": "Khiếu nại đơn hàng ML-20260528-0001\nSản phẩm: Muc kho loai 1\nTổng tiền: 4200000 VND\nTrạng thái: COMPLETED\nVui lòng mô tả vấn đề cần hỗ trợ.",
+        "createdAt": "2026-05-28T08:30:00Z",
+        "attachments": []
+      }
+    ]
+  }
+}
+```
+
+Rules:
+
+- Only authenticated `USER` can use this endpoint.
+- User can only open complaint room for their own order.
+- Order must be `COMPLETED`; other statuses return `422`.
+- Existing room is reused and reopened if needed; seed context message is only
+  created when the room has no messages.
+- After receiving `roomId`, client sends complaint details through
+  `POST /api/chat/send`.
+
 ### GET `/api/chat/{roomId}`
 
 Response `200`:
@@ -850,7 +920,7 @@ Query params:
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `status` | `OPEN` \| `CLOSED` \| `ALL` | `OPEN` | `OPEN` = chưa xử lý, `CLOSED` = đã xử lý |
-| `q` | string | optional | Tìm theo tên/email/số điện thoại đại lý |
+| `q` | string | optional | Tìm theo tên/email/số điện thoại đại lý, mã đơn hoặc tên sản phẩm |
 
 Response `200`:
 
@@ -1166,6 +1236,8 @@ Rules:
 | `GET /api/orders/{id}` | `orders`, `order_items`, `products`, `order_status_history` |
 | `PUT /api/orders/{id}/status` | `orders`, `order_status_history`, `notifications` |
 | `POST /api/chat/send` | `chat_rooms`, `chat_messages`, `chat_attachments`, `notifications` |
+| `GET /api/chat/room` | `chat_rooms`, `chat_messages`, `chat_attachments` |
+| `GET /api/chat/orders/{orderId}/room` | `orders`, `order_items`, `products`, `chat_rooms`, `chat_messages`, `chat_attachments` |
 | `GET /api/chat/{roomId}` | `chat_rooms`, `chat_messages`, `chat_attachments` |
 | `GET /api/notifications` | `notifications` |
 | `PUT /api/notifications/{id}/read` | `notifications` |
@@ -1179,7 +1251,7 @@ Rules:
 - Không hardcode JWT secret, DB password, Supabase service role key hoặc API key trong source.
 - Không trả `passwordHash`, stack trace, SQL error raw, hoặc internal exception class cho client.
 - Validate input bằng DTO/schema ở controller boundary.
-- Check ownership cho `/api/orders/{id}`, `/api/notifications/{id}/read`, `/api/chat/{roomId}`.
+- Check ownership cho `/api/orders/{id}`, `/api/notifications/{id}/read`, `/api/chat/{roomId}`, `/api/chat/orders/{orderId}/room`.
 - Rate limit `/api/auth/login` và `/api/auth/register`.
 - File chat attachment chỉ dùng bucket private hoặc signed URL/backend proxy.
 - Admin endpoints phải require role `ADMIN`; Staff không được truy cập nhầm full admin CRUD.

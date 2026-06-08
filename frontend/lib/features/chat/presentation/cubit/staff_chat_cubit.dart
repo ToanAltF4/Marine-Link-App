@@ -11,14 +11,20 @@ class StaffChatCubit extends Cubit<StaffChatState> {
 
   StaffChatCubit({required this.repository}) : super(const StaffChatState());
 
-  Future<void> load() async {
-    emit(
-      state.copyWith(
-        status: StaffChatStatus.loading,
-        clearErrorMessage: true,
-        clearActionMessage: true,
-      ),
-    );
+  Future<void> load() => _load(showLoading: true);
+
+  Future<void> refresh() => _load(showLoading: false);
+
+  Future<void> _load({required bool showLoading}) async {
+    if (showLoading) {
+      emit(
+        state.copyWith(
+          status: StaffChatStatus.loading,
+          clearErrorMessage: true,
+          clearActionMessage: true,
+        ),
+      );
+    }
     try {
       final response = await repository.getStaffRooms(
         filter: state.filter,
@@ -31,26 +37,31 @@ class StaffChatCubit extends Cubit<StaffChatState> {
                 ? StaffChatStatus.empty
                 : StaffChatStatus.success,
             rooms: response.data!,
+            clearErrorMessage: true,
           ),
         );
       } else {
+        if (showLoading) {
+          emit(
+            state.copyWith(
+              status: StaffChatStatus.failure,
+              errorMessage:
+                  response.message ??
+                  'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch chat.',
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      if (showLoading) {
         emit(
           state.copyWith(
             status: StaffChatStatus.failure,
             errorMessage:
-                response.message ??
-                'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch chat.',
+                '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i danh s\u00e1ch chat.',
           ),
         );
       }
-    } catch (_) {
-      emit(
-        state.copyWith(
-          status: StaffChatStatus.failure,
-          errorMessage:
-              '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i danh s\u00e1ch chat.',
-        ),
-      );
     }
   }
 

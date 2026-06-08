@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -25,8 +27,32 @@ class StaffChatManagementScreen extends StatelessWidget {
   }
 }
 
-class _StaffChatView extends StatelessWidget {
+class _StaffChatView extends StatefulWidget {
   const _StaffChatView();
+
+  @override
+  State<_StaffChatView> createState() => _StaffChatViewState();
+}
+
+class _StaffChatViewState extends State<_StaffChatView> {
+  static const _refreshInterval = Duration(seconds: 4);
+
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(
+      _refreshInterval,
+      (_) => context.read<StaffChatCubit>().refresh(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +224,7 @@ class _StaffChatSearchState extends State<_StaffChatSearch> {
       decoration: const InputDecoration(
         prefixIcon: Icon(Icons.search),
         hintText:
-            'T\u00ecm theo t\u00ean, email, s\u1ed1 \u0111i\u1ec7n tho\u1ea1i',
+            'T\u00ecm theo t\u00ean, email, S\u0110T, m\u00e3 \u0111\u01a1n, s\u1ea3n ph\u1ea9m',
       ),
       onSubmitted: context.read<StaffChatCubit>().setQuery,
     );

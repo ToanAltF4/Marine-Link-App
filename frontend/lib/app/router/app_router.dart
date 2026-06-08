@@ -44,6 +44,7 @@ abstract class AppRoutes {
   static const notifications = '/home/notifications';
   static const chat = '/chat';
   static const chatRoom = '/chat/:roomId';
+  static const chatOrderRoom = '/chat/order/:orderId';
   static const profile = '/profile';
   static const warehouseMap = '/warehouses';
 
@@ -63,6 +64,7 @@ abstract class AppRoutes {
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
   static String chatRoomPath(String roomId) => '$chat/$roomId';
+  static String chatOrderRoomPath(String orderId) => '$chat/order/$orderId';
   static String staffOrderDetailPath(String id) => '$staffOrders/$id';
   static String staffChatRoomPath(String roomId) => '$staffChat/$roomId';
   static String adminOrderDetailPath(String id) => '$adminOrders/$id';
@@ -171,6 +173,11 @@ class AppRouter {
                 path: AppRoutes.chat,
                 builder: (context, state) => const ChatScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'order/:orderId',
+                    builder: (context, state) =>
+                        ChatScreen(orderId: state.pathParameters['orderId']!),
+                  ),
                   GoRoute(
                     path: ':roomId',
                     builder: (context, state) => ChatScreen(
