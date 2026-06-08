@@ -43,11 +43,12 @@ void _registerRepo(AdminDashboardRepository repo) {
   );
 }
 
-Future<void> _pumpScreen(WidgetTester tester) async {
+Future<void> _pumpScreen(
+  WidgetTester tester, {
+  Size size = const Size(800, 1600),
+}) async {
   tester.view.devicePixelRatio = 1;
-  // Wider than a phone so the DashboardHeader row does not overflow under the
-  // wide default test font (this screen is verified on-device at phone width).
-  tester.view.physicalSize = const Size(800, 1600);
+  tester.view.physicalSize = size;
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
@@ -102,6 +103,24 @@ void main() {
     expect(find.text('Doanh thu tháng này'), findsOneWidget);
     expect(find.text('ML-2901'), findsOneWidget);
     expect(find.text('Chờ duyệt'), findsOneWidget);
+  });
+
+  testWidgets('renders dashboard states at phone width without overflow', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            ApiResponse(success: true, message: 'OK', data: _dashboard()),
+      ),
+    );
+
+    await _pumpScreen(tester, size: const Size(390, 1000));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminDashboardScreen')), findsOneWidget);
+    expect(find.byKey(const Key('adminSystemSummaryBand')), findsOneWidget);
+    expect(find.byKey(const Key('adminOperationsSection')), findsOneWidget);
   });
 
   testWidgets('shows empty placeholder when there are no recent orders', (
