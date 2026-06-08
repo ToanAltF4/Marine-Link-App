@@ -42,6 +42,7 @@ void main() {
             'productId': '550e8400-e29b-41d4-a716-446655440203',
             'productNameSnapshot': 'Muc kho loai 1',
             'productUnitSnapshot': 'kg',
+            'productImageUrl': 'https://example.com/muc.png',
             'unitPrice': 425000,
             'quantity': 2,
             'lineTotal': 850000,
@@ -60,6 +61,7 @@ void main() {
       expect(order.orderCode, 'ML-20260604-0003');
       expect(order.paymentMethod, PaymentMethod.bankTransfer);
       expect(order.items.single.productNameSnapshot, 'Muc kho loai 1');
+      expect(order.items.single.productImageUrl, 'https://example.com/muc.png');
       expect(order.items.single.lineTotal, 850000);
       expect(order.statusHistory.single.toStatus, 'PENDING');
     });

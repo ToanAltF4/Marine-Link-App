@@ -141,6 +141,7 @@ class OrderControllerTest {
                         productId,
                         "Muc kho loai 1",
                         "kg",
+                        "https://example.com/muc.png",
                         new BigDecimal("425000"),
                         2,
                         new BigDecimal("850000"))),

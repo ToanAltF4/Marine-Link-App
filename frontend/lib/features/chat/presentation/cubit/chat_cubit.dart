@@ -64,6 +64,106 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  /// Buyer mở tab Chat: lấy/tạo phòng hỗ trợ của chính mình (không cần roomId).
+  Future<void> loadMyRoom() async {
+    final cachedThread = state.thread;
+    emit(
+      state.copyWith(
+        status: cachedThread == null ? ChatStatus.loading : state.status,
+        canRetrySend: false,
+        offlineFallback: false,
+        clearErrorMessage: true,
+        clearSendErrorMessage: true,
+      ),
+    );
+    try {
+      final response = await repository.getMyRoom();
+      if (response.success && response.data != null) {
+        final thread = response.data!;
+        emit(
+          state.copyWith(
+            status: thread.messages.isEmpty
+                ? ChatStatus.empty
+                : ChatStatus.success,
+            roomId: thread.roomId,
+            thread: thread,
+            offlineFallback: false,
+            clearErrorMessage: true,
+          ),
+        );
+      } else {
+        _emitLoadFailure(
+          roomId: state.roomId ?? '',
+          cachedThread: cachedThread,
+          message: response.message ?? 'Không tải được phòng chat hỗ trợ.',
+        );
+      }
+    } on ApiException catch (error) {
+      _emitLoadFailure(
+        roomId: state.roomId ?? '',
+        cachedThread: cachedThread,
+        message: error.message,
+      );
+    } catch (_) {
+      _emitLoadFailure(
+        roomId: state.roomId ?? '',
+        cachedThread: cachedThread,
+        message: 'Đã xảy ra lỗi khi tải phòng chat hỗ trợ.',
+      );
+    }
+  }
+
+  Future<void> loadOrderRoom(String orderId) async {
+    final cachedThread = state.thread;
+    emit(
+      state.copyWith(
+        status: cachedThread == null ? ChatStatus.loading : state.status,
+        canRetrySend: false,
+        offlineFallback: false,
+        clearErrorMessage: true,
+        clearSendErrorMessage: true,
+      ),
+    );
+    try {
+      final response = await repository.getOrderRoom(orderId);
+      if (response.success && response.data != null) {
+        final thread = response.data!;
+        emit(
+          state.copyWith(
+            status: thread.messages.isEmpty
+                ? ChatStatus.empty
+                : ChatStatus.success,
+            roomId: thread.roomId,
+            thread: thread,
+            offlineFallback: false,
+            clearErrorMessage: true,
+          ),
+        );
+      } else {
+        _emitLoadFailure(
+          roomId: state.roomId ?? '',
+          cachedThread: cachedThread,
+          message:
+              response.message ??
+              'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+        );
+      }
+    } on ApiException catch (error) {
+      _emitLoadFailure(
+        roomId: state.roomId ?? '',
+        cachedThread: cachedThread,
+        message: error.message,
+      );
+    } catch (_) {
+      _emitLoadFailure(
+        roomId: state.roomId ?? '',
+        cachedThread: cachedThread,
+        message:
+            '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea1o ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+      );
+    }
+  }
+
   void _emitLoadFailure({
     required String roomId,
     required ChatThread? cachedThread,
@@ -107,18 +207,6 @@ class ChatCubit extends Cubit<ChatState> {
       );
       return;
     }
-    final roomId = state.roomId;
-    if (roomId == null || roomId.isEmpty) {
-      emit(
-        state.copyWith(
-          sendErrorMessage:
-              'Ch\u01b0a c\u00f3 ph\u00f2ng chat \u0111\u1ec3 g\u1eedi tin.',
-          canRetrySend: false,
-        ),
-      );
-      return;
-    }
-
     emit(
       state.copyWith(
         sending: true,
@@ -127,6 +215,19 @@ class ChatCubit extends Cubit<ChatState> {
       ),
     );
     try {
+      final roomId = await _resolveRoomIdForSend(sendAsStaff: sendAsStaff);
+      if (roomId == null || roomId.isEmpty) {
+        emit(
+          state.copyWith(
+            sending: false,
+            canRetrySend: true,
+            sendErrorMessage:
+                'Không chuẩn bị được phòng chat. Vui lòng thử gửi lại.',
+          ),
+        );
+        return;
+      }
+
       final response = await repository.sendMessage(
         roomId: roomId,
         content: trimmed,
@@ -177,5 +278,37 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
     }
+  }
+
+  Future<String?> _resolveRoomIdForSend({required bool sendAsStaff}) async {
+    final currentRoomId = state.roomId;
+    if (currentRoomId != null && currentRoomId.isNotEmpty) {
+      return currentRoomId;
+    }
+    if (sendAsStaff) {
+      return null;
+    }
+
+    final response = await repository.getMyRoom();
+    if (!response.success || response.data == null) {
+      throw ApiException(
+        message:
+            response.message ??
+            'Không chuẩn bị được phòng chat. Vui lòng thử lại.',
+        type: ApiExceptionType.notFound,
+      );
+    }
+
+    final thread = response.data!;
+    emit(
+      state.copyWith(
+        status: thread.messages.isEmpty ? ChatStatus.empty : ChatStatus.success,
+        roomId: thread.roomId,
+        thread: thread,
+        offlineFallback: false,
+        clearErrorMessage: true,
+      ),
+    );
+    return thread.roomId;
   }
 }

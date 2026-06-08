@@ -141,6 +141,7 @@ class OrderMockRepository implements OrderRepository {
           productId: 'prod-004',
           productNameSnapshot: 'Khô cá lóc',
           productUnitSnapshot: 'kg',
+          productImageUrl: 'https://example.com/kho-ca-loc.png',
           unitPrice: 390000,
           quantity: 20,
         ),

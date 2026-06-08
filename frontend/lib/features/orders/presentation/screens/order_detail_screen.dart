@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/di/service_locator.dart';
@@ -179,7 +180,51 @@ class _OrderDetailBody extends StatelessWidget {
           icon: Icons.account_balance_wallet_outlined,
           child: _PaymentSummary(order: order),
         ),
+        if (!adminMode &&
+            !staffMode &&
+            order.status == OrderStatus.completed) ...[
+          const SizedBox(height: 12),
+          _CompletedOrderActions(order: order),
+        ],
       ],
+    );
+  }
+}
+
+class _CompletedOrderActions extends StatelessWidget {
+  final OrderDetail order;
+
+  const _CompletedOrderActions({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      key: const Key('buyerCompletedOrderActionsPanel'),
+      title: 'Hỗ trợ sau giao hàng',
+      icon: Icons.support_agent_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Nếu đơn hàng có vấn đề về chất lượng, số lượng hoặc giao nhận, hãy mở kênh chat khiếu nại để staff xử lý theo mã đơn.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const Key('buyerComplaintChatButton'),
+              onPressed: () =>
+                  context.push(AppRoutes.chatOrderRoomPath(order.id)),
+              icon: const Icon(Icons.report_problem_outlined),
+              label: const Text('Khiếu nại đơn hàng'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -489,15 +534,12 @@ class _OrderItemRow extends StatelessWidget {
           Container(
             width: 54,
             height: 54,
-            alignment: Alignment.center,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: const Color(0xFFEFF8FB),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.set_meal_outlined,
-              color: AppColors.primary,
-            ),
+            child: _OrderItemImage(imageUrl: item.productImageUrl),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -533,6 +575,29 @@ class _OrderItemRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OrderItemImage extends StatelessWidget {
+  final String? imageUrl;
+
+  const _OrderItemImage({this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = imageUrl?.trim();
+    if (url == null || url.isEmpty) {
+      return const Icon(Icons.set_meal_outlined, color: AppColors.primary);
+    }
+    return Image.network(
+      url,
+      key: const Key('orderItemProductImage'),
+      width: 54,
+      height: 54,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          const Icon(Icons.set_meal_outlined, color: AppColors.primary),
     );
   }
 }

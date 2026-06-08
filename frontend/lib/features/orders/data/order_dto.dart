@@ -40,6 +40,7 @@ class OrderItemDto {
   final String productId;
   final String productNameSnapshot;
   final String productUnitSnapshot;
+  final String? productImageUrl;
   final double unitPrice;
   final int quantity;
 
@@ -47,6 +48,7 @@ class OrderItemDto {
     required this.productId,
     required this.productNameSnapshot,
     required this.productUnitSnapshot,
+    this.productImageUrl,
     required this.unitPrice,
     required this.quantity,
   });
@@ -56,6 +58,7 @@ class OrderItemDto {
       productId: json['productId'] as String,
       productNameSnapshot: json['productNameSnapshot'] as String,
       productUnitSnapshot: json['productUnitSnapshot'] as String? ?? 'kg',
+      productImageUrl: json['productImageUrl'] as String?,
       unitPrice: (json['unitPrice'] as num? ?? 0).toDouble(),
       quantity: json['quantity'] as int? ?? 0,
     );
@@ -66,6 +69,7 @@ class OrderItemDto {
       productId: productId,
       productNameSnapshot: productNameSnapshot,
       productUnitSnapshot: productUnitSnapshot,
+      productImageUrl: productImageUrl,
       unitPrice: unitPrice,
       quantity: quantity,
     );

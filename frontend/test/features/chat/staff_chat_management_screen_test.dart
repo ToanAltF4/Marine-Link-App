@@ -68,6 +68,21 @@ class _FakeRepo implements ChatRepository {
       );
 
   @override
+  Future<ApiResponse<ChatThread>> getMyRoom() async => const ApiResponse(
+    success: true,
+    message: 'OK',
+    data: ChatThread(roomId: 'room-001', isClosed: false, messages: []),
+  );
+
+  @override
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) async =>
+      const ApiResponse(
+        success: true,
+        message: 'OK',
+        data: ChatThread(roomId: 'room-001', isClosed: false, messages: []),
+      );
+
+  @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,

@@ -4,6 +4,11 @@ import 'chat.dart';
 abstract class ChatRepository {
   Future<ApiResponse<ChatThread>> getThread(String roomId);
 
+  /// Lấy (hoặc tạo) phòng hỗ trợ chung của user hiện tại — dùng cho tab Chat buyer.
+  Future<ApiResponse<ChatThread>> getMyRoom();
+
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId);
+
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,

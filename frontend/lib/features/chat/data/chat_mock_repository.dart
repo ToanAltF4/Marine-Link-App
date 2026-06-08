@@ -6,6 +6,7 @@ class ChatMockRepository implements ChatRepository {
   static const defaultRoomId = '550e8400-e29b-41d4-a716-44665544000a';
   static const emptyRoomId = '550e8400-e29b-41d4-a716-4466554400ee';
   static const closedRoomId = '550e8400-e29b-41d4-a716-4466554400cc';
+  static const orderComplaintRoomId = '550e8400-e29b-41d4-a716-4466554400dd';
 
   final Map<String, ChatThread> _threads;
   final Map<String, StaffChatRoom> _rooms;
@@ -28,6 +29,15 @@ class ChatMockRepository implements ChatRepository {
       );
     }
     return ApiResponse(success: true, message: 'OK', data: thread);
+  }
+
+  @override
+  Future<ApiResponse<ChatThread>> getMyRoom() => getThread(defaultRoomId);
+
+  @override
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return getThread(orderComplaintRoomId);
   }
 
   @override
@@ -231,6 +241,20 @@ class ChatMockRepository implements ChatRepository {
           ),
         ],
       ),
+      orderComplaintRoomId: ChatThread(
+        roomId: orderComplaintRoomId,
+        isClosed: false,
+        messages: [
+          ChatMessage(
+            id: 'mock-message-order-complaint-1',
+            roomId: orderComplaintRoomId,
+            senderType: ChatSenderType.aiSample,
+            content:
+                'Khi\u1ebfu n\u1ea1i \u0111\u01a1n h\u00e0ng ML-20260526-0001\nS\u1ea3n ph\u1ea9m: Kh\u00f4 c\u00e1 l\u00f3c\nT\u1ed5ng ti\u1ec1n: 7800000 VND\nVui l\u00f2ng m\u00f4 t\u1ea3 v\u1ea5n \u0111\u1ec1 c\u1ea7n h\u1ed7 tr\u1ee3.',
+            createdAt: createdAt.add(const Duration(minutes: 12)),
+          ),
+        ],
+      ),
     };
   }
 
@@ -270,6 +294,15 @@ class ChatMockRepository implements ChatRepository {
         assignedStaff: const StaffChatAssignee(
           id: '550e8400-e29b-41d4-a716-446655440004',
           fullName: 'Staff Demo',
+        ),
+      ),
+      orderComplaintRoomId: _roomFromThread(
+        thread: threads[orderComplaintRoomId]!,
+        customer: const StaffChatCustomer(
+          id: '550e8400-e29b-41d4-a716-446655440003',
+          fullName: '\u0110\u1ea1i l\u00fd H\u1ea3i S\u1ea3n A',
+          email: 'daily-a@marinelink.demo',
+          phone: '0901000001',
         ),
       ),
     };

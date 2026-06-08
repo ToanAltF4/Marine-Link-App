@@ -7,6 +7,7 @@ public record OrderItemResponse(
         UUID productId,
         String productNameSnapshot,
         String productUnitSnapshot,
+        String productImageUrl,
         BigDecimal unitPrice,
         int quantity,
         BigDecimal lineTotal) {
@@ -16,6 +17,7 @@ public record OrderItemResponse(
                 item.getProduct().getPublicId(),
                 item.getProductNameSnapshot(),
                 item.getProductUnitSnapshot(),
+                item.getProduct().getImageUrl(),
                 item.getUnitPrice(),
                 item.getQuantity(),
                 item.getLineTotal());
