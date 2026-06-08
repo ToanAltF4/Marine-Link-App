@@ -1,6 +1,7 @@
 package com.marinelink.users;
 
 import com.marinelink.auth.AuthUserResponse;
+import com.marinelink.common.exception.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -52,7 +54,12 @@ class UserServiceTest {
 
     @Test
     void updateProfile_ShouldUpdateFieldsAndSave() {
-        UpdateProfileRequest request = new UpdateProfileRequest("New Name", "0987654321", "New Address");
+        UpdateProfileRequest request = new UpdateProfileRequest(
+                "New Name",
+                "0987654321",
+                "New Address",
+                "https://example.com/avatar.png"
+        );
         when(userRepository.findActiveByPublicId(publicId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -61,6 +68,24 @@ class UserServiceTest {
         assertThat(response.fullName()).isEqualTo("New Name");
         assertThat(response.phone()).isEqualTo("0987654321");
         assertThat(user.getBusinessAddress()).isEqualTo("New Address");
+        assertThat(user.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(response.avatarUrl()).isEqualTo("https://example.com/avatar.png");
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateProfile_ShouldRejectDuplicatePhone() {
+        UpdateProfileRequest request = new UpdateProfileRequest(
+                "New Name",
+                "0987654321",
+                "New Address",
+                null
+        );
+        when(userRepository.findActiveByPublicId(publicId)).thenReturn(Optional.of(user));
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0987654321", publicId)).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> userService.updateProfile(publicId, request));
+
+        verify(userRepository, never()).save(any(User.class));
     }
 }
