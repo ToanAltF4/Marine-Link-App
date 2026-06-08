@@ -261,6 +261,65 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('chatInputError')), findsOneWidget);
+    expect(find.byKey(const Key('chatRetrySendButton')), findsNothing);
+  });
+
+  testWidgets('keeps failed message and retries sending successfully', (
+    tester,
+  ) async {
+    var sendCalls = 0;
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async {
+              sendCalls++;
+              if (sendCalls == 1) {
+                return const ApiResponse(
+                  success: false,
+                  message: 'Mất kết nối khi gửi tin.',
+                );
+              }
+              return ApiResponse(
+                success: true,
+                message: 'Message sent',
+                data: ChatMessage(
+                  id: 'message-003',
+                  roomId: roomId,
+                  senderType: ChatSenderType.user,
+                  content: content,
+                  createdAt: DateTime.utc(2026, 5, 28, 8, 45),
+                ),
+              );
+            },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('chatMessageTextField')),
+      'Cần hỗ trợ lại',
+    );
+    await tester.tap(find.byKey(const Key('chatSendButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chatInputError')), findsOneWidget);
+    expect(find.byKey(const Key('chatRetrySendButton')), findsOneWidget);
+    expect(find.text('Cần hỗ trợ lại'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('chatRetrySendButton')));
+    await tester.pumpAndSettle();
+
+    expect(sendCalls, 2);
+    expect(find.byKey(const Key('chatInputError')), findsNothing);
+    expect(find.byKey(const Key('chatRetrySendButton')), findsNothing);
+    expect(
+      find.byKey(const Key('chatMessageBubble_message-003')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('disables composer when room is closed', (tester) async {

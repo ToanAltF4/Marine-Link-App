@@ -203,6 +203,7 @@ void main() {
       isA<ChatState>()
           .having((state) => state.status, 'status', ChatStatus.success)
           .having((state) => state.sending, 'sending', false)
+          .having((state) => state.canRetrySend, 'canRetrySend', false)
           .having((state) => state.messages.length, 'message count', 2)
           .having(
             (state) => state.messages.last.senderType,
@@ -233,6 +234,7 @@ void main() {
       isA<ChatState>().having((state) => state.sending, 'sending', true),
       isA<ChatState>()
           .having((state) => state.sending, 'sending', false)
+          .having((state) => state.canRetrySend, 'canRetrySend', true)
           .having(
             (state) => state.sendErrorMessage,
             'sendErrorMessage',
@@ -256,11 +258,44 @@ void main() {
     ),
     act: (cubit) => cubit.sendMessage('   '),
     expect: () => [
-      isA<ChatState>().having(
-        (state) => state.sendErrorMessage,
-        'sendErrorMessage',
-        isNotEmpty,
+      isA<ChatState>()
+          .having(
+            (state) => state.sendErrorMessage,
+            'sendErrorMessage',
+            isNotEmpty,
+          )
+          .having((state) => state.canRetrySend, 'canRetrySend', false),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
+    'sendMessage surfaces thrown error as retryable',
+    seed: () => ChatState(
+      status: ChatStatus.success,
+      roomId: 'room-001',
+      thread: _thread,
+    ),
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) {
+              throw Exception('timeout');
+            },
       ),
+    ),
+    act: (cubit) => cubit.sendMessage('New message'),
+    expect: () => [
+      isA<ChatState>().having((state) => state.sending, 'sending', true),
+      isA<ChatState>()
+          .having((state) => state.sending, 'sending', false)
+          .having((state) => state.canRetrySend, 'canRetrySend', true)
+          .having(
+            (state) => state.sendErrorMessage,
+            'sendErrorMessage',
+            isNotEmpty,
+          ),
     ],
   );
 }
