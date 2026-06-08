@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_theme.dart';
+
 /// Standard empty state widget.
 /// Usage: show when a list/query returns no results.
 class AppEmptyState extends StatelessWidget {
@@ -21,28 +23,53 @@ class AppEmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon ?? Icons.inbox_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSky,
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Icon(
+                    icon ?? Icons.inbox_outlined,
+                    key: const Key('appEmptyStateIcon'),
+                    size: 36,
+                    color: AppColors.primary,
+                  ),
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
-              OutlinedButton(onPressed: onAction, child: Text(actionLabel!)),
+              const SizedBox(height: 14),
+              Text(
+                message,
+                key: const Key('appEmptyStateMessage'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.35,
+                ),
+                textAlign: TextAlign.center,
+                softWrap: true,
+              ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  key: const Key('appEmptyStateActionButton'),
+                  onPressed: onAction,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(
+                    actionLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
