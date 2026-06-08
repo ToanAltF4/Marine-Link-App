@@ -31,6 +31,7 @@ class DashboardHeader extends StatelessWidget {
               const Expanded(child: _BrandMark()),
               const SizedBox(width: 8),
               _HeaderIconButton(
+                key: const Key('dashboardNotificationButton'),
                 tooltip: 'Thông báo',
                 onPressed: onNotificationPressed,
                 child: Stack(
@@ -59,6 +60,7 @@ class DashboardHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _HeaderIconButton(
+                key: const Key('dashboardProfileButton'),
                 tooltip: 'Hồ sơ',
                 onPressed: onProfilePressed,
                 child: const Icon(
@@ -112,6 +114,7 @@ class _HeaderIconButton extends StatelessWidget {
   final Widget child;
 
   const _HeaderIconButton({
+    super.key,
     required this.tooltip,
     required this.onPressed,
     required this.child,
