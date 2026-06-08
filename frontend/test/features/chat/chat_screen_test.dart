@@ -198,6 +198,48 @@ void main() {
     expect(find.byKey(const Key('chatMessagesList')), findsOneWidget);
   });
 
+  testWidgets('keeps messages with offline fallback banner, then reloads', (
+    tester,
+  ) async {
+    var calls = 0;
+    late ChatCubit cubit;
+    final repo = _FakeRepo(
+      threadResponder: (_) async {
+        calls++;
+        if (calls == 2) {
+          return const ApiResponse(
+            success: false,
+            message: 'M\u1ea5t k\u1ebft n\u1ed1i',
+          );
+        }
+        return ApiResponse(success: true, message: 'OK', data: _thread);
+      },
+    );
+    sl.registerFactory<ChatCubit>(() {
+      cubit = ChatCubit(repository: repo);
+      return cubit;
+    });
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chatMessagesList')), findsOneWidget);
+
+    await cubit.load('room-001');
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chatMessagesList')), findsOneWidget);
+    expect(find.byKey(const Key('chatOfflineFallbackBanner')), findsOneWidget);
+    expect(find.byKey(const Key('chatOfflineRetryButton')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('chatOfflineRetryButton')));
+    await tester.pumpAndSettle();
+
+    expect(calls, 3);
+    expect(find.byKey(const Key('chatOfflineFallbackBanner')), findsNothing);
+    expect(find.byKey(const Key('chatMessagesList')), findsOneWidget);
+  });
+
   testWidgets('sends a valid staff message and appends it to the list', (
     tester,
   ) async {

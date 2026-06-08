@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../domain/chat.dart';
 import '../../domain/chat_repository.dart';
 
@@ -12,11 +13,13 @@ class ChatCubit extends Cubit<ChatState> {
   ChatCubit({required this.repository}) : super(const ChatState());
 
   Future<void> load(String roomId) async {
+    final cachedThread = state.thread;
     emit(
       state.copyWith(
-        status: ChatStatus.loading,
+        status: cachedThread == null ? ChatStatus.loading : state.status,
         roomId: roomId,
         canRetrySend: false,
+        offlineFallback: false,
         clearErrorMessage: true,
         clearSendErrorMessage: true,
       ),
@@ -32,27 +35,64 @@ class ChatCubit extends Cubit<ChatState> {
                 : ChatStatus.success,
             roomId: thread.roomId,
             thread: thread,
+            offlineFallback: false,
+            clearErrorMessage: true,
           ),
         );
       } else {
-        emit(
-          state.copyWith(
-            status: ChatStatus.failure,
-            errorMessage:
-                response.message ??
-                'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
-          ),
+        _emitLoadFailure(
+          roomId: roomId,
+          cachedThread: cachedThread,
+          message:
+              response.message ??
+              'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
         );
       }
+    } on ApiException catch (error) {
+      _emitLoadFailure(
+        roomId: roomId,
+        cachedThread: cachedThread,
+        message: error.message,
+      );
     } catch (_) {
-      emit(
-        state.copyWith(
-          status: ChatStatus.failure,
-          errorMessage:
-              '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i l\u1ecbch s\u1eed chat.',
-        ),
+      _emitLoadFailure(
+        roomId: roomId,
+        cachedThread: cachedThread,
+        message:
+            '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i l\u1ecbch s\u1eed chat.',
       );
     }
+  }
+
+  void _emitLoadFailure({
+    required String roomId,
+    required ChatThread? cachedThread,
+    required String message,
+  }) {
+    if (cachedThread != null) {
+      emit(
+        state.copyWith(
+          status: cachedThread.messages.isEmpty
+              ? ChatStatus.empty
+              : ChatStatus.success,
+          roomId: roomId,
+          thread: cachedThread,
+          offlineFallback: true,
+          errorMessage:
+              '$message \u0110ang hi\u1ec3n th\u1ecb d\u1eef li\u1ec7u g\u1ea7n nh\u1ea5t.',
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: ChatStatus.failure,
+        roomId: roomId,
+        offlineFallback: false,
+        errorMessage: message,
+      ),
+    );
   }
 
   Future<void> sendMessage(String content, {bool sendAsStaff = false}) async {
@@ -119,6 +159,14 @@ class ChatCubit extends Cubit<ChatState> {
           ),
         );
       }
+    } on ApiException catch (error) {
+      emit(
+        state.copyWith(
+          sending: false,
+          canRetrySend: true,
+          sendErrorMessage: error.message,
+        ),
+      );
     } catch (_) {
       emit(
         state.copyWith(

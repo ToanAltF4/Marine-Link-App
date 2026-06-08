@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marinelink/core/api/api_client.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/chat/domain/chat.dart';
 import 'package:marinelink/features/chat/domain/chat_repository.dart';
@@ -156,6 +157,35 @@ void main() {
   );
 
   blocTest<ChatCubit, ChatState>(
+    'keeps cached thread as offline fallback when reload fails',
+    seed: () => ChatState(
+      status: ChatStatus.success,
+      roomId: 'room-001',
+      thread: _thread,
+    ),
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async => const ApiResponse(
+          success: false,
+          message: 'M\u1ea5t k\u1ebft n\u1ed1i',
+        ),
+      ),
+    ),
+    act: (cubit) => cubit.load('room-001'),
+    expect: () => [
+      isA<ChatState>()
+          .having((state) => state.status, 'status', ChatStatus.success)
+          .having((state) => state.offlineFallback, 'offlineFallback', true)
+          .having((state) => state.messages.length, 'message count', 1)
+          .having(
+            (state) => state.errorMessage,
+            'errorMessage',
+            contains('d\u1eef li\u1ec7u g\u1ea7n nh\u1ea5t'),
+          ),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
     'emits [loading, failure] when repository throws',
     build: () => ChatCubit(
       repository: _FakeRepo(
@@ -174,6 +204,35 @@ void main() {
         'status',
         ChatStatus.failure,
       ),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
+    'uses ApiException message for cached offline fallback',
+    seed: () => ChatState(
+      status: ChatStatus.success,
+      roomId: 'room-001',
+      thread: _thread,
+    ),
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async => throw const ApiException(
+          message:
+              'K\u1ebft n\u1ed1i qu\u00e1 ch\u1eadm. Vui l\u00f2ng th\u1eed l\u1ea1i.',
+          type: ApiExceptionType.network,
+        ),
+      ),
+    ),
+    act: (cubit) => cubit.load('room-001'),
+    expect: () => [
+      isA<ChatState>()
+          .having((state) => state.status, 'status', ChatStatus.success)
+          .having((state) => state.offlineFallback, 'offlineFallback', true)
+          .having(
+            (state) => state.errorMessage,
+            'errorMessage',
+            contains('K\u1ebft n\u1ed1i qu\u00e1 ch\u1eadm'),
+          ),
     ],
   );
 
@@ -295,6 +354,41 @@ void main() {
             (state) => state.sendErrorMessage,
             'sendErrorMessage',
             isNotEmpty,
+          ),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
+    'sendMessage uses ApiException message as retryable remote error',
+    seed: () => ChatState(
+      status: ChatStatus.success,
+      roomId: 'room-001',
+      thread: _thread,
+    ),
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async {
+              throw const ApiException(
+                message:
+                    'K\u1ebft n\u1ed1i qu\u00e1 ch\u1eadm. Vui l\u00f2ng th\u1eed l\u1ea1i.',
+                type: ApiExceptionType.network,
+              );
+            },
+      ),
+    ),
+    act: (cubit) => cubit.sendMessage('New message'),
+    expect: () => [
+      isA<ChatState>().having((state) => state.sending, 'sending', true),
+      isA<ChatState>()
+          .having((state) => state.sending, 'sending', false)
+          .having((state) => state.canRetrySend, 'canRetrySend', true)
+          .having(
+            (state) => state.sendErrorMessage,
+            'sendErrorMessage',
+            contains('K\u1ebft n\u1ed1i qu\u00e1 ch\u1eadm'),
           ),
     ],
   );
