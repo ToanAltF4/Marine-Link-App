@@ -197,6 +197,32 @@ void main() {
     expect(find.text('Chờ xác nhận'), findsOneWidget);
   });
 
+  testWidgets('refreshes staff rooms periodically without loading flicker', (
+    tester,
+  ) async {
+    var calls = 0;
+    _registerRepo(
+      _FakeRepo(
+        staffRoomsResponder:
+            ({filter = StaffChatRoomFilter.open, query}) async {
+              calls++;
+              return ApiResponse(success: true, message: 'OK', data: [_room]);
+            },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('staffChatLoading')), findsNothing);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump();
+
+    expect(calls, greaterThanOrEqualTo(2));
+    expect(find.byKey(const Key('staffChatLoading')), findsNothing);
+    expect(find.byKey(const Key('staffChatRoomCard_room-001')), findsOneWidget);
+  });
+
   testWidgets('shows empty state when no rooms match filter', (tester) async {
     _registerRepo(
       _FakeRepo(

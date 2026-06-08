@@ -190,6 +190,34 @@ void main() {
     expect(find.byKey(const Key('chatMessageTextField')), findsOneWidget);
   });
 
+  testWidgets(
+    'refreshes open chat room periodically without clearing composer',
+    (tester) async {
+      var calls = 0;
+      _registerRepo(
+        _FakeRepo(
+          threadResponder: (_) async {
+            calls++;
+            return ApiResponse(success: true, message: 'OK', data: _thread);
+          },
+        ),
+      );
+
+      await _pumpScreen(tester);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('chatMessageTextField')),
+        'Dang nhap tin nhan',
+      );
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+
+      expect(calls, greaterThanOrEqualTo(2));
+      expect(find.text('Dang nhap tin nhan'), findsOneWidget);
+    },
+  );
+
   testWidgets('opens completed order complaint room with order context', (
     tester,
   ) async {

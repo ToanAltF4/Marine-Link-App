@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -71,11 +73,21 @@ class _ChatView extends StatefulWidget {
 }
 
 class _ChatViewState extends State<_ChatView> {
+  static const _refreshInterval = Duration(seconds: 4);
+
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) => _refresh());
+  }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -88,9 +100,6 @@ class _ChatViewState extends State<_ChatView> {
           previous.sending != current.sending ||
           previous.messages.length != current.messages.length,
       listener: (context, state) {
-        if (!state.sending && state.sendErrorMessage == null) {
-          _controller.clear();
-        }
         _scrollToBottom();
       },
       builder: (context, state) {
@@ -150,10 +159,29 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   Future<void> _send() async {
-    await context.read<ChatCubit>().sendMessage(
-      _controller.text,
-      sendAsStaff: widget.staffMode,
-    );
+    final cubit = context.read<ChatCubit>();
+    await cubit.sendMessage(_controller.text, sendAsStaff: widget.staffMode);
+    if (!mounted) return;
+    if (cubit.state.sendErrorMessage == null) {
+      _controller.clear();
+    }
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    final cubit = context.read<ChatCubit>();
+    if (cubit.state.sending) return;
+    final complaintOrderId = widget.orderId;
+    if (complaintOrderId != null && complaintOrderId.isNotEmpty) {
+      cubit.loadOrderRoom(complaintOrderId);
+      return;
+    }
+    final id = cubit.state.roomId;
+    if (id == null || id.isEmpty) {
+      cubit.loadMyRoom();
+      return;
+    }
+    cubit.load(id);
   }
 
   void _scrollToBottom() {
