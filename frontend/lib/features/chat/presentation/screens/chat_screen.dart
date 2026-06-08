@@ -151,7 +151,7 @@ class _ChatBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (state.status) {
+    final body = switch (state.status) {
       ChatStatus.initial || ChatStatus.loading => const Center(
         key: Key('chatLoading'),
         child: CircularProgressIndicator(),
@@ -177,6 +177,66 @@ class _ChatBody extends StatelessWidget {
         messages: state.messages,
       ),
     };
+    if (!state.offlineFallback) {
+      return body;
+    }
+    return Column(
+      children: [
+        _OfflineFallbackBanner(
+          message:
+              state.errorMessage ??
+              '\u0110ang hi\u1ec3n th\u1ecb d\u1eef li\u1ec7u chat g\u1ea7n nh\u1ea5t.',
+          onRetry: () => context.read<ChatCubit>().load(
+            state.roomId ?? ChatMockRepository.defaultRoomId,
+          ),
+        ),
+        Expanded(child: body),
+      ],
+    );
+  }
+}
+
+class _OfflineFallbackBanner extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _OfflineFallbackBanner({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: const Key('chatOfflineFallbackBanner'),
+      color: const Color(0xFFFFF7E6),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.wifi_off_rounded,
+              color: AppColors.warning,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            TextButton.icon(
+              key: const Key('chatOfflineRetryButton'),
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('T\u1ea3i l\u1ea1i'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
