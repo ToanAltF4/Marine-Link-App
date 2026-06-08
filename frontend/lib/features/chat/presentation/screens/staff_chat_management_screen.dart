@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
@@ -331,6 +332,16 @@ class _StaffChatRoomCard extends StatelessWidget {
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
             ),
+            if (room.context case final contextData?) ...[
+              if (contextData.hasOrder || contextData.hasProduct) ...[
+                const SizedBox(height: 10),
+                _StaffChatContextStrip(
+                  key: Key('staffChatContext_${room.roomId}'),
+                  roomId: room.roomId,
+                  contextData: contextData,
+                ),
+              ],
+            ],
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -400,6 +411,51 @@ class _StaffChatRoomCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StaffChatContextStrip extends StatelessWidget {
+  final String roomId;
+  final StaffChatContext contextData;
+
+  const _StaffChatContextStrip({
+    super.key,
+    required this.roomId,
+    required this.contextData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (contextData.hasOrder)
+          _SmallBadge(
+            key: Key('staffChatContextOrderBadge_$roomId'),
+            icon: Icons.receipt_long_outlined,
+            label: contextData.orderCode ?? 'Đơn hàng',
+          ),
+        if (contextData.orderStatus != null)
+          _SmallBadge(
+            key: Key('staffChatContextOrderStatusBadge_$roomId'),
+            icon: Icons.local_shipping_outlined,
+            label: _orderStatusLabel(contextData.orderStatus!),
+          ),
+        if (contextData.orderTotalAmount != null)
+          _SmallBadge(
+            key: Key('staffChatContextOrderTotalBadge_$roomId'),
+            icon: Icons.payments_outlined,
+            label: MoneyFormatter.compact(contextData.orderTotalAmount!),
+          ),
+        if (contextData.hasProduct)
+          _SmallBadge(
+            key: Key('staffChatContextProductBadge_$roomId'),
+            icon: Icons.inventory_2_outlined,
+            label: contextData.productName ?? 'Sản phẩm',
+          ),
+      ],
     );
   }
 }
@@ -630,7 +686,7 @@ class _SmallBadge extends StatelessWidget {
   final String label;
   final IconData icon;
 
-  const _SmallBadge({required this.label, required this.icon});
+  const _SmallBadge({super.key, required this.label, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -683,6 +739,17 @@ String? _required(String? value) {
     return 'Kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng';
   }
   return null;
+}
+
+String _orderStatusLabel(String status) {
+  return switch (status.toUpperCase()) {
+    'PENDING' => 'Chờ xác nhận',
+    'CONFIRMED' => 'Đã xác nhận',
+    'SHIPPING' => 'Đang giao',
+    'COMPLETED' => 'Hoàn tất',
+    'CANCELLED' => 'Đã hủy',
+    _ => status,
+  };
 }
 
 ({String label, Color textColor, Color backgroundColor}) _statusStyle(

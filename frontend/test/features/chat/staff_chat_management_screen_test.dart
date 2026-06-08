@@ -116,6 +116,14 @@ final _room = StaffChatRoom(
   isClosed: false,
   lastMessageAt: DateTime.utc(2026, 5, 28, 8, 30),
   messageCount: 2,
+  context: const StaffChatContext(
+    orderId: 'order-001',
+    orderCode: 'ML-20260528-0001',
+    orderStatus: 'PENDING',
+    orderTotalAmount: 4200000,
+    productId: 'product-001',
+    productName: 'Muc kho loai 1',
+  ),
   summary: 'Dai ly: Can ho tro don hang',
 );
 
@@ -168,6 +176,10 @@ void main() {
     expect(find.byKey(const Key('staffChatRoomCard_room-001')), findsOneWidget);
     expect(find.text('Dai ly A'), findsOneWidget);
     expect(find.text('Dai ly: Can ho tro don hang'), findsOneWidget);
+    expect(find.byKey(const Key('staffChatContext_room-001')), findsOneWidget);
+    expect(find.text('ML-20260528-0001'), findsOneWidget);
+    expect(find.text('Muc kho loai 1'), findsOneWidget);
+    expect(find.text('Chờ xác nhận'), findsOneWidget);
   });
 
   testWidgets('shows empty state when no rooms match filter', (tester) async {

@@ -884,6 +884,15 @@ Response `200`:
         "createdAt": "2026-05-28T08:30:00Z",
         "attachments": []
       },
+      "context": {
+        "orderId": "550e8400-e29b-41d4-a716-446655440009",
+        "orderCode": "ML-20260528-0001",
+        "orderStatus": "PENDING",
+        "orderTotalAmount": 4200000,
+        "productId": "550e8400-e29b-41d4-a716-446655440003",
+        "productName": "Muc kho loai 1",
+        "productImageUrl": "https://example.com/product.png"
+      },
       "summary": "Đại lý hỏi thời gian giao đơn; staff cần kiểm tra trạng thái vận chuyển."
     }
   ]
@@ -894,6 +903,7 @@ Rules:
 
 - STAFF/ADMIN xem được danh sách phòng chat để xử lý hỗ trợ.
 - Staff trả lời một phòng chưa assign sẽ tự được gán làm `assignedStaff`.
+- `context` là object optional, trả ngữ cảnh đơn hàng/sản phẩm nếu phòng chat được tạo từ đơn hoặc sản phẩm; field không có ngữ cảnh sẽ là `null`.
 - `summary` là tóm tắt ngắn từ vài tin mới nhất, phục vụ inbox; không phải phản hồi AI thật.
 
 ### PUT `/api/staff/chat/rooms/{roomId}/status`
