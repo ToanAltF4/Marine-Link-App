@@ -33,7 +33,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   late AnimationController _successController;
-  late Animation<double> _successScale;
 
   Timer? _resendTimer;
   Timer? _expiryTimer;
@@ -56,9 +55,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     _successController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    );
-    _successScale = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _successController, curve: Curves.elasticOut),
     );
 
     _startResendCooldown();
@@ -178,7 +174,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Email xác thực thành công! Bạn có thể đăng nhập ngay.',
+                      'Đã xác nhận thành công. Yêu cầu tạo tài khoản của bạn sẽ được duyệt trong 1h.',
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -189,11 +185,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              duration: const Duration(seconds: 3),
+              duration: const Duration(seconds: 4),
             ),
           );
-          Future.delayed(const Duration(milliseconds: 800), () {
-            if (mounted) context.go('/login');
+          final router = GoRouter.of(context);
+          Future.delayed(const Duration(milliseconds: 3500), () {
+            if (mounted) router.go('/login');
           });
         }
         if (state is AuthOtpResent) {

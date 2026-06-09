@@ -74,7 +74,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Register successful"))
+                .andExpect(jsonPath("$.message").value("Register successful. Please check your email for the OTP."))
                 .andExpect(jsonPath("$.data.roles[0]").value("USER"));
     }
 }

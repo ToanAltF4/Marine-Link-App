@@ -9,11 +9,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 /**
  * Handles generation, storage, delivery, and validation of email OTPs.
@@ -40,11 +42,17 @@ public class EmailOtpService {
     /**
      * Generates a 6-digit OTP, persists it, and sends it to the given email address.
      * Any previous unused OTPs for this email are invalidated first.
+     *
+     * <p>Uses {@code REQUIRES_NEW} propagation so the OTP record is committed to the
+     * database immediately — independently of any outer transaction. This guarantees
+     * the OTP is visible to a subsequent verify request even if the caller's
+     * transaction is still open or later rolls back.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendOtp(String email) {
         // Remove any existing OTPs for this email before issuing a new one
         emailOtpRepository.deleteByEmail(email);
+        emailOtpRepository.flush(); // ensure delete is flushed before inserting new OTP
 
         String otpCode = generateOtp();
         Instant expiresAt = Instant.now().plus(otpExpiryMinutes, ChronoUnit.MINUTES);
@@ -54,7 +62,7 @@ public class EmailOtpService {
                 .otpCode(otpCode)
                 .expiresAt(expiresAt)
                 .build();
-        emailOtpRepository.save(otp);
+        emailOtpRepository.saveAndFlush(otp); // commit immediately
 
         sendOtpEmail(email, otpCode);
         log.info("OTP sent to {}", email);
@@ -67,16 +75,32 @@ public class EmailOtpService {
      */
     @Transactional
     public void verifyOtp(String email, String otpCode) {
+        // Debug: log what we're searching for
+        log.debug("verifyOtp called — email='{}' (length={}), otpCode='{}' (length={})",
+                email, email.length(), otpCode, otpCode.length());
+
+        // Debug: find ALL OTPs for this email (including used ones) to diagnose issues
+        List<EmailOtp> allOtps = emailOtpRepository.findAllByEmailOrderByCreatedAtDesc(email);
+        log.debug("All OTP records for email '{}': count={}", email, allOtps.size());
+        allOtps.forEach(o -> log.debug("  OTP id={} used={} expiresAt={} code='{}'",
+                o.getId(), o.isUsed(), o.getExpiresAt(), o.getOtpCode()));
+
+        // Find the most recent unused OTP for this email
         EmailOtp otp = emailOtpRepository
                 .findTopByEmailAndUsedFalseOrderByCreatedAtDesc(email)
                 .orElseThrow(() -> new BusinessException(
-                        "Mã OTP không hợp lệ hoặc đã hết hạn", HttpStatus.BAD_REQUEST));
+                        "Mã OTP không tồn tại hoặc đã được sử dụng", HttpStatus.BAD_REQUEST));
 
+        // Check expiry first so user knows to request a new OTP
         if (otp.getExpiresAt().isBefore(Instant.now())) {
-            throw new BusinessException("Mã OTP đã hết hạn", HttpStatus.BAD_REQUEST);
+            throw new BusinessException(
+                    "Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại mã mới.",
+                    HttpStatus.BAD_REQUEST);
         }
 
+        // Then verify the code
         if (!otp.getOtpCode().equals(otpCode)) {
+            log.debug("OTP code mismatch — expected='{}', received='{}'", otp.getOtpCode(), otpCode);
             throw new BusinessException("Mã OTP không chính xác", HttpStatus.BAD_REQUEST);
         }
 

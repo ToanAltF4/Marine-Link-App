@@ -1,5 +1,6 @@
 package com.marinelink.auth;
 
+import com.marinelink.auth.otp.EmailOtpService;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.security.JwtTokenProvider;
 import com.marinelink.users.Role;
@@ -38,6 +39,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private EmailOtpService emailOtpService;
 
     @InjectMocks
     private AuthService authService;
@@ -81,7 +85,7 @@ class AuthServiceTest {
         when(userRepository.existsActiveByPhone("0912345678")).thenReturn(false);
         when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
         when(passwordEncoder.encode("StrongPassword123")).thenReturn("bcrypt-hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RegisterResponse response = authService.register(
                 new RegisterRequest(
@@ -93,9 +97,9 @@ class AuthServiceTest {
                         "Can Tho",
                         "0312345678"));
 
-        assertThat(response.status()).isEqualTo(UserStatus.PENDING_APPROVAL.name());
+        assertThat(response.status()).isEqualTo(UserStatus.PENDING_VERIFICATION.name());
         assertThat(response.roles()).containsExactly("USER");
-        verify(userRepository).save(any(User.class));
+        verify(userRepository).saveAndFlush(any(User.class));
     }
 
     @Test

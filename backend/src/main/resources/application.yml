@@ -83,4 +83,5 @@ springdoc:
 logging:
   level:
     com.marinelink: DEBUG
+    com.marinelink.auth.otp: DEBUG
     org.springframework.security: INFO

@@ -52,6 +52,9 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
       return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);
@@ -65,6 +68,9 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.post(path, data: data);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
       return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);
@@ -78,6 +84,9 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.put(path, data: data);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
       return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);

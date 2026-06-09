@@ -8,7 +8,7 @@ ALTER TYPE user_status ADD VALUE IF NOT EXISTS 'PENDING_VERIFICATION' BEFORE 'PE
 -- Stores one-time passwords for email verification.
 -- Rows are soft-invalidated via the `used` flag; old rows are cleaned up on resend.
 
-CREATE TABLE email_otp (
+CREATE TABLE IF NOT EXISTS email_otp (
     id          BIGSERIAL    PRIMARY KEY,
     email       VARCHAR(255) NOT NULL,
     otp_code    VARCHAR(6)   NOT NULL,
@@ -17,4 +17,4 @@ CREATE TABLE email_otp (
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_email_otp_email ON email_otp(email);
+CREATE INDEX IF NOT EXISTS idx_email_otp_email ON email_otp(email);

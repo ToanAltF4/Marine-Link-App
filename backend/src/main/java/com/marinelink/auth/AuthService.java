@@ -85,9 +85,12 @@ public class AuthService {
                 .taxCode(trimToNull(request.taxCode()))
                 .build();
 
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user); // flush immediately so the user row
+                                                            // is visible to the REQUIRES_NEW OTP transaction
 
-        // Send OTP after user is persisted so that a mail failure still keeps the user record
+        // sendOtp runs in its own REQUIRES_NEW transaction, committing the OTP record
+        // independently so it is readable by the client's verify request right away.
+        // If email sending fails the user record is already persisted (outer tx commits later).
         emailOtpService.sendOtp(email);
 
         return RegisterResponse.from(savedUser);
