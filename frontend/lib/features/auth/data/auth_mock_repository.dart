@@ -108,6 +108,23 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<void> verifyEmail({
+    required String email,
+    required String otpCode,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: accept any 6-digit code
+    if (otpCode.length != 6) {
+      throw Exception('Mã OTP không hợp lệ');
+    }
+  }
+
+  @override
+  Future<void> resendOtp({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,

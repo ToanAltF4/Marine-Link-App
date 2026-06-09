@@ -63,7 +63,11 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                    "/api/auth/login",
+                    "/api/auth/register",
+                    "/api/auth/verify-email",
+                    "/api/auth/resend-otp").permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/products", "/api/products/**",
                     "/api/warehouses",

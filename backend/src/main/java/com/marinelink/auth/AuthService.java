@@ -1,5 +1,6 @@
 package com.marinelink.auth;
 
+import com.marinelink.auth.otp.EmailOtpService;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ConflictException;
 import com.marinelink.common.security.JwtTokenProvider;
@@ -30,6 +31,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailOtpService emailOtpService;
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
@@ -77,14 +79,52 @@ public class AuthService {
                 .email(email)
                 .phone(phone)
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .status(UserStatus.PENDING_APPROVAL)
+                .status(UserStatus.PENDING_VERIFICATION)
                 .storeName(trimToNull(request.storeName()))
                 .businessAddress(trimToNull(request.businessAddress()))
                 .taxCode(trimToNull(request.taxCode()))
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        // Send OTP after user is persisted so that a mail failure still keeps the user record
+        emailOtpService.sendOtp(email);
+
         return RegisterResponse.from(savedUser);
+    }
+
+    /**
+     * Verifies the OTP code for the given email and activates the user account.
+     */
+    @Transactional
+    public void verifyEmail(VerifyEmailRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        // Validate OTP first (throws BusinessException on failure)
+        emailOtpService.verifyOtp(email, request.otpCode());
+
+        User user = userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION)
+                .orElseThrow(() -> new BusinessException(
+                        "Không tìm thấy tài khoản đang chờ xác thực với email này",
+                        HttpStatus.NOT_FOUND));
+
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
+
+    /**
+     * Resends a new OTP to the given email if the account is still pending verification.
+     */
+    @Transactional
+    public void resendOtp(ResendOtpRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION)
+                .orElseThrow(() -> new BusinessException(
+                        "Không tìm thấy tài khoản đang chờ xác thực với email này",
+                        HttpStatus.NOT_FOUND));
+
+        emailOtpService.sendOtp(email);
     }
 
     @Transactional
@@ -101,6 +141,9 @@ public class AuthService {
     }
 
     private void requireLoginAllowed(User user) {
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            throw new BusinessException("Tài khoản chưa được xác thực email", HttpStatus.FORBIDDEN);
+        }
         if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
             throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);
         }

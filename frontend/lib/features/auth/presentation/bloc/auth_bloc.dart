@@ -5,10 +5,7 @@ import '../../domain/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
-/// AuthBloc handles login, register, logout and token persistence.
-///
-/// Repository is injected — switch from AuthMockRepository to
-/// AuthRemoteRepository in Sprint 5 via DI without changing this bloc.
+/// AuthBloc handles login, register, OTP verification, logout and token persistence.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
 
@@ -18,6 +15,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckRequested>(_onCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
+    on<AuthVerifyEmailRequested>(_onVerifyEmailRequested);
+    on<AuthResendOtpRequested>(_onResendOtpRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthChangePasswordRequested>(_onChangePasswordRequested);
   }
@@ -70,7 +69,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         businessAddress: event.businessAddress,
         taxCode: event.taxCode,
       );
-      emit(const AuthRegistrationSuccess());
+      // After successful registration, an OTP has been sent to the user's email.
+      emit(AuthOtpSent(email: event.email));
+    } catch (e) {
+      emit(AuthFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onVerifyEmailRequested(
+    AuthVerifyEmailRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      await _authRepository.verifyEmail(
+        email: event.email,
+        otpCode: event.otpCode,
+      );
+      emit(const AuthEmailVerified());
+    } catch (e) {
+      emit(AuthFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onResendOtpRequested(
+    AuthResendOtpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      await _authRepository.resendOtp(email: event.email);
+      emit(const AuthOtpResent());
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }
@@ -99,15 +127,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(const AuthPasswordChangeSuccess());
 
-      // After success, if we were authenticated, keep user info but it's better to
-      // let UI handle navigation or just show success.
-      // Usually, stay on same state but with success flag.
-      // But since we use sealed classes, we return to authenticated after success
-      // OR stay on success state and let UI pop.
       if (currentState is AuthAuthenticated) {
-        // We emit success, UI pops, and UI still has access to AuthBloc's state
-        // if it needs. However, the state is now AuthPasswordChangeSuccess.
-        // We might want to restore AuthAuthenticated after a brief moment or UI pop.
         emit(currentState);
       }
     } catch (e) {

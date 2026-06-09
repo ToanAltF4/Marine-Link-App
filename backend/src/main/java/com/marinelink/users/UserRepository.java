@@ -29,4 +29,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             + "AND u.status = com.marinelink.users.UserStatus.ACTIVE "
             + "AND u.role.code = 'USER'")
     long countActiveDealers();
+
+    @Query("SELECT u FROM User u WHERE lower(u.email) = lower(:email) AND u.status = :status AND u.deletedAt IS NULL")
+    Optional<User> findByEmailAndStatus(@Param("email") String email, @Param("status") UserStatus status);
 }

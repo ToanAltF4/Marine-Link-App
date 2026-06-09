@@ -92,6 +92,41 @@ class AuthRemoteRepository implements AuthRepository {
   Future<void> logout() => tokenStorage.clearAll();
 
   @override
+  Future<void> verifyEmail({
+    required String email,
+    required String otpCode,
+  }) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.verifyEmail,
+      data: {'email': email, 'otpCode': otpCode},
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? 'Xác thực email thất bại',
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
+
+  @override
+  Future<void> resendOtp({required String email}) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.resendOtp,
+      data: {'email': email},
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? 'Không thể gửi lại OTP',
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
+
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
