@@ -1,18 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:marinelink/features/auth/data/auth_mock_repository.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:marinelink/features/auth/presentation/screens/login_screen.dart';
 import 'package:marinelink/features/auth/presentation/screens/register_screen.dart';
 
 Widget _wrap(Widget child) {
-  return MaterialApp(
-    home: BlocProvider(
-      create: (_) => AuthBloc(authRepository: AuthMockRepository()),
-      child: child,
-    ),
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, _) => BlocProvider(
+          create: (_) => AuthBloc(authRepository: AuthMockRepository()),
+          child: child,
+        ),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) => Scaffold(
+          key: const Key('verifyEmailStub'),
+          body: Text('Verify Email Stub: ${state.extra}'),
+        ),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, _) => const Scaffold(body: Text('Login Stub')),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, _) => const Scaffold(body: Text('Home Stub')),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, _) => const Scaffold(body: Text('Admin Stub')),
+      ),
+      GoRoute(
+        path: '/staff',
+        builder: (context, _) => const Scaffold(body: Text('Staff Stub')),
+      ),
+    ],
   );
+  return MaterialApp.router(routerConfig: router);
 }
 
 void main() {
@@ -110,7 +141,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       await tester.pumpAndSettle(const Duration(milliseconds: 700));
-      expect(find.textContaining('Đăng ký thành công'), findsOneWidget);
+      expect(find.byKey(const Key('verifyEmailStub')), findsOneWidget);
     });
   });
 }

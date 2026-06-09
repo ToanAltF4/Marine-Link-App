@@ -112,7 +112,7 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [Loading, RegistrationSuccess] on valid dealer register',
+      'emits [Loading, AuthOtpSent] on valid dealer register',
       build: () => AuthBloc(authRepository: AuthMockRepository()),
       act: (bloc) => bloc.add(
         const AuthRegisterRequested(
@@ -126,7 +126,10 @@ void main() {
         ),
       ),
       wait: const Duration(milliseconds: 600),
-      expect: () => [const AuthLoading(), const AuthRegistrationSuccess()],
+      expect: () => [
+        const AuthLoading(),
+        const AuthOtpSent(email: 'daily-b@marinelink.demo'),
+      ],
     );
 
     blocTest<AuthBloc, AuthState>(
