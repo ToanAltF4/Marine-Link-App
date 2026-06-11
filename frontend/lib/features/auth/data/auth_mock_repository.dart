@@ -101,6 +101,23 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<({String token, User user})> loginWithGoogle() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    const user = User(
+      id: '550e8400-e29b-41d4-a716-4466554400a0',
+      fullName: 'Google Demo User',
+      email: 'google-demo@gmail.com',
+      phone: '',
+      status: 'ACTIVE',
+      roles: ['USER'],
+    );
+    const token = 'mock-jwt-token-google';
+    _currentUser = user;
+    _currentToken = token;
+    return (token: token, user: user);
+  }
+
+  @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 100));
     _currentUser = null;

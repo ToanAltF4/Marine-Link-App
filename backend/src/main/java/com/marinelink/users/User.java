@@ -44,7 +44,8 @@ public class User {
     @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "phone", nullable = false)
+    /** Nullable: Google sign-up accounts have no phone until profile is completed. */
+    @Column(name = "phone")
     private String phone;
 
     /** BCrypt hash — never returned in API response. */

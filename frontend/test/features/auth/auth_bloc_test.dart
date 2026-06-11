@@ -74,6 +74,19 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
+      'emits [Loading, Authenticated] on successful Google login',
+      build: () => AuthBloc(authRepository: AuthMockRepository()),
+      act: (bloc) => bloc.add(const AuthGoogleLoginRequested()),
+      wait: const Duration(milliseconds: 600),
+      expect: () => [
+        const AuthLoading(),
+        isA<AuthAuthenticated>()
+            .having((s) => s.user.email, 'email', 'google-demo@gmail.com')
+            .having((s) => s.user.isUser, 'isUser', true),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
       'restores the current authenticated user after successful login',
       build: () {
         final repository = AuthMockRepository();

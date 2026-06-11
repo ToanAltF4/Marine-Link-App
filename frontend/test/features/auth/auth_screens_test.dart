@@ -87,6 +87,22 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 700));
       expect(find.textContaining('Đăng nhập thành công'), findsOneWidget);
     });
+
+    testWidgets('Google button signs in through AuthBloc and routes home', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const LoginScreen()));
+
+      final googleButton = find.byKey(const Key('loginGoogleButton'));
+      await tester.ensureVisible(googleButton);
+      await tester.pumpAndSettle();
+      await tester.tap(googleButton);
+      await tester.pump();
+
+      // Mock Google sign-in resolves to a USER → routed to the home stub.
+      await tester.pumpAndSettle(const Duration(milliseconds: 700));
+      expect(find.text('Home Stub'), findsOneWidget);
+    });
   });
 
   group('RegisterScreen', () {

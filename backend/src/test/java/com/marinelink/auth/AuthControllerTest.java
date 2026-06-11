@@ -54,6 +54,41 @@ class AuthControllerTest {
     }
 
     @Test
+    void googleLoginReturnsApiEnvelope() throws Exception {
+        AuthUserResponse user = new AuthUserResponse(
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440003"),
+                "Google User",
+                "google-user@gmail.com",
+                null,
+                UserStatus.ACTIVE.name(),
+                List.of("USER"),
+                null,
+                null,
+                null,
+                "http://pic");
+        GoogleLoginRequest request = new GoogleLoginRequest("google-id-token");
+        when(authService.googleLogin(request))
+                .thenReturn(new LoginResponse("jwt-token", "Bearer", 3600L, user));
+
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.token").value("jwt-token"))
+                .andExpect(jsonPath("$.data.user.roles[0]").value("USER"));
+    }
+
+    @Test
+    void googleLoginRejectsMissingIdToken() throws Exception {
+        mockMvc.perform(post("/api/auth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new GoogleLoginRequest(""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
     void registerReturnsCreatedEnvelope() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "Nguyen Van A",

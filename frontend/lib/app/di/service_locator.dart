@@ -6,6 +6,7 @@ import '../../core/storage/secure_token_storage.dart';
 import '../../features/auth/domain/auth_repository.dart';
 import '../../features/auth/data/auth_mock_repository.dart';
 import '../../features/auth/data/auth_remote_repository.dart';
+import '../../features/auth/data/google_sign_in_service.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 // Products
@@ -100,12 +101,14 @@ Future<void> setupServiceLocator() async {
   );
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<GoogleAuthService>(() => GoogleSignInAuthService());
   // Sprint 5: swap AuthMockRepository → AuthRemoteRepository
   sl.registerLazySingleton<AuthRepository>(
     () => _useRemoteRepositories
         ? AuthRemoteRepository(
             apiClient: sl<ApiClient>(),
             tokenStorage: sl<SecureTokenStorage>(),
+            googleAuthService: sl<GoogleAuthService>(),
           )
         : AuthMockRepository(),
   );
