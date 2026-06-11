@@ -374,13 +374,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           Expanded(
             child: ClipRect(
-              child: SingleChildScrollView(
-                key: const Key('productScrollableFilters'),
-                clipBehavior: Clip.hardEdge,
-                restorationId:
-                    'productTopFilters-${_selectedCategoryId ?? 'all'}-$_stockFilter',
-                scrollDirection: Axis.horizontal,
-                child: Row(children: scrollingFilters),
+              // The chips use Ink, which paints its background onto the NEAREST
+              // Material ancestor — without a local Material that would be the
+              // full-width header Material, so the ink bled OVER the fixed
+              // "Tất cả"/"Lọc" buttons when scrolled (ClipRect only clips normal
+              // widgets, not ink). A transparent Material INSIDE the ClipRect
+              // makes the chip ink paint here and get clipped to this block.
+              child: Material(
+                type: MaterialType.transparency,
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    overscroll: false,
+                    scrollbars: false,
+                  ),
+                  child: SingleChildScrollView(
+                    key: const Key('productScrollableFilters'),
+                    clipBehavior: Clip.hardEdge,
+                    physics: const ClampingScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: scrollingFilters),
+                  ),
+                ),
               ),
             ),
           ),
