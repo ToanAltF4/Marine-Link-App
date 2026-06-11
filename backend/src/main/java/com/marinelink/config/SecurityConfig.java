@@ -65,6 +65,7 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers(HttpMethod.POST,
                     "/api/auth/login",
+                    "/api/auth/google",
                     "/api/auth/register",
                     "/api/auth/verify-email",
                     "/api/auth/resend-otp").permitAll()

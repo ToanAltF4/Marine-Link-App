@@ -70,6 +70,10 @@ class AuthResendOtpRequested extends AuthEvent {
   List<Object?> get props => [email];
 }
 
+class AuthGoogleLoginRequested extends AuthEvent {
+  const AuthGoogleLoginRequested();
+}
+
 class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }

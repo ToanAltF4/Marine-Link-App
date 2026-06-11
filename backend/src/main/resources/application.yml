@@ -72,6 +72,10 @@ app:
     from: ${MAIL_FROM}
     from-name: ${MAIL_FROM_NAME:MarineLink}
     otp-expiry-minutes: ${MAIL_OTP_EXPIRY_MINUTES:10}
+  google:
+    # Comma-separated OAuth client IDs accepted as the ID token audience
+    # (Web client ID used as serverClientId for Android/iOS google_sign_in).
+    client-ids: ${GOOGLE_CLIENT_IDS:}
 
 springdoc:
   api-docs:

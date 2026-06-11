@@ -150,29 +150,31 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 24),
                             const _DividerLabel(label: 'Hoặc'),
                             const SizedBox(height: 18),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Google login sẽ được bổ sung sau MVP',
+                            BlocBuilder<AuthBloc, AuthState>(
+                              builder: (context, state) {
+                                final isLoading = state is AuthLoading;
+                                return OutlinedButton.icon(
+                                  key: const Key('loginGoogleButton'),
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => context.read<AuthBloc>().add(
+                                          const AuthGoogleLoginRequested(),
+                                        ),
+                                  icon: const _GoogleMark(),
+                                  label: const Text('Đăng nhập với Google'),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(56),
+                                    foregroundColor: const Color(0xFF006C67),
+                                    side: const BorderSide(
+                                      color: Color(0xFF006C67),
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 );
                               },
-                              icon: const _GoogleMark(),
-                              label: const Text('Đăng nhập với Google'),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(56),
-                                foregroundColor: const Color(0xFF006C67),
-                                side: const BorderSide(
-                                  color: Color(0xFF006C67),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
                             ),
                           ],
                         ),

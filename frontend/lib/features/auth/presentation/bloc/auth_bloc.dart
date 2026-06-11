@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/auth_exceptions.dart';
 import '../../domain/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -14,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       super(const AuthInitial()) {
     on<AuthCheckRequested>(_onCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
+    on<AuthGoogleLoginRequested>(_onGoogleLoginRequested);
     on<AuthRegisterRequested>(_onRegisterRequested);
     on<AuthVerifyEmailRequested>(_onVerifyEmailRequested);
     on<AuthResendOtpRequested>(_onResendOtpRequested);
@@ -49,6 +51,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
       emit(AuthAuthenticated(user: result.user, token: result.token));
+    } catch (e) {
+      emit(AuthFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onGoogleLoginRequested(
+    AuthGoogleLoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      final result = await _authRepository.loginWithGoogle();
+      emit(AuthAuthenticated(user: result.user, token: result.token));
+    } on GoogleSignInCancelled {
+      // User dismissed the picker — return silently, no error message.
+      emit(const AuthUnauthenticated());
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }

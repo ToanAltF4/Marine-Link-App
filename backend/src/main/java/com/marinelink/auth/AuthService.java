@@ -1,5 +1,7 @@
 package com.marinelink.auth;
 
+import com.marinelink.auth.google.GoogleTokenVerifier;
+import com.marinelink.auth.google.GoogleUserInfo;
 import com.marinelink.auth.otp.EmailOtpService;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ConflictException;
@@ -32,6 +34,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailOtpService emailOtpService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
@@ -53,6 +56,75 @@ public class AuthService {
                 "Bearer",
                 jwtTokenProvider.getExpirationSeconds(),
                 AuthUserResponse.from(user));
+    }
+
+    /**
+     * Sign in (or sign up) with Google. The Google ID token is verified, then
+     * the account is matched by email — created as ACTIVE if new (Google already
+     * verified the email), or logged in if it exists. Returns an app JWT.
+     */
+    @Transactional
+    public LoginResponse googleLogin(GoogleLoginRequest request) {
+        GoogleUserInfo info = googleTokenVerifier.verify(request.idToken().trim());
+        if (!info.emailVerified()) {
+            throw new BusinessException("Email Google chưa được xác thực", HttpStatus.FORBIDDEN);
+        }
+        String email = info.email().trim().toLowerCase(Locale.ROOT);
+
+        User user = userRepository.findActiveByEmailOrPhone(email)
+                .map(existing -> reconcileGoogleUser(existing))
+                .orElseGet(() -> createGoogleUser(info, email));
+
+        List<String> roles = List.of(user.getRoleCode());
+        String token = jwtTokenProvider.generateToken(user.getPublicId(), roles);
+
+        return new LoginResponse(
+                token,
+                "Bearer",
+                jwtTokenProvider.getExpirationSeconds(),
+                AuthUserResponse.from(user));
+    }
+
+    private User reconcileGoogleUser(User user) {
+        if (user.getStatus() == UserStatus.DISABLED) {
+            throw new BusinessException("Tài khoản không hoạt động", HttpStatus.FORBIDDEN);
+        }
+        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
+            throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);
+        }
+        // Google has verified the email — clear a pending-verification state.
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            user.setStatus(UserStatus.ACTIVE);
+            return userRepository.save(user);
+        }
+        return user;
+    }
+
+    private User createGoogleUser(GoogleUserInfo info, String email) {
+        Role userRole = roleRepository.findByCode(DEFAULT_ROLE)
+                .orElseThrow(() -> new BusinessException(
+                        "Role USER chưa được cấu hình",
+                        HttpStatus.INTERNAL_SERVER_ERROR));
+
+        User user = User.builder()
+                .publicId(UUID.randomUUID())
+                .role(userRole)
+                .fullName(resolveGoogleName(info, email))
+                .email(email)
+                .phone(null) // Google does not provide a phone; user completes profile later
+                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString())) // unusable
+                .status(UserStatus.ACTIVE)
+                .avatarUrl(info.picture())
+                .build();
+        return userRepository.save(user);
+    }
+
+    private String resolveGoogleName(GoogleUserInfo info, String email) {
+        if (info.name() != null && !info.name().isBlank()) {
+            return info.name().trim();
+        }
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
     }
 
     @Transactional
