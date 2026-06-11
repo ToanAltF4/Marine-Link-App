@@ -374,13 +374,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           Expanded(
             child: ClipRect(
-              child: SingleChildScrollView(
-                key: const Key('productScrollableFilters'),
-                clipBehavior: Clip.hardEdge,
-                restorationId:
-                    'productTopFilters-${_selectedCategoryId ?? 'all'}-$_stockFilter',
-                scrollDirection: Axis.horizontal,
-                child: Row(children: scrollingFilters),
+              // Hard-clip + clamping physics (no stretch overscroll) so the
+              // chips stay inside this block and never slide over the fixed
+              // "Tất cả"/"Lọc" buttons when dragged horizontally.
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  overscroll: false,
+                  scrollbars: false,
+                ),
+                child: SingleChildScrollView(
+                  key: const Key('productScrollableFilters'),
+                  clipBehavior: Clip.hardEdge,
+                  physics: const ClampingScrollPhysics(),
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: scrollingFilters),
+                ),
               ),
             ),
           ),

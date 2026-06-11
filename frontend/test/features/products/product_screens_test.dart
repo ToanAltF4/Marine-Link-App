@@ -389,6 +389,57 @@ void main() {
       expect(find.text('T\u1ea5t c\u1ea3'), findsOneWidget);
     });
 
+    testWidgets('filter strip is hard-clipped with clamping scroll physics', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(393, 852);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductListScreen(
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final scrollable = find.byKey(const Key('productScrollableFilters'));
+      final advanced = find.byKey(const Key('productAdvancedFilterButton'));
+
+      // The strip is contained to the right of the fixed "Lọc" button.
+      expect(
+        tester.getRect(scrollable).left,
+        greaterThanOrEqualTo(tester.getRect(advanced).right),
+      );
+
+      // Regression: the strip must hard-clip + use clamping physics so chips
+      // cannot stretch over the fixed buttons when dragged horizontally.
+      final view = tester.widget<SingleChildScrollView>(scrollable);
+      expect(view.clipBehavior, Clip.hardEdge);
+      expect(view.physics, isA<ClampingScrollPhysics>());
+      expect(view.scrollDirection, Axis.horizontal);
+
+      // Dragging the strip keeps the container fixed and on-screen.
+      await tester.drag(scrollable, const Offset(-260, 0));
+      await tester.pump();
+      expect(
+        tester.getRect(scrollable).left,
+        greaterThanOrEqualTo(tester.getRect(advanced).right),
+      );
+      expect(tester.getRect(scrollable).right, lessThanOrEqualTo(393));
+    });
+
     testWidgets('applies stock filter from the product filter sheet', (
       tester,
     ) async {
