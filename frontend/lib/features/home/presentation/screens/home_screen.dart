@@ -16,6 +16,8 @@ import '../../../products/domain/product.dart';
 import '../../../products/domain/product_repository.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/widgets/product_visuals.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 const _compactFeaturedGridMaxWidth = 348.0;
 const _compactFeaturedCardAspectRatio = 0.80;
@@ -86,14 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
                   children: [
-                    Text(
-                      'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontFamily: 'serif',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    _buildGreetingWidget(theme),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -455,6 +450,38 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (!mounted) return;
     BuyerNavigation.push(context, AppRoutes.productDetailPath(productId));
+  }
+
+  Widget _buildGreetingWidget(ThemeData theme) {
+    try {
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      return BlocBuilder<AuthBloc, AuthState>(
+        bloc: authBloc,
+        builder: (context, state) {
+          String name = 'Nguy\u1ec5n V\u0103n A';
+          if (state is AuthAuthenticated) {
+            name = state.user.fullName;
+          }
+          return Text(
+            'Xin ch\u00e0o, $name',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: AppColors.primaryDark,
+              fontFamily: 'serif',
+              fontWeight: FontWeight.w700,
+            ),
+          );
+        },
+      );
+    } catch (_) {
+      return Text(
+        'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
+        style: theme.textTheme.headlineSmall?.copyWith(
+          color: AppColors.primaryDark,
+          fontFamily: 'serif',
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
   }
 }
 
