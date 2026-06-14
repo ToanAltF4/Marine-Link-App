@@ -5,6 +5,7 @@
 
 # Local AI handoff notes (never commit)
 .codex-notes/
+rules-notes/.codex-notes
 
 # ── Flutter / Dart (root-level artifacts from before monorepo split) ──────────
 .dart_tool/
@@ -58,3 +59,5 @@ yarn-error.log*
 jacoco.exec
 lcov.info
 coverage/
+
+frontend/web/
