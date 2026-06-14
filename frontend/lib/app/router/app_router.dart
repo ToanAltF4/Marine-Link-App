@@ -11,6 +11,7 @@ import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/staff_chat_management_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/change_password_screen.dart';
 import '../../features/cart/presentation/screens/cart_screen.dart';
@@ -33,6 +34,7 @@ abstract class AppRoutes {
   static const splash = '/';
   static const login = '/login';
   static const register = '/register';
+  static const verifyEmail = '/verify-email';
   static const changePassword = '/change-password';
   static const home = '/home';
   static const productList = '/products';
@@ -44,6 +46,7 @@ abstract class AppRoutes {
   static const notifications = '/home/notifications';
   static const chat = '/chat';
   static const chatRoom = '/chat/:roomId';
+  static const chatOrderRoom = '/chat/order/:orderId';
   static const profile = '/profile';
   static const warehouseMap = '/warehouses';
 
@@ -63,6 +66,7 @@ abstract class AppRoutes {
   static String productDetailPath(String id) => '$productList/$id';
   static String orderDetailPath(String id) => '$orders/$id';
   static String chatRoomPath(String roomId) => '$chat/$roomId';
+  static String chatOrderRoomPath(String orderId) => '$chat/order/$orderId';
   static String staffOrderDetailPath(String id) => '$staffOrders/$id';
   static String staffChatRoomPath(String roomId) => '$staffChat/$roomId';
   static String adminOrderDetailPath(String id) => '$adminOrders/$id';
@@ -115,6 +119,13 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.changePassword,
         builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) {
+          final email = state.extra as String? ?? '';
+          return OtpVerificationScreen(email: email);
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -171,6 +182,11 @@ class AppRouter {
                 path: AppRoutes.chat,
                 builder: (context, state) => const ChatScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'order/:orderId',
+                    builder: (context, state) =>
+                        ChatScreen(orderId: state.pathParameters['orderId']!),
+                  ),
                   GoRoute(
                     path: ':roomId',
                     builder: (context, state) => ChatScreen(

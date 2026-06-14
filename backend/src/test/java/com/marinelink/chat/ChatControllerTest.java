@@ -63,6 +63,49 @@ class ChatControllerTest {
     }
 
     @Test
+    void getMyRoomReturnsBuyerSupportRoom() throws Exception {
+        UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID roomId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        ChatThreadResponse response = new ChatThreadResponse(roomId, false, List.of());
+
+        when(chatService.getOrCreateMyRoom(userId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/chat/room")
+                        .principal(new TestingAuthenticationToken(userId.toString(), null, "ROLE_USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.roomId").value(roomId.toString()));
+
+        verify(chatService).getOrCreateMyRoom(userId);
+    }
+
+    @Test
+    void getOrderComplaintRoomReturnsLinkedRoom() throws Exception {
+        UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID orderId = UUID.fromString("550e8400-e29b-41d4-a716-446655440009");
+        UUID roomId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        ChatThreadResponse response = new ChatThreadResponse(roomId, false, List.of(
+                new ChatMessageResponse(
+                        UUID.fromString("550e8400-e29b-41d4-a716-44665544000b"),
+                        roomId,
+                        ChatSenderType.AI_SAMPLE,
+                        "Khiếu nại đơn hàng ML-20260528-0001",
+                        Instant.parse("2026-05-28T08:30:00Z"),
+                        List.of())));
+
+        when(chatService.getOrCreateOrderComplaintRoom(userId, orderId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/chat/orders/{orderId}/room", orderId)
+                        .principal(new TestingAuthenticationToken(userId.toString(), null, "ROLE_USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.roomId").value(roomId.toString()))
+                .andExpect(jsonPath("$.data.messages[0].senderType").value("AI_SAMPLE"));
+
+        verify(chatService).getOrCreateOrderComplaintRoom(userId, orderId);
+    }
+
+    @Test
     void sendMessageReturnsCreatedEnvelope() throws Exception {
         UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
         UUID roomId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");

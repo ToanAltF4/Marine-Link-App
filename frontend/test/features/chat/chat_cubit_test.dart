@@ -15,8 +15,14 @@ class _FakeRepo implements ChatRepository {
   })
   sendResponder;
 
+  final Future<ApiResponse<ChatThread>> Function()? myRoomResponder;
+  final Future<ApiResponse<ChatThread>> Function(String orderId)?
+  orderRoomResponder;
+
   _FakeRepo({
     required this.threadResponder,
+    this.myRoomResponder,
+    this.orderRoomResponder,
     Future<ApiResponse<ChatMessage>> Function({
       required String roomId,
       required String content,
@@ -31,6 +37,14 @@ class _FakeRepo implements ChatRepository {
   @override
   Future<ApiResponse<ChatThread>> getThread(String roomId) =>
       threadResponder(roomId);
+
+  @override
+  Future<ApiResponse<ChatThread>> getMyRoom() =>
+      (myRoomResponder ?? () => threadResponder('my-room'))();
+
+  @override
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) =>
+      (orderRoomResponder ?? (_) => threadResponder('order-room'))(orderId);
 
   @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
@@ -83,7 +97,69 @@ final _sentMessage = ChatMessage(
   createdAt: DateTime.utc(2026, 5, 28, 8, 35),
 );
 
+const _emptyThread = ChatThread(
+  roomId: 'room-001',
+  isClosed: false,
+  messages: [],
+);
+
+final _sentBuyerMessage = ChatMessage(
+  id: 'message-003',
+  roomId: 'room-001',
+  senderType: ChatSenderType.user,
+  content: 'Tôi cần hỗ trợ đơn hàng.',
+  createdAt: DateTime.utc(2026, 5, 28, 8, 40),
+);
+
 void main() {
+  blocTest<ChatCubit, ChatState>(
+    'loadMyRoom resolves the user support room (buyer tab)',
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            const ApiResponse(success: false, message: 'should not be used'),
+        myRoomResponder: () async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+      ),
+    ),
+    act: (cubit) => cubit.loadMyRoom(),
+    expect: () => [
+      isA<ChatState>().having(
+        (state) => state.status,
+        'status',
+        ChatStatus.loading,
+      ),
+      isA<ChatState>()
+          .having((state) => state.status, 'status', ChatStatus.success)
+          .having((state) => state.roomId, 'roomId', 'room-001')
+          .having((state) => state.messages.length, 'message count', 1),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
+    'loadOrderRoom creates the completed order complaint room',
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            const ApiResponse(success: false, message: 'should not be used'),
+        orderRoomResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+      ),
+    ),
+    act: (cubit) => cubit.loadOrderRoom('order-001'),
+    expect: () => [
+      isA<ChatState>().having(
+        (state) => state.status,
+        'status',
+        ChatStatus.loading,
+      ),
+      isA<ChatState>()
+          .having((state) => state.status, 'status', ChatStatus.success)
+          .having((state) => state.roomId, 'roomId', 'room-001')
+          .having((state) => state.messages.length, 'message count', 1),
+    ],
+  );
+
   blocTest<ChatCubit, ChatState>(
     'emits [loading, success] when repository returns messages',
     build: () => ChatCubit(
@@ -268,6 +344,69 @@ void main() {
             (state) => state.messages.last.senderType,
             'sender',
             ChatSenderType.staff,
+          ),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
+    'sendMessage creates buyer support room first when roomId is missing',
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            const ApiResponse(success: false, message: 'not used'),
+        myRoomResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: _emptyThread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async =>
+                ApiResponse(
+                  success: true,
+                  message: 'Message sent',
+                  data: _sentBuyerMessage,
+                ),
+      ),
+    ),
+    act: (cubit) => cubit.sendMessage('Tôi cần hỗ trợ đơn hàng.'),
+    expect: () => [
+      isA<ChatState>().having((state) => state.sending, 'sending', true),
+      isA<ChatState>()
+          .having((state) => state.status, 'status', ChatStatus.empty)
+          .having((state) => state.roomId, 'roomId', 'room-001')
+          .having((state) => state.sending, 'sending', true),
+      isA<ChatState>()
+          .having((state) => state.status, 'status', ChatStatus.success)
+          .having((state) => state.sending, 'sending', false)
+          .having((state) => state.canRetrySend, 'canRetrySend', false)
+          .having((state) => state.messages.length, 'message count', 1)
+          .having(
+            (state) => state.messages.last.content,
+            'content',
+            'Tôi cần hỗ trợ đơn hàng.',
+          ),
+    ],
+  );
+
+  blocTest<ChatCubit, ChatState>(
+    'sendMessage keeps retry enabled when buyer support room cannot be created',
+    build: () => ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            const ApiResponse(success: false, message: 'not used'),
+        myRoomResponder: () async => const ApiResponse(
+          success: false,
+          message: 'Không chuẩn bị được phòng chat.',
+        ),
+      ),
+    ),
+    act: (cubit) => cubit.sendMessage('Tôi cần hỗ trợ đơn hàng.'),
+    expect: () => [
+      isA<ChatState>().having((state) => state.sending, 'sending', true),
+      isA<ChatState>()
+          .having((state) => state.sending, 'sending', false)
+          .having((state) => state.canRetrySend, 'canRetrySend', true)
+          .having(
+            (state) => state.sendErrorMessage,
+            'sendErrorMessage',
+            'Không chuẩn bị được phòng chat.',
           ),
     ],
   );

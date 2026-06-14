@@ -19,6 +19,19 @@ class ChatRemoteRepository implements ChatRepository {
   }
 
   @override
+  Future<ApiResponse<ChatThread>> getMyRoom() {
+    return apiClient.get(ApiEndpoints.chatMyRoom, fromJson: chatThreadFromJson);
+  }
+
+  @override
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) {
+    return apiClient.get(
+      ApiEndpoints.chatOrderRoom(orderId),
+      fromJson: chatThreadFromJson,
+    );
+  }
+
+  @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,

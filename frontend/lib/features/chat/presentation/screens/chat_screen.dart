@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,18 +13,21 @@ import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
-import '../../data/chat_mock_repository.dart';
 import '../../domain/chat.dart';
 import '../cubit/chat_cubit.dart';
 
 class ChatScreen extends StatelessWidget {
-  final String roomId;
+  /// Khi null (buyer mở tab Chat): lấy/tạo phòng hỗ trợ của user hiện tại.
+  /// Khi có giá trị (staff / deep-link): mở đúng phòng đó.
+  final String? roomId;
+  final String? orderId;
   final bool staffMode;
   final String staffBackLocation;
 
   const ChatScreen({
     super.key,
-    this.roomId = ChatMockRepository.defaultRoomId,
+    this.roomId,
+    this.orderId,
     this.staffMode = false,
     this.staffBackLocation = AppRoutes.staffDashboard,
   });
@@ -30,8 +35,21 @@ class ChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ChatCubit>(
-      create: (_) => sl<ChatCubit>()..load(roomId),
+      create: (_) {
+        final cubit = sl<ChatCubit>();
+        final id = roomId;
+        final complaintOrderId = orderId;
+        if (complaintOrderId != null && complaintOrderId.isNotEmpty) {
+          cubit.loadOrderRoom(complaintOrderId);
+        } else if (id == null) {
+          cubit.loadMyRoom();
+        } else {
+          cubit.load(id);
+        }
+        return cubit;
+      },
       child: _ChatView(
+        orderId: orderId,
         staffMode: staffMode,
         staffBackLocation: staffBackLocation,
       ),
@@ -40,21 +58,36 @@ class ChatScreen extends StatelessWidget {
 }
 
 class _ChatView extends StatefulWidget {
+  final String? orderId;
   final bool staffMode;
   final String staffBackLocation;
 
-  const _ChatView({required this.staffMode, required this.staffBackLocation});
+  const _ChatView({
+    this.orderId,
+    required this.staffMode,
+    required this.staffBackLocation,
+  });
 
   @override
   State<_ChatView> createState() => _ChatViewState();
 }
 
 class _ChatViewState extends State<_ChatView> {
+  static const _refreshInterval = Duration(seconds: 4);
+
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) => _refresh());
+  }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -67,9 +100,6 @@ class _ChatViewState extends State<_ChatView> {
           previous.sending != current.sending ||
           previous.messages.length != current.messages.length,
       listener: (context, state) {
-        if (!state.sending && state.sendErrorMessage == null) {
-          _controller.clear();
-        }
         _scrollToBottom();
       },
       builder: (context, state) {
@@ -99,7 +129,11 @@ class _ChatViewState extends State<_ChatView> {
           body: Column(
             children: [
               Expanded(
-                child: _ChatBody(state: state, controller: _scrollController),
+                child: _ChatBody(
+                  state: state,
+                  controller: _scrollController,
+                  orderId: widget.orderId,
+                ),
               ),
               _ChatComposer(
                 controller: _controller,
@@ -125,10 +159,29 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   Future<void> _send() async {
-    await context.read<ChatCubit>().sendMessage(
-      _controller.text,
-      sendAsStaff: widget.staffMode,
-    );
+    final cubit = context.read<ChatCubit>();
+    await cubit.sendMessage(_controller.text, sendAsStaff: widget.staffMode);
+    if (!mounted) return;
+    if (cubit.state.sendErrorMessage == null) {
+      _controller.clear();
+    }
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    final cubit = context.read<ChatCubit>();
+    if (cubit.state.sending) return;
+    final complaintOrderId = widget.orderId;
+    if (complaintOrderId != null && complaintOrderId.isNotEmpty) {
+      cubit.loadOrderRoom(complaintOrderId);
+      return;
+    }
+    final id = cubit.state.roomId;
+    if (id == null || id.isEmpty) {
+      cubit.loadMyRoom();
+      return;
+    }
+    cubit.load(id);
   }
 
   void _scrollToBottom() {
@@ -146,8 +199,28 @@ class _ChatViewState extends State<_ChatView> {
 class _ChatBody extends StatelessWidget {
   final ChatState state;
   final ScrollController controller;
+  final String? orderId;
 
-  const _ChatBody({required this.state, required this.controller});
+  const _ChatBody({
+    required this.state,
+    required this.controller,
+    this.orderId,
+  });
+
+  void _reload(BuildContext context) {
+    final cubit = context.read<ChatCubit>();
+    final complaintOrderId = orderId;
+    if (complaintOrderId != null && complaintOrderId.isNotEmpty) {
+      cubit.loadOrderRoom(complaintOrderId);
+      return;
+    }
+    final id = state.roomId;
+    if (id == null || id.isEmpty) {
+      cubit.loadMyRoom();
+    } else {
+      cubit.load(id);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,9 +233,7 @@ class _ChatBody extends StatelessWidget {
         message:
             state.errorMessage ??
             'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
-        onRetry: () => context.read<ChatCubit>().load(
-          state.roomId ?? ChatMockRepository.defaultRoomId,
-        ),
+        onRetry: () => _reload(context),
       ),
       ChatStatus.empty => const Center(
         key: Key('chatEmpty'),
@@ -186,9 +257,7 @@ class _ChatBody extends StatelessWidget {
           message:
               state.errorMessage ??
               '\u0110ang hi\u1ec3n th\u1ecb d\u1eef li\u1ec7u chat g\u1ea7n nh\u1ea5t.',
-          onRetry: () => context.read<ChatCubit>().load(
-            state.roomId ?? ChatMockRepository.defaultRoomId,
-          ),
+          onRetry: () => _reload(context),
         ),
         Expanded(child: body),
       ],

@@ -9,6 +9,10 @@ abstract class AuthRepository {
     required String password,
   });
 
+  /// Sign in with Google: launches the Google picker, exchanges the resulting
+  /// ID token with the backend, and returns the app session.
+  Future<({String token, User user})> loginWithGoogle();
+
   Future<User> register({
     required String fullName,
     required String email,
@@ -18,6 +22,13 @@ abstract class AuthRepository {
     String? businessAddress,
     String? taxCode,
   });
+
+  Future<void> verifyEmail({
+    required String email,
+    required String otpCode,
+  });
+
+  Future<void> resendOtp({required String email});
 
   Future<void> logout();
 

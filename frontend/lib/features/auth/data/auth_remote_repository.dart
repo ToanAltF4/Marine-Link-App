@@ -4,14 +4,17 @@ import '../../../core/storage/secure_token_storage.dart';
 import '../domain/auth_repository.dart';
 import '../domain/user.dart';
 import 'auth_dto.dart';
+import 'google_sign_in_service.dart';
 
 class AuthRemoteRepository implements AuthRepository {
   final ApiClient apiClient;
   final SecureTokenStorage tokenStorage;
+  final GoogleAuthService googleAuthService;
 
   const AuthRemoteRepository({
     required this.apiClient,
     required this.tokenStorage,
+    required this.googleAuthService,
   });
 
   @override
@@ -32,6 +35,30 @@ class AuthRemoteRepository implements AuthRepository {
     if (!response.success || response.data == null) {
       throw ApiException(
         message: response.message ?? 'Dang nhap that bai',
+        type: ApiExceptionType.unauthorized,
+      );
+    }
+
+    final login = response.data!;
+    final user = login.user.toDomain();
+    await _persistSession(login.token, user);
+    return (token: login.token, user: user);
+  }
+
+  @override
+  Future<({String token, User user})> loginWithGoogle() async {
+    final idToken = await googleAuthService.signInAndGetIdToken();
+
+    final response = await apiClient.post<LoginResponseDto>(
+      ApiEndpoints.googleLogin,
+      data: {'idToken': idToken},
+      fromJson: (json) =>
+          LoginResponseDto.fromJson(json as Map<String, dynamic>),
+    );
+
+    if (!response.success || response.data == null) {
+      throw ApiException(
+        message: response.message ?? 'Đăng nhập Google thất bại',
         type: ApiExceptionType.unauthorized,
       );
     }
@@ -90,6 +117,41 @@ class AuthRemoteRepository implements AuthRepository {
 
   @override
   Future<void> logout() => tokenStorage.clearAll();
+
+  @override
+  Future<void> verifyEmail({
+    required String email,
+    required String otpCode,
+  }) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.verifyEmail,
+      data: {'email': email, 'otpCode': otpCode},
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? 'Xác thực email thất bại',
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
+
+  @override
+  Future<void> resendOtp({required String email}) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.resendOtp,
+      data: {'email': email},
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? 'Không thể gửi lại OTP',
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
 
   @override
   Future<void> changePassword({

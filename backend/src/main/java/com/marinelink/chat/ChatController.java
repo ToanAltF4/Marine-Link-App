@@ -23,6 +23,20 @@ public class ChatController {
 
     private final ChatService chatService;
 
+    @GetMapping("/room")
+    public ApiResponse<ChatThreadResponse> getMyRoom(Authentication authentication) {
+        return ApiResponse.ok(chatService.getOrCreateMyRoom(currentUserId(authentication)));
+    }
+
+    @GetMapping("/orders/{orderId}/room")
+    public ApiResponse<ChatThreadResponse> getOrderComplaintRoom(
+            Authentication authentication,
+            @PathVariable UUID orderId) {
+        return ApiResponse.ok(chatService.getOrCreateOrderComplaintRoom(
+                currentUserId(authentication),
+                orderId));
+    }
+
     @GetMapping("/{roomId}")
     public ApiResponse<ChatThreadResponse> getThread(
             Authentication authentication,

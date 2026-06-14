@@ -101,10 +101,44 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<({String token, User user})> loginWithGoogle() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    const user = User(
+      id: '550e8400-e29b-41d4-a716-4466554400a0',
+      fullName: 'Google Demo User',
+      email: 'google-demo@gmail.com',
+      phone: '',
+      status: 'ACTIVE',
+      roles: ['USER'],
+    );
+    const token = 'mock-jwt-token-google';
+    _currentUser = user;
+    _currentToken = token;
+    return (token: token, user: user);
+  }
+
+  @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 100));
     _currentUser = null;
     _currentToken = null;
+  }
+
+  @override
+  Future<void> verifyEmail({
+    required String email,
+    required String otpCode,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: accept any 6-digit code
+    if (otpCode.length != 6) {
+      throw Exception('Mã OTP không hợp lệ');
+    }
+  }
+
+  @override
+  Future<void> resendOtp({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override

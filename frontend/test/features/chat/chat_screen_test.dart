@@ -17,9 +17,14 @@ class _FakeRepo implements ChatRepository {
     bool sendAsStaff,
   })
   sendResponder;
+  final Future<ApiResponse<ChatThread>> Function()? myRoomResponder;
+  final Future<ApiResponse<ChatThread>> Function(String orderId)?
+  orderRoomResponder;
 
   _FakeRepo({
     required this.threadResponder,
+    this.myRoomResponder,
+    this.orderRoomResponder,
     Future<ApiResponse<ChatMessage>> Function({
       required String roomId,
       required String content,
@@ -34,6 +39,14 @@ class _FakeRepo implements ChatRepository {
   @override
   Future<ApiResponse<ChatThread>> getThread(String roomId) =>
       threadResponder(roomId);
+
+  @override
+  Future<ApiResponse<ChatThread>> getMyRoom() =>
+      (myRoomResponder ?? () => threadResponder('my-room'))();
+
+  @override
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) =>
+      (orderRoomResponder ?? (_) => threadResponder('order-room'))(orderId);
 
   @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
@@ -89,7 +102,12 @@ void _registerRepo(ChatRepository repo) {
   sl.registerFactory<ChatCubit>(() => ChatCubit(repository: repo));
 }
 
-Future<void> _pumpScreen(WidgetTester tester, {bool staffMode = false}) async {
+Future<void> _pumpScreen(
+  WidgetTester tester, {
+  bool staffMode = false,
+  String? roomId = 'room-001',
+  String? orderId,
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(800, 1600);
   addTearDown(() {
@@ -98,7 +116,7 @@ Future<void> _pumpScreen(WidgetTester tester, {bool staffMode = false}) async {
   });
   await tester.pumpWidget(
     MaterialApp(
-      home: ChatScreen(roomId: 'room-001', staffMode: staffMode),
+      home: ChatScreen(roomId: roomId, orderId: orderId, staffMode: staffMode),
     ),
   );
 }
@@ -170,6 +188,71 @@ void main() {
 
     expect(find.byKey(const Key('chatEmpty')), findsOneWidget);
     expect(find.byKey(const Key('chatMessageTextField')), findsOneWidget);
+  });
+
+  testWidgets(
+    'refreshes open chat room periodically without clearing composer',
+    (tester) async {
+      var calls = 0;
+      _registerRepo(
+        _FakeRepo(
+          threadResponder: (_) async {
+            calls++;
+            return ApiResponse(success: true, message: 'OK', data: _thread);
+          },
+        ),
+      );
+
+      await _pumpScreen(tester);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('chatMessageTextField')),
+        'Dang nhap tin nhan',
+      );
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+
+      expect(calls, greaterThanOrEqualTo(2));
+      expect(find.text('Dang nhap tin nhan'), findsOneWidget);
+    },
+  );
+
+  testWidgets('opens completed order complaint room with order context', (
+    tester,
+  ) async {
+    var orderRoomCalls = 0;
+    final orderThread = ChatThread(
+      roomId: 'order-room-001',
+      isClosed: false,
+      messages: [
+        ChatMessage(
+          id: 'message-order-001',
+          roomId: 'order-room-001',
+          senderType: ChatSenderType.aiSample,
+          content: 'Khiếu nại đơn hàng ML-20260526-0001',
+          createdAt: DateTime.utc(2026, 5, 28, 8, 30),
+        ),
+      ],
+    );
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async =>
+            const ApiResponse(success: false, message: 'not used'),
+        orderRoomResponder: (orderId) async {
+          orderRoomCalls++;
+          expect(orderId, 'order-004');
+          return ApiResponse(success: true, message: 'OK', data: orderThread);
+        },
+      ),
+    );
+
+    await _pumpScreen(tester, roomId: null, orderId: 'order-004');
+    await tester.pumpAndSettle();
+
+    expect(orderRoomCalls, 1);
+    expect(find.byKey(const Key('chatMessagesList')), findsOneWidget);
+    expect(find.text('Khiếu nại đơn hàng ML-20260526-0001'), findsOneWidget);
   });
 
   testWidgets('shows error with retry, then recovers', (tester) async {
@@ -282,6 +365,67 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Checked order'), findsOneWidget);
+  });
+
+  testWidgets('buyer chat tab creates room before sending first message', (
+    tester,
+  ) async {
+    const emptyThread = ChatThread(
+      roomId: 'room-001',
+      isClosed: false,
+      messages: [],
+    );
+    var myRoomCalls = 0;
+    var sendCalls = 0;
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async =>
+            const ApiResponse(success: false, message: 'not used'),
+        myRoomResponder: () async {
+          myRoomCalls++;
+          return const ApiResponse(
+            success: true,
+            message: 'OK',
+            data: emptyThread,
+          );
+        },
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async {
+              sendCalls++;
+              return ApiResponse(
+                success: true,
+                message: 'Message sent',
+                data: ChatMessage(
+                  id: 'message-003',
+                  roomId: roomId,
+                  senderType: ChatSenderType.user,
+                  content: content,
+                  createdAt: DateTime.utc(2026, 5, 28, 8, 40),
+                ),
+              );
+            },
+      ),
+    );
+
+    await _pumpScreen(tester, roomId: null);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('chatEmpty')), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('chatMessageTextField')),
+      'Tôi cần hỗ trợ đơn hàng.',
+    );
+    await tester.tap(find.byKey(const Key('chatSendButton')));
+    await tester.pumpAndSettle();
+
+    expect(myRoomCalls, 1);
+    expect(sendCalls, 1);
+    expect(
+      find.byKey(const Key('chatMessageBubble_message-003')),
+      findsOneWidget,
+    );
+    expect(find.text('Tôi cần hỗ trợ đơn hàng.'), findsOneWidget);
   });
 
   testWidgets('shows validation error for blank message', (tester) async {

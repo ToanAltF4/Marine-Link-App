@@ -1,5 +1,8 @@
 package com.marinelink.auth;
 
+import com.marinelink.auth.google.GoogleTokenVerifier;
+import com.marinelink.auth.google.GoogleUserInfo;
+import com.marinelink.auth.otp.EmailOtpService;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ConflictException;
 import com.marinelink.common.security.JwtTokenProvider;
@@ -30,6 +33,8 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailOtpService emailOtpService;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
@@ -51,6 +56,75 @@ public class AuthService {
                 "Bearer",
                 jwtTokenProvider.getExpirationSeconds(),
                 AuthUserResponse.from(user));
+    }
+
+    /**
+     * Sign in (or sign up) with Google. The Google ID token is verified, then
+     * the account is matched by email — created as ACTIVE if new (Google already
+     * verified the email), or logged in if it exists. Returns an app JWT.
+     */
+    @Transactional
+    public LoginResponse googleLogin(GoogleLoginRequest request) {
+        GoogleUserInfo info = googleTokenVerifier.verify(request.idToken().trim());
+        if (!info.emailVerified()) {
+            throw new BusinessException("Email Google chưa được xác thực", HttpStatus.FORBIDDEN);
+        }
+        String email = info.email().trim().toLowerCase(Locale.ROOT);
+
+        User user = userRepository.findActiveByEmailOrPhone(email)
+                .map(existing -> reconcileGoogleUser(existing))
+                .orElseGet(() -> createGoogleUser(info, email));
+
+        List<String> roles = List.of(user.getRoleCode());
+        String token = jwtTokenProvider.generateToken(user.getPublicId(), roles);
+
+        return new LoginResponse(
+                token,
+                "Bearer",
+                jwtTokenProvider.getExpirationSeconds(),
+                AuthUserResponse.from(user));
+    }
+
+    private User reconcileGoogleUser(User user) {
+        if (user.getStatus() == UserStatus.DISABLED) {
+            throw new BusinessException("Tài khoản không hoạt động", HttpStatus.FORBIDDEN);
+        }
+        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
+            throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);
+        }
+        // Google has verified the email — clear a pending-verification state.
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            user.setStatus(UserStatus.ACTIVE);
+            return userRepository.save(user);
+        }
+        return user;
+    }
+
+    private User createGoogleUser(GoogleUserInfo info, String email) {
+        Role userRole = roleRepository.findByCode(DEFAULT_ROLE)
+                .orElseThrow(() -> new BusinessException(
+                        "Role USER chưa được cấu hình",
+                        HttpStatus.INTERNAL_SERVER_ERROR));
+
+        User user = User.builder()
+                .publicId(UUID.randomUUID())
+                .role(userRole)
+                .fullName(resolveGoogleName(info, email))
+                .email(email)
+                .phone(null) // Google does not provide a phone; user completes profile later
+                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString())) // unusable
+                .status(UserStatus.ACTIVE)
+                .avatarUrl(info.picture())
+                .build();
+        return userRepository.save(user);
+    }
+
+    private String resolveGoogleName(GoogleUserInfo info, String email) {
+        if (info.name() != null && !info.name().isBlank()) {
+            return info.name().trim();
+        }
+        int at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
     }
 
     @Transactional
@@ -77,14 +151,55 @@ public class AuthService {
                 .email(email)
                 .phone(phone)
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .status(UserStatus.PENDING_APPROVAL)
+                .status(UserStatus.PENDING_VERIFICATION)
                 .storeName(trimToNull(request.storeName()))
                 .businessAddress(trimToNull(request.businessAddress()))
                 .taxCode(trimToNull(request.taxCode()))
                 .build();
 
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user); // flush immediately so the user row
+                                                            // is visible to the REQUIRES_NEW OTP transaction
+
+        // sendOtp runs in its own REQUIRES_NEW transaction, committing the OTP record
+        // independently so it is readable by the client's verify request right away.
+        // If email sending fails the user record is already persisted (outer tx commits later).
+        emailOtpService.sendOtp(email);
+
         return RegisterResponse.from(savedUser);
+    }
+
+    /**
+     * Verifies the OTP code for the given email and activates the user account.
+     */
+    @Transactional
+    public void verifyEmail(VerifyEmailRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        // Validate OTP first (throws BusinessException on failure)
+        emailOtpService.verifyOtp(email, request.otpCode());
+
+        User user = userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION)
+                .orElseThrow(() -> new BusinessException(
+                        "Không tìm thấy tài khoản đang chờ xác thực với email này",
+                        HttpStatus.NOT_FOUND));
+
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
+
+    /**
+     * Resends a new OTP to the given email if the account is still pending verification.
+     */
+    @Transactional
+    public void resendOtp(ResendOtpRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION)
+                .orElseThrow(() -> new BusinessException(
+                        "Không tìm thấy tài khoản đang chờ xác thực với email này",
+                        HttpStatus.NOT_FOUND));
+
+        emailOtpService.sendOtp(email);
     }
 
     @Transactional
@@ -101,6 +216,9 @@ public class AuthService {
     }
 
     private void requireLoginAllowed(User user) {
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            throw new BusinessException("Tài khoản chưa được xác thực email", HttpStatus.FORBIDDEN);
+        }
         if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
             throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);
         }

@@ -68,6 +68,21 @@ class _FakeRepo implements ChatRepository {
       );
 
   @override
+  Future<ApiResponse<ChatThread>> getMyRoom() async => const ApiResponse(
+    success: true,
+    message: 'OK',
+    data: ChatThread(roomId: 'room-001', isClosed: false, messages: []),
+  );
+
+  @override
+  Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) async =>
+      const ApiResponse(
+        success: true,
+        message: 'OK',
+        data: ChatThread(roomId: 'room-001', isClosed: false, messages: []),
+      );
+
+  @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,
@@ -180,6 +195,32 @@ void main() {
     expect(find.text('ML-20260528-0001'), findsOneWidget);
     expect(find.text('Muc kho loai 1'), findsOneWidget);
     expect(find.text('Chờ xác nhận'), findsOneWidget);
+  });
+
+  testWidgets('refreshes staff rooms periodically without loading flicker', (
+    tester,
+  ) async {
+    var calls = 0;
+    _registerRepo(
+      _FakeRepo(
+        staffRoomsResponder:
+            ({filter = StaffChatRoomFilter.open, query}) async {
+              calls++;
+              return ApiResponse(success: true, message: 'OK', data: [_room]);
+            },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('staffChatLoading')), findsNothing);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump();
+
+    expect(calls, greaterThanOrEqualTo(2));
+    expect(find.byKey(const Key('staffChatLoading')), findsNothing);
+    expect(find.byKey(const Key('staffChatRoomCard_room-001')), findsOneWidget);
   });
 
   testWidgets('shows empty state when no rooms match filter', (tester) async {

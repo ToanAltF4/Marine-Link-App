@@ -8,9 +8,12 @@ abstract class ApiEndpoints {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   static const String login = '/api/auth/login';
+  static const String googleLogin = '/api/auth/google';
   static const String register = '/api/auth/register';
   static const String logout = '/api/auth/logout';
   static const String changePassword = '/api/auth/change-password';
+  static const String verifyEmail = '/api/auth/verify-email';
+  static const String resendOtp = '/api/auth/resend-otp';
 
   // ── Profile ───────────────────────────────────────────────────────────────
   static const String me = '/api/users/me';
@@ -32,6 +35,9 @@ abstract class ApiEndpoints {
 
   // ── Chat ──────────────────────────────────────────────────────────────────
   static const String chatSend = '/api/chat/send';
+  static const String chatMyRoom = '/api/chat/room';
+  static String chatOrderRoom(String orderId) =>
+      '/api/chat/orders/$orderId/room';
   static String chatRoom(String roomId) => '/api/chat/$roomId';
   static const String staffChatRooms = '/api/staff/chat/rooms';
   static String staffChatRoomStatus(String roomId) =>

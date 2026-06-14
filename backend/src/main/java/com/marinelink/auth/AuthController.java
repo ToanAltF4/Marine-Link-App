@@ -23,12 +23,29 @@ public class AuthController {
         return ApiResponse.ok(authService.login(request), "Login successful");
     }
 
+    @PostMapping("/google")
+    public ApiResponse<LoginResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        return ApiResponse.ok(authService.googleLogin(request), "Login successful");
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<RegisterResponse>> register(
             @Valid @RequestBody RegisterRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.created(authService.register(request), "Register successful"));
+                .body(ApiResponse.created(authService.register(request), "Register successful. Please check your email for the OTP."));
+    }
+
+    @PostMapping("/verify-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request);
+    }
+
+    @PostMapping("/resend-otp")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authService.resendOtp(request);
     }
 
     @PostMapping("/logout")

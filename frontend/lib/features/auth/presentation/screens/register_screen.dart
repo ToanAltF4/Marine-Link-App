@@ -43,13 +43,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AuthRegistrationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Đăng ký thành công, tài khoản đang chờ duyệt'),
-            ),
-          );
-          GoRouter.maybeOf(context)?.go('/login');
+        if (state is AuthOtpSent) {
+          context.go('/verify-email', extra: state.email);
         }
         if (state is AuthFailure) {
           ScaffoldMessenger.of(

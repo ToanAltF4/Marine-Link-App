@@ -1,5 +1,8 @@
 package com.marinelink.auth;
 
+import com.marinelink.auth.google.GoogleTokenVerifier;
+import com.marinelink.auth.google.GoogleUserInfo;
+import com.marinelink.auth.otp.EmailOtpService;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.security.JwtTokenProvider;
 import com.marinelink.users.Role;
@@ -21,6 +24,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +44,12 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private EmailOtpService emailOtpService;
+
+    @Mock
+    private GoogleTokenVerifier googleTokenVerifier;
 
     @InjectMocks
     private AuthService authService;
@@ -81,7 +93,7 @@ class AuthServiceTest {
         when(userRepository.existsActiveByPhone("0912345678")).thenReturn(false);
         when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
         when(passwordEncoder.encode("StrongPassword123")).thenReturn("bcrypt-hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RegisterResponse response = authService.register(
                 new RegisterRequest(
@@ -93,9 +105,66 @@ class AuthServiceTest {
                         "Can Tho",
                         "0312345678"));
 
-        assertThat(response.status()).isEqualTo(UserStatus.PENDING_APPROVAL.name());
+        assertThat(response.status()).isEqualTo(UserStatus.PENDING_VERIFICATION.name());
         assertThat(response.roles()).containsExactly("USER");
+        verify(userRepository).saveAndFlush(any(User.class));
+    }
+
+    @Test
+    void googleLoginCreatesActiveUserWhenEmailIsNew() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        when(googleTokenVerifier.verify("google-id-token"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub-1", "newuser@gmail.com", true, "New User", "http://pic"));
+        when(userRepository.findActiveByEmailOrPhone("newuser@gmail.com"))
+                .thenReturn(Optional.empty());
+        when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+        when(passwordEncoder.encode(anyString())).thenReturn("random-hash");
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtTokenProvider.generateToken(any(UUID.class), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.googleLogin(
+                new GoogleLoginRequest("google-id-token"));
+
+        assertThat(response.token()).isEqualTo("jwt-token");
+        assertThat(response.user().email()).isEqualTo("newuser@gmail.com");
+        assertThat(response.user().status()).isEqualTo(UserStatus.ACTIVE.name());
+        assertThat(response.user().roles()).containsExactly("USER");
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginLogsInExistingActiveUserWithoutCreatingAccount() {
+        User user = activeUser("USER");
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Existing", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(jwtTokenProvider.generateToken(eq(user.getPublicId()), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.googleLogin(new GoogleLoginRequest("tok"));
+
+        assertThat(response.token()).isEqualTo("jwt-token");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginRejectsUnverifiedGoogleEmail() {
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "x@gmail.com", false, "X", null));
+
+        assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequest("tok")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("chưa được xác thực");
+
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

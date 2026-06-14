@@ -28,9 +28,10 @@ class UserDto {
   factory UserDto.fromJson(Map<String, dynamic> json) {
     return UserDto(
       id: json['id'] as String,
-      fullName: json['fullName'] as String,
+      fullName: json['fullName'] as String? ?? '',
       email: json['email'] as String,
-      phone: json['phone'] as String,
+      // Google sign-up accounts have no phone; the API omits null fields.
+      phone: json['phone'] as String? ?? '',
       status: json['status'] as String? ?? 'ACTIVE',
       roles: (json['roles'] as List<dynamic>? ?? const [])
           .map((role) => role.toString())
