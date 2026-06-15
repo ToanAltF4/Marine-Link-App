@@ -713,6 +713,24 @@
         }
       }
     },
+    "/api/payments/vnpay/return": {
+      "get": {
+        "tags": ["Commerce"],
+        "summary": "Handle VNPAY browser return and redirect to frontend app",
+        "description": "Backend verifies VNPAY checksum, updates payment status, then redirects the browser to the configured frontend VNPAY result route.",
+        "responses": {
+          "302": {
+            "description": "Redirect to frontend VNPAY result screen",
+            "headers": {
+              "Location": {
+                "schema": { "type": "string", "format": "uri" },
+                "example": "http://localhost:3000/payments/vnpay/result?success=true&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/warehouses": {
       "get": {
         "tags": ["Warehouse Map"],

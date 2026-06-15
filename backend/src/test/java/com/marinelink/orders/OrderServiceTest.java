@@ -330,11 +330,17 @@ class OrderServiceTest {
                 .amount(new BigDecimal("850000"))
                 .txnRef("manual-001")
                 .build();
+        Cart cart = Cart.builder()
+                .id(31L)
+                .publicId(UUID.randomUUID())
+                .user(customer)
+                .build();
 
         when(userRepository.findActiveByPublicId(staffPublicId)).thenReturn(Optional.of(staff));
         when(orderRepository.findDetailByPublicId(orderPublicId)).thenReturn(Optional.of(order));
         when(paymentRepository.findTopByOrderOrderByCreatedAtDesc(order)).thenReturn(Optional.of(payment));
         when(orderRepository.save(order)).thenReturn(order);
+        when(cartRepository.findActiveByUserPublicId(customer.getPublicId())).thenReturn(Optional.of(cart));
 
         OrderPaymentStatusUpdateResponse response = orderService.updatePaymentStatus(
                 staffPublicId,
@@ -344,6 +350,7 @@ class OrderServiceTest {
 
         assertEquals(PaymentStatus.PAID, response.paymentStatus());
         verify(paymentRepository).save(payment);
+        verify(cartItemRepository).deleteSelectedByCartId(31L);
         verify(orderPaymentNotificationService).notifyPaidOrderWaitingForApproval(order);
     }
 

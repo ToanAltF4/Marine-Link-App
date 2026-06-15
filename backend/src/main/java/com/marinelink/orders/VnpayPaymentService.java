@@ -1,5 +1,7 @@
 package com.marinelink.orders;
 
+import com.marinelink.cart.CartItemRepository;
+import com.marinelink.cart.CartRepository;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,8 @@ public class VnpayPaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final OrderPaymentNotificationService orderPaymentNotificationService;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
 
     @Value("${app.vnpay.tmn-code:}")
     private String tmnCode;
@@ -189,6 +193,7 @@ public class VnpayPaymentService {
         payment.getOrder().setPaymentStatus(nextStatus);
         paymentRepository.save(payment);
         if (previousStatus != PaymentStatus.PAID && nextStatus == PaymentStatus.PAID) {
+            clearSelectedCartItems(payment.getOrder());
             orderPaymentNotificationService.notifyPaidOrderWaitingForApproval(payment.getOrder());
         }
 
@@ -278,6 +283,16 @@ public class VnpayPaymentService {
     private void requireConfigured() {
         if (tmnCode == null || tmnCode.isBlank() || hashSecret == null || hashSecret.isBlank()) {
             throw new BusinessException("Chua cau hinh VNPAY", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void clearSelectedCartItems(Order order) {
+        if (order.getUser() == null || order.getUser().getPublicId() == null) {
+            return;
+        }
+        var cart = cartRepository.findActiveByUserPublicId(order.getUser().getPublicId());
+        if (cart != null) {
+            cart.ifPresent(activeCart -> cartItemRepository.deleteSelectedByCartId(activeCart.getId()));
         }
     }
 

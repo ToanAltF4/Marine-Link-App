@@ -338,6 +338,7 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         if (previousStatus != PaymentStatus.PAID && targetStatus == PaymentStatus.PAID) {
+            clearSelectedCartItems(savedOrder);
             orderPaymentNotificationService.notifyPaidOrderWaitingForApproval(savedOrder);
         }
         return OrderPaymentStatusUpdateResponse.from(savedOrder);
@@ -418,6 +419,16 @@ public class OrderService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void clearSelectedCartItems(Order order) {
+        if (order.getUser() == null || order.getUser().getPublicId() == null) {
+            return;
+        }
+        var cart = cartRepository.findActiveByUserPublicId(order.getUser().getPublicId());
+        if (cart != null) {
+            cart.ifPresent(activeCart -> cartItemRepository.deleteSelectedByCartId(activeCart.getId()));
+        }
     }
 
     private record OrderSource(List<OrderLine> lines, Long cartIdToClear) {

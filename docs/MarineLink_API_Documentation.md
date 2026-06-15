@@ -861,7 +861,27 @@ Response `200`:
 
 ### GET `/api/payments/vnpay/return`
 
-Return URL nhận redirect từ VNPAY sau khi người dùng hoàn tất thanh toán. Backend verify checksum và trả envelope kết quả để FE hoặc browser hiển thị.
+Return URL nhận redirect từ VNPAY sau khi người dùng hoàn tất thanh toán. Backend verify checksum, cập nhật payment/order, sau đó trả HTTP `302` về app frontend thay vì hiển thị JSON backend.
+
+Default frontend redirect:
+
+```text
+http://localhost:3000/payments/vnpay/result
+```
+
+Cấu hình bằng env:
+
+```text
+VNPAY_FRONTEND_RETURN_URL=https://<frontend-domain>/payments/vnpay/result
+```
+
+Query FE nhận sau redirect:
+
+```text
+/payments/vnpay/result?success=true&txnRef=...&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00&transactionStatus=00&message=Confirm%20Success
+```
+
+Khi `paymentStatus = PAID`, FE hiển thị thanh toán thành công, clear cart local/server sync, và cho user mở danh sách đơn hàng.
 
 ### POST `/api/payments/vnpay/cancel`
 

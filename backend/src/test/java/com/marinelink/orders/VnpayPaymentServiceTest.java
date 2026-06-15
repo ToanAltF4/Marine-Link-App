@@ -1,5 +1,7 @@
 package com.marinelink.orders;
 
+import com.marinelink.cart.CartItemRepository;
+import com.marinelink.cart.CartRepository;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.users.User;
 import org.junit.jupiter.api.Test;
@@ -21,11 +23,15 @@ class VnpayPaymentServiceTest {
     private final PaymentMethodRepository paymentMethodRepository = mock(PaymentMethodRepository.class);
     private final OrderPaymentNotificationService orderPaymentNotificationService =
             mock(OrderPaymentNotificationService.class);
+    private final CartRepository cartRepository = mock(CartRepository.class);
+    private final CartItemRepository cartItemRepository = mock(CartItemRepository.class);
     private final VnpayPaymentService service = new VnpayPaymentService(
             orderRepository,
             paymentRepository,
             paymentMethodRepository,
-            orderPaymentNotificationService);
+            orderPaymentNotificationService,
+            cartRepository,
+            cartItemRepository);
 
     @Test
     void cancelPendingPaymentMarksOrderCancelledAndPaymentFailed() {

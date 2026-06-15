@@ -5,8 +5,11 @@ import com.marinelink.common.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,6 +27,9 @@ import java.util.UUID;
 public class VnpayPaymentController {
 
     private final VnpayPaymentService vnpayPaymentService;
+
+    @Value("${app.vnpay.frontend-return-url:http://localhost:3000/payments/vnpay/result}")
+    private String frontendReturnUrl = "http://localhost:3000/payments/vnpay/result";
 
     @PostMapping("/payment-url")
     public ApiResponse<VnpayPaymentUrlResponse> createPaymentUrl(
@@ -48,8 +55,11 @@ public class VnpayPaymentController {
     }
 
     @GetMapping("/return")
-    public ApiResponse<VnpayPaymentResultResponse> handleReturn(@RequestParam Map<String, String> params) {
-        return ApiResponse.ok(vnpayPaymentService.handleReturn(params));
+    public ResponseEntity<Void> handleReturn(@RequestParam Map<String, String> params) {
+        VnpayPaymentResultResponse result = vnpayPaymentService.handleReturn(params);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(frontendReturnUri(result))
+                .build();
     }
 
     @GetMapping("/ipn")
@@ -74,5 +84,18 @@ public class VnpayPaymentController {
             return forwardedFor.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private URI frontendReturnUri(VnpayPaymentResultResponse result) {
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromUriString(frontendReturnUrl.trim())
+                .queryParam("success", result.paymentStatus() == PaymentStatus.PAID)
+                .queryParam("txnRef", result.txnRef())
+                .queryParam("orderCode", result.orderCode())
+                .queryParam("paymentStatus", result.paymentStatus() == null ? null : result.paymentStatus().name())
+                .queryParam("responseCode", result.responseCode())
+                .queryParam("transactionStatus", result.transactionStatus())
+                .queryParam("message", result.message());
+        return builder.build().encode().toUri();
     }
 }

@@ -16,6 +16,7 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/change_password_screen.dart';
 import '../../features/cart/presentation/screens/cart_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
+import '../../features/checkout/presentation/screens/vnpay_result_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/orders/presentation/screens/order_detail_screen.dart';
@@ -41,6 +42,7 @@ abstract class AppRoutes {
   static const productDetail = '/products/:id';
   static const cart = '/cart';
   static const checkout = '/checkout';
+  static const vnpayResult = '/payments/vnpay/result';
   static const orders = '/orders';
   static const orderDetail = '/orders/:id';
   static const notifications = '/home/notifications';
@@ -126,6 +128,14 @@ class AppRouter {
           final email = state.extra as String? ?? '';
           return OtpVerificationScreen(email: email);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.vnpayResult,
+        builder: (context, state) => VnpayResultScreen(
+          queryParameters: Map<String, String>.unmodifiable(
+            state.uri.queryParameters,
+          ),
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

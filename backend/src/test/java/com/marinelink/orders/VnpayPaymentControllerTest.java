@@ -10,10 +10,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,5 +54,28 @@ class VnpayPaymentControllerTest {
                 .andExpect(jsonPath("$.message").value("VNPAY payment cancelled"))
                 .andExpect(jsonPath("$.data.paymentStatus").value("FAILED"))
                 .andExpect(jsonPath("$.data.responseCode").value("USER_CANCELLED"));
+    }
+
+    @Test
+    void returnRedirectsToFrontendResultPage() throws Exception {
+        VnpayPaymentResultResponse response = new VnpayPaymentResultResponse(
+                "txn-001",
+                "ML-20260614-0027",
+                PaymentStatus.PAID,
+                "00",
+                "00",
+                "Confirm Success");
+
+        when(vnpayPaymentService.handleReturn(org.mockito.ArgumentMatchers.anyMap()))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/payments/vnpay/return")
+                        .queryParam("vnp_TxnRef", "txn-001"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", containsString("/payments/vnpay/result")))
+                .andExpect(header().string("Location", containsString("success=true")))
+                .andExpect(header().string("Location", containsString("orderCode=ML-20260614-0027")))
+                .andExpect(header().string("Location", containsString("paymentStatus=PAID")))
+                .andExpect(header().string("Location", containsString("responseCode=00")));
     }
 }
