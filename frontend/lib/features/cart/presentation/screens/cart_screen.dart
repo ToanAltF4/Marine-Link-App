@@ -9,6 +9,7 @@ import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../domain/cart.dart';
+import '../../domain/cart_pricing.dart';
 import '../cubit/cart_cubit.dart';
 
 const _cartSurfaceRadius = 18.0;
@@ -526,9 +527,7 @@ class _OrderSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subtotal = state.subtotalAmount;
-    final discount = subtotal > 0 ? subtotal * 0.05 : 0.0;
-    final total = subtotal - discount;
+    final pricing = CartPricingSummary.fromCart(state.cart);
 
     return _CartCard(
       child: Column(
@@ -553,14 +552,20 @@ class _OrderSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           _SummaryRow(
             label: 'T\u1ea1m t\u00ednh:',
-            value: _formatVnd(subtotal),
+            value: _formatVnd(pricing.subtotalAmount),
             valueColor: AppColors.primaryDark,
           ),
           const SizedBox(height: 12),
           _SummaryRow(
-            label: 'Gi\u1ea3m gi\u00e1 s\u1ec9 (5%):',
-            value: '-${_formatVnd(discount)}',
-            valueColor: AppColors.success,
+            label: pricing.hasDiscount
+                ? 'Khuyến mãi mua nhiều (${pricing.discountPercent}%):'
+                : 'Khuyến mãi mua nhiều:',
+            value: pricing.hasDiscount
+                ? '-${_formatVnd(pricing.discountAmount)}'
+                : 'Chưa áp dụng',
+            valueColor: pricing.hasDiscount
+                ? AppColors.success
+                : AppColors.textSecondary,
           ),
           const SizedBox(height: 12),
           const _SummaryRow(
@@ -588,7 +593,7 @@ class _OrderSummaryCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    _formatVnd(total),
+                    _formatVnd(pricing.totalAmount),
                     textAlign: TextAlign.end,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: AppColors.primaryDark,

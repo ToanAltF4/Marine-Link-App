@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -89,12 +90,14 @@ public class OrderService {
                 .build();
 
         BigDecimal subtotal = BigDecimal.ZERO;
+        int totalQuantity = 0;
         for (OrderLine line : orderSource.lines()) {
             Product product = line.product();
             validateItem(product, line.quantity());
 
             BigDecimal unitPrice = resolveUnitPrice(product, line.priceTier(), line.quantity());
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(line.quantity()));
+            totalQuantity += line.quantity();
             OrderItem orderItem = OrderItem.builder()
                     .publicId(UUID.randomUUID())
                     .order(order)
@@ -109,8 +112,13 @@ public class OrderService {
             subtotal = subtotal.add(lineTotal);
         }
 
+        BigDecimal discountRate = BulkDiscountPolicy.rateForQuantity(totalQuantity);
+        BigDecimal discountAmount = discountRate.signum() == 0
+                ? BigDecimal.ZERO
+                : subtotal.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
         order.setSubtotalAmount(subtotal);
-        order.setTotalAmount(subtotal.add(order.getShippingFee()).subtract(order.getDiscountAmount()));
+        order.setDiscountAmount(discountAmount);
+        order.setTotalAmount(subtotal.add(order.getShippingFee()).subtract(discountAmount));
         order.getStatusHistory().add(OrderStatusHistory.builder()
                 .publicId(UUID.randomUUID())
                 .order(order)

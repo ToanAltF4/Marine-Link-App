@@ -155,6 +155,39 @@ class OrderServiceTest {
     }
 
     @Test
+    void createOrderAppliesBulkDiscountForRequestItems() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        User user = user(userPublicId);
+        Product product = product();
+
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(user));
+        when(paymentMethodRepository.findByCodeAndActiveTrue(PaymentMethodCode.COD))
+                .thenReturn(Optional.of(paymentMethod(PaymentMethodCode.COD)));
+        when(productRepository.findDetailByPublicId(product.getPublicId())).thenReturn(Optional.of(product));
+        when(orderRepository.countByCreatedAtBetween(any(), any())).thenReturn(0L);
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(61L);
+            order.setCreatedAt(Instant.parse("2026-06-04T01:00:00Z"));
+            return order;
+        });
+
+        OrderSummaryResponse response = orderService.createFromActiveCart(
+                userPublicId,
+                new OrderCreateRequest(
+                        "Nguyen Van A",
+                        "0912345678",
+                        "Can Tho",
+                        PaymentMethodCode.COD,
+                        null,
+                        List.of(new OrderCreateItemRequest(product.getPublicId(), 5))));
+
+        assertEquals(new BigDecimal("2250000"), response.subtotalAmount());
+        assertEquals(new BigDecimal("112500.00"), response.discountAmount());
+        assertEquals(new BigDecimal("2137500.00"), response.totalAmount());
+    }
+
+    @Test
     void createBankTransferOrderWaitsForPaymentBeforeNotification() {
         UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
         User user = user(userPublicId);

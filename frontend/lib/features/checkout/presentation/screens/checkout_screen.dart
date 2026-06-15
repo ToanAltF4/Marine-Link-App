@@ -14,6 +14,7 @@ import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../cart/domain/cart.dart';
+import '../../../cart/domain/cart_pricing.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../orders/domain/order.dart';
 import '../../domain/checkout_repository.dart';
@@ -689,6 +690,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final selectedItems = cart.selectedItems;
+    final pricing = CartPricingSummary.fromCart(cart);
 
     return _CheckoutCard(
       child: Column(
@@ -721,11 +723,34 @@ class _CheckoutSummaryCard extends StatelessWidget {
               const Divider(height: 1, color: Color(0xFFF0F4F8)),
           ],
           const Divider(height: 22, color: Color(0xFFEAF0F5)),
+          _CheckoutMetricRow(
+            label: 'Tạm tính',
+            value: MoneyFormatter.format(pricing.subtotalAmount),
+          ),
+          const SizedBox(height: 8),
+          _CheckoutMetricRow(
+            label: pricing.hasDiscount
+                ? 'Khuyến mãi mua nhiều (${pricing.discountPercent}%)'
+                : 'Khuyến mãi mua nhiều',
+            value: pricing.hasDiscount
+                ? '-${MoneyFormatter.format(pricing.discountAmount)}'
+                : 'Chưa áp dụng',
+            valueColor: pricing.hasDiscount
+                ? AppColors.success
+                : AppColors.textSecondary,
+          ),
+          const SizedBox(height: 8),
+          const _CheckoutMetricRow(
+            label: 'Phí vận chuyển',
+            value: 'Miễn phí',
+            valueColor: AppColors.success,
+          ),
+          const Divider(height: 22, color: Color(0xFFEAF0F5)),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'T\u1ed5ng t\u1ea1m t\u00ednh',
+                  'Tổng cộng',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: AppColors.primaryDark,
                     fontWeight: FontWeight.w800,
@@ -737,7 +762,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    MoneyFormatter.format(cart.subtotalAmount),
+                    MoneyFormatter.format(pricing.totalAmount),
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w900,
@@ -820,6 +845,47 @@ class _CheckoutItemRow extends StatelessWidget {
   }
 }
 
+class _CheckoutMetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _CheckoutMetricRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor ?? AppColors.primaryDark,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _CheckoutSuccessView extends StatefulWidget {
   final CheckoutResult result;
 
@@ -858,6 +924,14 @@ class _CheckoutSuccessViewState extends State<_CheckoutSuccessView> {
     final theme = Theme.of(context);
     final payment = result.vnpayPayment;
     final isVnpay = payment != null;
+    final fallbackDiscountRate = CartBulkDiscountPolicy.rateForQuantity(
+      result.totalItemCount,
+    );
+    final fallbackTotal =
+        result.subtotalAmount - (result.subtotalAmount * fallbackDiscountRate);
+    final totalAmount = result.order.totalAmount > 0
+        ? result.order.totalAmount
+        : fallbackTotal;
 
     return Center(
       child: SingleChildScrollView(
@@ -907,8 +981,8 @@ class _CheckoutSuccessViewState extends State<_CheckoutSuccessView> {
                 ),
                 const Divider(height: 18, color: Color(0xFFEAF0F5)),
                 _SuccessMetricRow(
-                  label: 'T\u1ed5ng t\u1ea1m t\u00ednh',
-                  value: MoneyFormatter.format(result.subtotalAmount),
+                  label: 'Tổng thanh toán',
+                  value: MoneyFormatter.format(totalAmount),
                 ),
                 const SizedBox(height: 20),
                 if (payment != null && !_cancelled) ...[

@@ -88,9 +88,10 @@ void main() {
       );
       expect(cartCubit.state.subtotalAmount, 180000);
       expect(find.text('T\u1ed5ng \u0111\u01a1n h\u00e0ng'), findsOneWidget);
-      expect(find.text('Gi\u1ea3m gi\u00e1 s\u1ec9 (5%):'), findsOneWidget);
+      expect(find.text('Khuyến mãi mua nhiều:'), findsOneWidget);
+      expect(find.text('Chưa áp dụng'), findsOneWidget);
       expect(find.text('Mi\u1ec5n ph\u00ed'), findsOneWidget);
-      expect(find.text('171.000\u0111'), findsOneWidget);
+      expect(find.text('180.000\u0111'), findsWidgets);
 
       await tester.tap(find.byKey(const Key('cartIncreaseButton-prod-001')));
       await tester.pump();
@@ -112,6 +113,19 @@ void main() {
         findsOneWidget,
       );
       expect(cartCubit.state.cart.isEmpty, isTrue);
+    });
+
+    testWidgets('applies bulk discount when selected quantity reaches tier', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 5);
+
+      await tester.pumpWidget(_wrap(cartCubit: cartCubit));
+
+      expect(cartCubit.state.subtotalAmount, 400000);
+      expect(find.text('Khuyến mãi mua nhiều (5%):'), findsOneWidget);
+      expect(find.text('-20.000\u0111'), findsOneWidget);
+      expect(find.text('380.000\u0111'), findsOneWidget);
     });
 
     testWidgets('toggles selected item out of totals and checkout state', (
