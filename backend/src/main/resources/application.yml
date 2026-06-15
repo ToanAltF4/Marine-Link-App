@@ -81,7 +81,7 @@ app:
     hash-secret: ${VNPAY_HASH_SECRET:${VNP_HASH_SECRET:}}
     payment-url: ${VNPAY_PAYMENT_URL:${VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}}
     return-url: ${VNPAY_RETURN_URL:${VNP_RETURN_URL:http://localhost:8080/api/payments/vnpay/return}}
-    frontend-return-url: ${VNPAY_FRONTEND_RETURN_URL:http://localhost:3000/payments/vnpay/result}
+    frontend-return-url: ${VNPAY_FRONTEND_RETURN_URL:marinelink:///payments/vnpay/result}
 
 springdoc:
   api-docs:

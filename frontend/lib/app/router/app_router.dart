@@ -43,6 +43,7 @@ abstract class AppRoutes {
   static const cart = '/cart';
   static const checkout = '/checkout';
   static const vnpayResult = '/payments/vnpay/result';
+  static const vnpayResultAndroidAlias = '/vnpay/result';
   static const orders = '/orders';
   static const orderDetail = '/orders/:id';
   static const notifications = '/home/notifications';
@@ -129,13 +130,10 @@ class AppRouter {
           return OtpVerificationScreen(email: email);
         },
       ),
+      GoRoute(path: AppRoutes.vnpayResult, builder: _vnpayResultBuilder),
       GoRoute(
-        path: AppRoutes.vnpayResult,
-        builder: (context, state) => VnpayResultScreen(
-          queryParameters: Map<String, String>.unmodifiable(
-            state.uri.queryParameters,
-          ),
-        ),
+        path: AppRoutes.vnpayResultAndroidAlias,
+        builder: _vnpayResultBuilder,
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -342,6 +340,14 @@ class AppRouter {
       ),
     ],
   );
+
+  static Widget _vnpayResultBuilder(BuildContext context, GoRouterState state) {
+    return VnpayResultScreen(
+      queryParameters: Map<String, String>.unmodifiable(
+        state.uri.queryParameters,
+      ),
+    );
+  }
 
   static void _routeByRole(BuildContext context, User user) {
     if (user.isAdmin) {

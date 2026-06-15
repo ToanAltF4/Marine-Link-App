@@ -724,7 +724,7 @@
             "headers": {
               "Location": {
                 "schema": { "type": "string", "format": "uri" },
-                "example": "http://localhost:3000/payments/vnpay/result?success=true&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00"
+                "example": "marinelink:///payments/vnpay/result?success=true&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00"
               }
             }
           }

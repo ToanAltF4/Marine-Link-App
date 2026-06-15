@@ -866,22 +866,24 @@ Return URL nhận redirect từ VNPAY sau khi người dùng hoàn tất thanh t
 Default frontend redirect:
 
 ```text
-http://localhost:3000/payments/vnpay/result
+marinelink:///payments/vnpay/result
 ```
 
 Cấu hình bằng env:
 
 ```text
-VNPAY_FRONTEND_RETURN_URL=https://<frontend-domain>/payments/vnpay/result
+VNPAY_FRONTEND_RETURN_URL=marinelink:///payments/vnpay/result
 ```
 
 Query FE nhận sau redirect:
 
 ```text
-/payments/vnpay/result?success=true&txnRef=...&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00&transactionStatus=00&message=Confirm%20Success
+marinelink:///payments/vnpay/result?success=true&txnRef=...&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00&transactionStatus=00&message=Confirm%20Success
 ```
 
-Khi `paymentStatus = PAID`, FE hiển thị thanh toán thành công, clear cart local/server sync, và cho user mở danh sách đơn hàng.
+Khi `paymentStatus = PAID`, Android mở lại app qua deep link, FE hiển thị thanh toán thành công, clear cart local/server sync, và cho user mở danh sách đơn hàng. Nếu chạy web, override `VNPAY_FRONTEND_RETURN_URL=http://localhost:3000/payments/vnpay/result` hoặc domain frontend thật.
+
+Khi test trên Android emulator, `VNPAY_RETURN_URL` cũng phải là địa chỉ browser trong emulator gọi được backend, ví dụ `http://10.0.2.2:8080/api/payments/vnpay/return`. Production nên dùng HTTPS public backend URL.
 
 ### POST `/api/payments/vnpay/cancel`
 

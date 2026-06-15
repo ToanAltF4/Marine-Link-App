@@ -13,24 +13,8 @@ void main() {
     tester,
   ) async {
     final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
-    final router = GoRouter(
-      initialLocation:
-          '${AppRoutes.vnpayResult}?success=true&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00',
-      routes: [
-        GoRoute(
-          path: AppRoutes.vnpayResult,
-          builder: (context, state) =>
-              VnpayResultScreen(queryParameters: state.uri.queryParameters),
-        ),
-        GoRoute(
-          path: AppRoutes.orders,
-          builder: (context, state) => const Scaffold(body: Text('Orders')),
-        ),
-        GoRoute(
-          path: AppRoutes.home,
-          builder: (context, state) => const Scaffold(body: Text('Home')),
-        ),
-      ],
+    final router = _router(
+      '${AppRoutes.vnpayResult}?success=true&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00',
     );
 
     await tester.pumpWidget(
@@ -48,6 +32,54 @@ void main() {
     expect(find.text('ML-20260614-0027'), findsOneWidget);
     expect(cartCubit.state.cart.isEmpty, isTrue);
   });
+
+  testWidgets('opens paid result from Android deep link alias', (tester) async {
+    final cartCubit = CartCubit()..addItem(product: _product(), quantity: 1);
+    final router = _router(
+      '${AppRoutes.vnpayResultAndroidAlias}?success=true&orderCode=ML-20260614-0028&paymentStatus=PAID',
+    );
+
+    await tester.pumpWidget(
+      BlocProvider.value(
+        value: cartCubit,
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Thanh toán VNPAY thành công'), findsOneWidget);
+    expect(find.text('ML-20260614-0028'), findsOneWidget);
+    expect(cartCubit.state.cart.isEmpty, isTrue);
+  });
+}
+
+GoRouter _router(String initialLocation) {
+  return GoRouter(
+    initialLocation: initialLocation,
+    routes: [
+      GoRoute(
+        path: AppRoutes.vnpayResult,
+        builder: (context, state) =>
+            VnpayResultScreen(queryParameters: state.uri.queryParameters),
+      ),
+      GoRoute(
+        path: AppRoutes.vnpayResultAndroidAlias,
+        builder: (context, state) =>
+            VnpayResultScreen(queryParameters: state.uri.queryParameters),
+      ),
+      GoRoute(
+        path: AppRoutes.orders,
+        builder: (context, state) => const Scaffold(body: Text('Orders')),
+      ),
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (context, state) => const Scaffold(body: Text('Home')),
+      ),
+    ],
+  );
 }
 
 ProductDetail _product() {

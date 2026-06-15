@@ -100,7 +100,12 @@ class BuyerNavigation {
     }
 
     if (_isPlainRootTab(location)) {
-      _goBranch(context, tabIndex);
+      final currentTab = _tabKey(_currentLocation(context));
+      if (currentTab == tabKey) {
+        GoRouter.maybeOf(context)?.go(location);
+      } else {
+        _goBranch(context, tabIndex);
+      }
     } else {
       GoRouter.maybeOf(context)?.go(location);
     }
@@ -138,6 +143,10 @@ class BuyerNavigation {
   }
 
   static bool _popBackToExistingTab(BuildContext context, String location) {
+    if (!_isBuyerRootLocation(location)) {
+      return false;
+    }
+
     final targetKey = _tabKey(location);
     if (!_buyerRootTabs.contains(targetKey)) {
       return false;
@@ -223,7 +232,25 @@ class BuyerNavigation {
 
     try {
       final uri = Uri.parse(location);
-      return uri.path;
+      final path = uri.path;
+      if (path == '/home' || path.startsWith('/home/')) {
+        return '/home';
+      }
+      if (path == '/products' || path.startsWith('/products/')) {
+        return '/products';
+      }
+      if (path == '/cart' || path == '/checkout') {
+        return '/cart';
+      }
+      if (path == '/chat' || path.startsWith('/chat/')) {
+        return '/chat';
+      }
+      if (path == '/profile' ||
+          path == '/orders' ||
+          path.startsWith('/orders/')) {
+        return '/profile';
+      }
+      return path;
     } on Exception {
       return location;
     }
@@ -235,6 +262,14 @@ class BuyerNavigation {
       return uri.queryParameters.isEmpty && uri.fragment.isEmpty;
     } on Exception {
       return true;
+    }
+  }
+
+  static bool _isBuyerRootLocation(String location) {
+    try {
+      return _buyerRootTabs.contains(Uri.parse(location).path);
+    } on Exception {
+      return _buyerRootTabs.contains(location);
     }
   }
 }

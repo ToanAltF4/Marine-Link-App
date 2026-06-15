@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
@@ -328,7 +329,7 @@ class _ProfileViewState extends State<_ProfileView> {
               icon: Icons.receipt_long_outlined,
               title: 'Đơn hàng của tôi',
               subtitle: 'Theo dõi đơn đã đặt và trạng thái giao hàng',
-              onTap: () => context.push(AppRoutes.orders),
+              onTap: () => BuyerNavigation.push(context, AppRoutes.orders),
             ),
             const Divider(height: 1, indent: 64),
           ],

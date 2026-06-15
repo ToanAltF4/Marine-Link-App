@@ -77,6 +77,99 @@ void main() {
     );
     expect(homeField.controller?.text, 'home kept');
   });
+
+  testWidgets('returns from buyer orders screen to profile tab root', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.orders,
+      routes: [
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            BuyerNavigation.attachShell(navigationShell);
+            return navigationShell;
+          },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.home,
+                  builder: (context, state) => const _TabProbe(
+                    tab: BuyerBottomNavTab.home,
+                    fieldKey: Key('homeStateField'),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.productList,
+                  builder: (context, state) => const _TabProbe(
+                    tab: BuyerBottomNavTab.products,
+                    fieldKey: Key('productStateField'),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.cart,
+                  builder: (context, state) => const _TabProbe(
+                    tab: BuyerBottomNavTab.cart,
+                    fieldKey: Key('cartStateField'),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.chat,
+                  builder: (context, state) => const _TabProbe(
+                    tab: BuyerBottomNavTab.chat,
+                    fieldKey: Key('chatStateField'),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: AppRoutes.profile,
+                  builder: (context, state) => const _TabProbe(
+                    tab: BuyerBottomNavTab.profile,
+                    fieldKey: Key('profileStateField'),
+                  ),
+                ),
+                GoRoute(
+                  path: AppRoutes.orders,
+                  builder: (context, state) => const _TabProbe(
+                    tab: BuyerBottomNavTab.profile,
+                    fieldKey: Key('ordersStateField'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp.router(theme: AppTheme.light(), routerConfig: router),
+    );
+
+    expect(find.byKey(const Key('ordersStateField')), findsOneWidget);
+
+    await tester.tap(find.text('T\u00e0i kho\u1ea3n'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('profileStateField')), findsOneWidget);
+    expect(find.byKey(const Key('ordersStateField')), findsNothing);
+  });
 }
 
 class _TabProbe extends StatefulWidget {

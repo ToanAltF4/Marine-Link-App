@@ -72,6 +72,7 @@ class VnpayPaymentControllerTest {
         mockMvc.perform(get("/api/payments/vnpay/return")
                         .queryParam("vnp_TxnRef", "txn-001"))
                 .andExpect(status().isFound())
+                .andExpect(header().string("Location", containsString("marinelink:///payments/vnpay/result")))
                 .andExpect(header().string("Location", containsString("/payments/vnpay/result")))
                 .andExpect(header().string("Location", containsString("success=true")))
                 .andExpect(header().string("Location", containsString("orderCode=ML-20260614-0027")))

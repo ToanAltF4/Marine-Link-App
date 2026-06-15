@@ -28,8 +28,8 @@ public class VnpayPaymentController {
 
     private final VnpayPaymentService vnpayPaymentService;
 
-    @Value("${app.vnpay.frontend-return-url:http://localhost:3000/payments/vnpay/result}")
-    private String frontendReturnUrl = "http://localhost:3000/payments/vnpay/result";
+    @Value("${app.vnpay.frontend-return-url:marinelink:///payments/vnpay/result}")
+    private String frontendReturnUrl = "marinelink:///payments/vnpay/result";
 
     @PostMapping("/payment-url")
     public ApiResponse<VnpayPaymentUrlResponse> createPaymentUrl(

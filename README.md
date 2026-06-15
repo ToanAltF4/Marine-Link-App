@@ -54,19 +54,46 @@ Legacy mock product thumbnails live in `frontend/assets/products/` and are used 
 
 ## Running Against Spring Boot
 
-Mock repositories remain the default for fast local widget tests. To test with real backend/Supabase data:
+Mock repositories remain the default for fast local widget tests. To test with real backend/Supabase data, run the backend first, then run Flutter with `USE_REMOTE_REPOSITORIES=true`.
+
+### Web / Chrome
+
+Use this mode when running Flutter in Chrome on the Windows host. The VNPAY browser return goes back to the Flutter web route on port `3000`.
 
 ```powershell
-# Terminal 1
+# Terminal 1: backend
 cd backend
+$env:VNPAY_RETURN_URL="http://localhost:8080/api/payments/vnpay/return"
+$env:VNPAY_FRONTEND_RETURN_URL="http://localhost:3000/payments/vnpay/result"
 mvn spring-boot:run
-
-# Terminal 2
-cd frontend
-flutter run --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
-For Windows desktop/browser testing, change `API_BASE_URL` to `http://localhost:8080`.
+```powershell
+# Terminal 2: frontend web
+cd frontend
+flutter run -d chrome --web-port=3000 --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://localhost:8080
+```
+
+### Android Emulator
+
+Use this mode when running Flutter on an Android emulator. Android cannot call the host backend through `localhost`, so use `10.0.2.2`. After VNPAY returns to the backend, the backend redirects to the app deep link `marinelink:///payments/vnpay/result`.
+
+```powershell
+# Terminal 1: backend
+cd backend
+$env:VNPAY_RETURN_URL="http://10.0.2.2:8080/api/payments/vnpay/return"
+$env:VNPAY_FRONTEND_RETURN_URL="marinelink:///payments/vnpay/result"
+mvn spring-boot:run
+```
+
+```powershell
+# Terminal 2: frontend Android
+cd frontend
+flutter devices
+flutter run -d emulator-5554 --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+If your emulator id is different, replace `emulator-5554` with the id shown by `flutter devices`.
 
 ### Smoke Test API Thật
 
