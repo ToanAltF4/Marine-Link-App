@@ -28,12 +28,16 @@ void main() {
     };
 
     test('getNotifications returns list of entities when successful', () async {
-      when(() => mockApiClient.get<List<NotificationEntity>>(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-            fromJson: any(named: 'fromJson'),
-          )).thenAnswer((invocation) async {
-        final fromJson = invocation.namedArguments[#fromJson] as List<NotificationEntity> Function(dynamic);
+      when(
+        () => mockApiClient.get<List<NotificationEntity>>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          fromJson: any(named: 'fromJson'),
+        ),
+      ).thenAnswer((invocation) async {
+        final fromJson =
+            invocation.namedArguments[#fromJson]
+                as List<NotificationEntity> Function(dynamic);
         return ApiResponse(
           success: true,
           message: 'OK',
@@ -51,18 +55,21 @@ void main() {
     });
 
     test('markAsRead calls put endpoint', () async {
-      when(() => mockApiClient.put<void>(
-            any(),
-            fromJson: any(named: 'fromJson'),
-          )).thenAnswer((_) async => const ApiResponse(success: true, message: 'OK'));
+      when(
+        () => mockApiClient.put<void>(any(), fromJson: any(named: 'fromJson')),
+      ).thenAnswer(
+        (_) async => const ApiResponse(success: true, message: 'OK'),
+      );
 
       final result = await repository.markAsRead('noti-001');
 
       expect(result.success, true);
-      verify(() => mockApiClient.put<void>(
-            '/api/notifications/noti-001/read',
-            fromJson: any(named: 'fromJson'),
-          )).called(1);
+      verify(
+        () => mockApiClient.put<void>(
+          '/api/notifications/noti-001/read',
+          fromJson: any(named: 'fromJson'),
+        ),
+      ).called(1);
     });
 
     test('maps relatedIds correctly from DTO', () async {
@@ -73,12 +80,16 @@ void main() {
         'relatedProductId': 'prod-456',
       };
 
-      when(() => mockApiClient.get<List<NotificationEntity>>(
-            any(),
-            queryParameters: any(named: 'queryParameters'),
-            fromJson: any(named: 'fromJson'),
-          )).thenAnswer((invocation) async {
-        final fromJson = invocation.namedArguments[#fromJson] as List<NotificationEntity> Function(dynamic);
+      when(
+        () => mockApiClient.get<List<NotificationEntity>>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          fromJson: any(named: 'fromJson'),
+        ),
+      ).thenAnswer((invocation) async {
+        final fromJson =
+            invocation.namedArguments[#fromJson]
+                as List<NotificationEntity> Function(dynamic);
         return ApiResponse(
           success: true,
           message: 'OK',

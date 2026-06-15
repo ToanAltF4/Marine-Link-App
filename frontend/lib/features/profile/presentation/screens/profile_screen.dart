@@ -380,24 +380,27 @@ class _ProfileViewState extends State<_ProfileView> {
         title: Text(
           'Đăng xuất?',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w900,
-              ),
+            color: AppColors.primary,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         content: Text(
           'Bạn có chắc chắn muốn đăng xuất khỏi MarineLink?',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         actions: [
           TextButton(
             key: const Key('profileLogoutCancelButton'),
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Hủy',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
             ),
           ),
           const SizedBox(width: 8),

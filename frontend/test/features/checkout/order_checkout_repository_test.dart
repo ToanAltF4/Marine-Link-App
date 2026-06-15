@@ -5,6 +5,7 @@ import 'package:marinelink/features/cart/domain/cart.dart';
 import 'package:marinelink/features/checkout/data/cart_sync_repository.dart';
 import 'package:marinelink/features/checkout/data/order_checkout_repository.dart';
 import 'package:marinelink/features/checkout/domain/checkout_repository.dart';
+import 'package:marinelink/features/checkout/domain/vnpay_payment.dart';
 import 'package:marinelink/features/orders/domain/order.dart';
 import 'package:marinelink/features/orders/domain/order_repository.dart';
 
@@ -84,14 +85,32 @@ void main() {
       expect(response.message, 'Gio hang dang trong');
     },
   );
+
+  test('creates VNPAY payment URL after creating a VNPAY order', () async {
+    final vnpayRepository = _FakeVnpayPaymentRepository();
+    final repository = OrderCheckoutRepository(
+      orderRepository: _FakeOrderRepository(),
+      vnpayPaymentRepository: vnpayRepository,
+    );
+
+    final response = await repository.createOrder(
+      request: _request(paymentMethod: PaymentMethod.vnpay),
+      activeCart: _activeCart(),
+    );
+
+    expect(response.success, isTrue);
+    expect(vnpayRepository.createCallCount, 1);
+    expect(vnpayRepository.lastOrderId, 'order-001');
+    expect(response.data?.vnpayPayment?.paymentUrl, contains('vnpay.test'));
+  });
 }
 
-CheckoutRequest _request() {
-  return const CheckoutRequest(
+CheckoutRequest _request({PaymentMethod paymentMethod = PaymentMethod.cod}) {
+  return CheckoutRequest(
     receiverName: 'Nguyen Van A',
     receiverPhone: '0912345678',
     shippingAddress: '123 Tran Hung Dao, Can Tho',
-    paymentMethod: PaymentMethod.cod,
+    paymentMethod: paymentMethod,
     note: 'Giao buoi sang',
   );
 }
@@ -182,5 +201,34 @@ class _FakeOrderRepository implements OrderRepository {
     String? note,
   }) {
     throw UnimplementedError();
+  }
+}
+
+class _FakeVnpayPaymentRepository implements VnpayPaymentRepository {
+  int createCallCount = 0;
+  int cancelCallCount = 0;
+  String? lastOrderId;
+
+  @override
+  Future<VnpayPaymentUrl> createPaymentUrl({required String orderId}) async {
+    createCallCount += 1;
+    lastOrderId = orderId;
+    return VnpayPaymentUrl(
+      orderId: orderId,
+      orderCode: 'ML-TEST-0001',
+      txnRef: 'txn-001',
+      paymentUrl: 'https://vnpay.test/pay',
+    );
+  }
+
+  @override
+  Future<VnpayPaymentResult> cancelPayment({required String orderId}) async {
+    cancelCallCount += 1;
+    lastOrderId = orderId;
+    return VnpayPaymentResult(
+      orderCode: 'ML-TEST-0001',
+      paymentStatus: 'FAILED',
+      responseCode: 'USER_CANCELLED',
+    );
   }
 }

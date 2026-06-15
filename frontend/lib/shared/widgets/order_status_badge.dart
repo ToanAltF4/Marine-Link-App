@@ -4,12 +4,19 @@ import '../../app/theme/app_theme.dart';
 
 class OrderStatusBadge extends StatelessWidget {
   final String status;
+  final String? paymentMethod;
+  final String? paymentStatus;
 
-  const OrderStatusBadge({super.key, required this.status});
+  const OrderStatusBadge({
+    super.key,
+    required this.status,
+    this.paymentMethod,
+    this.paymentStatus,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final (color, label) = _statusInfo(status);
+    final (color, label) = _statusInfo(status, paymentMethod, paymentStatus);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -28,12 +35,23 @@ class OrderStatusBadge extends StatelessWidget {
     );
   }
 
-  (Color, String) _statusInfo(String status) => switch (status) {
-    'PENDING' => (AppColors.orderPending, 'Chờ duyệt'),
-    'CONFIRMED' => (AppColors.orderConfirmed, 'Đã xác nhận'),
-    'SHIPPING' => (AppColors.orderShipping, 'Đang giao'),
-    'COMPLETED' => (AppColors.orderCompleted, 'Hoàn tất'),
-    'CANCELLED' => (AppColors.orderCancelled, 'Đã hủy'),
-    _ => (Colors.grey, status),
-  };
+  (Color, String) _statusInfo(
+    String status,
+    String? paymentMethod,
+    String? paymentStatus,
+  ) {
+    if (status == 'PENDING' &&
+        (paymentMethod == 'BANK_TRANSFER' || paymentMethod == 'VNPAY') &&
+        paymentStatus != 'PAID') {
+      return (AppColors.orderPending, 'Chờ thanh toán');
+    }
+    return switch (status) {
+      'PENDING' => (AppColors.orderPending, 'Chờ duyệt'),
+      'CONFIRMED' => (AppColors.orderConfirmed, 'Đã xác nhận'),
+      'SHIPPING' => (AppColors.orderShipping, 'Đang giao'),
+      'COMPLETED' => (AppColors.orderCompleted, 'Hoàn tất'),
+      'CANCELLED' => (AppColors.orderCancelled, 'Đã hủy'),
+      _ => (Colors.grey, status),
+    };
+  }
 }

@@ -67,6 +67,44 @@ class CartServiceTest {
         assertEquals(tier.getPublicId(), response.items().getFirst().selectedPriceTierId());
     }
 
+    @Test
+    void getActiveCartMergesDuplicateProductRowsForDisplay() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
+        User user = user(userPublicId);
+        Product product = product(productPublicId);
+        Cart cart = Cart.builder()
+                .id(31L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440031"))
+                .user(user)
+                .build();
+        cart.getItems().add(CartItem.builder()
+                .id(41L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440041"))
+                .cart(cart)
+                .product(product)
+                .quantity(2)
+                .selected(true)
+                .build());
+        cart.getItems().add(CartItem.builder()
+                .id(42L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440042"))
+                .cart(cart)
+                .product(product)
+                .quantity(3)
+                .selected(true)
+                .build());
+
+        when(cartRepository.findActiveByUserPublicId(userPublicId)).thenReturn(Optional.of(cart));
+
+        CartResponse response = cartService.getActiveCart(userPublicId);
+
+        assertEquals(1, response.items().size());
+        assertEquals(5, response.items().getFirst().quantity());
+        assertEquals(5, response.totalSelectedItemCount());
+        assertEquals(new BigDecimal("2250000"), response.subtotalAmount());
+    }
+
     private User user(UUID publicId) {
         return User.builder()
                 .id(21L)

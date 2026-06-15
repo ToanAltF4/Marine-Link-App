@@ -8,10 +8,7 @@ class CategoryDto {
   const CategoryDto({required this.id, required this.name});
 
   factory CategoryDto.fromJson(Map<String, dynamic> json) {
-    return CategoryDto(
-      id: json['id'] as String,
-      name: json['name'] as String,
-    );
+    return CategoryDto(id: json['id'] as String, name: json['name'] as String);
   }
 
   Category toDomain() => Category(id: id, name: name);
@@ -184,14 +181,14 @@ class ProductDetailDto extends ProductDto {
       isFeatured: base.isFeatured,
       category: base.category,
       description: json['description'] as String?,
-      images: (json['images'] as List<dynamic>?)
-              ?.map((e) =>
-                  ProductImageDto.fromJson(e as Map<String, dynamic>))
+      images:
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => ProductImageDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      priceTiers: (json['priceTiers'] as List<dynamic>?)
-              ?.map((e) =>
-                  PriceTierDto.fromJson(e as Map<String, dynamic>))
+      priceTiers:
+          (json['priceTiers'] as List<dynamic>?)
+              ?.map((e) => PriceTierDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );

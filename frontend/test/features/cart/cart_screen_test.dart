@@ -79,8 +79,7 @@ void main() {
       final imageSurface = tester.widget<Container>(
         find.byKey(const Key('cartProductImageSurface-prod-001')),
       );
-      final imageSurfaceDecoration =
-          imageSurface.decoration as BoxDecoration;
+      final imageSurfaceDecoration = imageSurface.decoration as BoxDecoration;
       expect(imageSurfaceDecoration.borderRadius, BorderRadius.circular(16));
       expect(imageSurface.clipBehavior, Clip.antiAlias);
       expect(

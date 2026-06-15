@@ -35,10 +35,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Đổi mật khẩu'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Đổi mật khẩu'), centerTitle: true),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthPasswordChangeSuccess) {
@@ -70,7 +67,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 children: [
                   const Text(
                     'Mật khẩu mới của bạn phải có ít nhất 6 ký tự để đảm bảo bảo mật.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   _buildPasswordField(
@@ -89,8 +89,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     obscureText: _obscureNew,
                     onToggle: () => setState(() => _obscureNew = !_obscureNew),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu mới';
-                      if (v.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+                      if (v == null || v.isEmpty) {
+                        return 'Vui lòng nhập mật khẩu mới';
+                      }
+                      if (v.length < 6) {
+                        return 'Mật khẩu phải có ít nhất 6 ký tự';
+                      }
                       return null;
                     },
                   ),
@@ -171,10 +175,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           validator: validator,
           decoration: InputDecoration(
             hintText: 'Nhập $label',
-            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
+            prefixIcon: const Icon(
+              Icons.lock_outline_rounded,
+              color: AppColors.primary,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
-                obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                obscureText
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: AppColors.textSecondary,
                 size: 20,
               ),
@@ -189,11 +198,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-            AuthChangePasswordRequested(
-              oldPassword: _oldPasswordController.text,
-              newPassword: _newPasswordController.text,
-            ),
-          );
+        AuthChangePasswordRequested(
+          oldPassword: _oldPasswordController.text,
+          newPassword: _newPasswordController.text,
+        ),
+      );
     }
   }
 }

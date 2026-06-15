@@ -9,7 +9,8 @@ import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_event.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 
-class _MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
+class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
+    implements AuthBloc {}
 
 User _user(List<String> roles) => User(
   id: 'user-1',
@@ -30,11 +31,7 @@ void main() {
   // Bơm guard vào một GoRouter tối thiểu để nút "Đăng nhập lại" (context.go)
   // hoạt động được trong widget test.
   Future<void> pumpGuard(WidgetTester tester, AuthState state) async {
-    whenListen(
-      authBloc,
-      const Stream<AuthState>.empty(),
-      initialState: state,
-    );
+    whenListen(authBloc, const Stream<AuthState>.empty(), initialState: state);
 
     final router = GoRouter(
       initialLocation: '/',
@@ -50,8 +47,7 @@ void main() {
         ),
         GoRoute(
           path: '/login',
-          builder: (context, _) =>
-              const Scaffold(key: Key('loginRouteStub')),
+          builder: (context, _) => const Scaffold(key: Key('loginRouteStub')),
         ),
       ],
     );
@@ -61,7 +57,10 @@ void main() {
   }
 
   testWidgets('cho phép ADMIN vào khu quản trị', (tester) async {
-    await pumpGuard(tester, AuthAuthenticated(user: _user(['ADMIN']), token: 't'));
+    await pumpGuard(
+      tester,
+      AuthAuthenticated(user: _user(['ADMIN']), token: 't'),
+    );
 
     expect(find.byKey(const Key('adminGuardedChild')), findsOneWidget);
     expect(find.byKey(const Key('adminAccessDeniedScreen')), findsNothing);
@@ -70,7 +69,10 @@ void main() {
   testWidgets('chặn STAFF khỏi khu quản trị (fallback unauthorized)', (
     tester,
   ) async {
-    await pumpGuard(tester, AuthAuthenticated(user: _user(['STAFF']), token: 't'));
+    await pumpGuard(
+      tester,
+      AuthAuthenticated(user: _user(['STAFF']), token: 't'),
+    );
 
     expect(find.byKey(const Key('adminGuardedChild')), findsNothing);
     expect(find.byKey(const Key('adminAccessDeniedScreen')), findsOneWidget);
@@ -78,7 +80,10 @@ void main() {
   });
 
   testWidgets('chặn USER khỏi khu quản trị', (tester) async {
-    await pumpGuard(tester, AuthAuthenticated(user: _user(['USER']), token: 't'));
+    await pumpGuard(
+      tester,
+      AuthAuthenticated(user: _user(['USER']), token: 't'),
+    );
 
     expect(find.byKey(const Key('adminGuardedChild')), findsNothing);
     expect(find.byKey(const Key('adminAccessDeniedScreen')), findsOneWidget);

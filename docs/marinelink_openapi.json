@@ -33,7 +33,7 @@
         "type": "object",
         "required": ["cartId", "isEmpty", "items", "totalItemCount", "totalSelectedItemCount", "subtotalAmount"],
         "properties": {
-          "cartId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440008" },
+          "cartId": { "type": "string", "format": "uuid", "nullable": true, "example": "550e8400-e29b-41d4-a716-446655440008" },
           "isEmpty": { "type": "boolean", "example": false },
           "items": {
             "type": "array",
@@ -46,7 +46,7 @@
       },
       "CartItemResponse": {
         "type": "object",
-        "required": ["productId", "productName", "productImageUrl", "unit", "quantity", "selected", "unitPrice", "lineTotal"],
+        "required": ["productId", "productName", "productImageUrl", "unit", "quantity", "selected", "baseUnitPrice", "unitPrice", "lineTotal", "minOrderQuantity", "stockQuantity", "priceTiers"],
         "properties": {
           "productId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440003" },
           "productName": { "type": "string", "example": "Muc kho loai 1" },
@@ -55,8 +55,25 @@
           "quantity": { "type": "integer", "minimum": 1, "example": 10 },
           "selected": { "type": "boolean", "example": true },
           "selectedPriceTierId": { "type": "string", "format": "uuid", "nullable": true, "example": "550e8400-e29b-41d4-a716-446655440007" },
+          "baseUnitPrice": { "type": "number", "format": "double", "example": 450000 },
           "unitPrice": { "type": "number", "format": "double", "example": 420000 },
-          "lineTotal": { "type": "number", "format": "double", "example": 4200000 }
+          "lineTotal": { "type": "number", "format": "double", "example": 4200000 },
+          "minOrderQuantity": { "type": "integer", "minimum": 1, "example": 2 },
+          "stockQuantity": { "type": "integer", "minimum": 0, "example": 120 },
+          "priceTiers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CartPriceTierResponse" }
+          }
+        }
+      },
+      "CartPriceTierResponse": {
+        "type": "object",
+        "required": ["id", "minQuantity", "unitPrice"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440007" },
+          "minQuantity": { "type": "integer", "minimum": 1, "example": 10 },
+          "maxQuantity": { "type": "integer", "nullable": true, "example": null },
+          "unitPrice": { "type": "number", "format": "double", "example": 420000 }
         }
       },
       "CartItemCreateRequest": {
@@ -520,7 +537,7 @@
                   "receiverName": { "type": "string", "example": "Nguyễn Văn A" },
                   "receiverPhone": { "type": "string", "example": "0912345678" },
                   "shippingAddress": { "type": "string", "example": "Cần Thơ" },
-                  "paymentMethod": { "type": "string", "enum": ["COD", "BANK_TRANSFER"], "example": "COD" },
+                  "paymentMethod": { "type": "string", "enum": ["COD", "BANK_TRANSFER", "VNPAY"], "example": "COD" },
                   "note": { "type": "string", "example": "Giao vào buổi sáng trước 11h." },
                   "items": {
                     "type": "array",
@@ -548,7 +565,7 @@
       "get": {
         "tags": ["Commerce"],
         "summary": "List orders by role scope",
-        "description": "USER sees only own orders. STAFF and ADMIN can see orders according to backend role filters.",
+        "description": "USER sees only own orders. STAFF and ADMIN can see orders according to backend role filters. Order list items include paymentMethod and paymentStatus so clients can show BANK_TRANSFER/VNPAY pending orders as waiting for payment instead of waiting for approval.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 0 } },

@@ -4,6 +4,8 @@ class OrderDto {
   final String id;
   final String orderCode;
   final String status;
+  final String paymentMethod;
+  final String paymentStatus;
   final double totalAmount;
   final DateTime createdAt;
 
@@ -11,6 +13,8 @@ class OrderDto {
     required this.id,
     required this.orderCode,
     required this.status,
+    required this.paymentMethod,
+    required this.paymentStatus,
     required this.totalAmount,
     required this.createdAt,
   });
@@ -20,6 +24,8 @@ class OrderDto {
       id: json['id'] as String,
       orderCode: json['orderCode'] as String,
       status: json['status'] as String? ?? 'PENDING',
+      paymentMethod: json['paymentMethod'] as String? ?? 'COD',
+      paymentStatus: json['paymentStatus'] as String? ?? 'UNPAID',
       totalAmount: (json['totalAmount'] as num? ?? 0).toDouble(),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -30,6 +36,8 @@ class OrderDto {
       id: id,
       orderCode: orderCode,
       status: OrderStatus.fromString(status),
+      paymentMethod: PaymentMethod.fromString(paymentMethod),
+      paymentStatus: paymentStatus,
       totalAmount: totalAmount,
       createdAt: createdAt,
     );
@@ -112,8 +120,6 @@ class OrderDetailDto extends OrderDto {
   final String receiverName;
   final String receiverPhone;
   final String shippingAddress;
-  final String paymentMethod;
-  final String paymentStatus;
   final double subtotalAmount;
   final double shippingFee;
   final double discountAmount;
@@ -125,13 +131,13 @@ class OrderDetailDto extends OrderDto {
     required super.id,
     required super.orderCode,
     required super.status,
+    required super.paymentMethod,
+    required super.paymentStatus,
     required super.totalAmount,
     required super.createdAt,
     required this.receiverName,
     required this.receiverPhone,
     required this.shippingAddress,
-    required this.paymentMethod,
-    required this.paymentStatus,
     required this.subtotalAmount,
     required this.shippingFee,
     required this.discountAmount,
@@ -146,13 +152,13 @@ class OrderDetailDto extends OrderDto {
       id: base.id,
       orderCode: base.orderCode,
       status: base.status,
+      paymentMethod: base.paymentMethod,
+      paymentStatus: base.paymentStatus,
       totalAmount: base.totalAmount,
       createdAt: base.createdAt,
       receiverName: json['receiverName'] as String? ?? '',
       receiverPhone: json['receiverPhone'] as String? ?? '',
       shippingAddress: json['shippingAddress'] as String? ?? '',
-      paymentMethod: json['paymentMethod'] as String? ?? 'COD',
-      paymentStatus: json['paymentStatus'] as String? ?? 'UNPAID',
       subtotalAmount: (json['subtotalAmount'] as num? ?? 0).toDouble(),
       shippingFee: (json['shippingFee'] as num? ?? 0).toDouble(),
       discountAmount: (json['discountAmount'] as num? ?? 0).toDouble(),

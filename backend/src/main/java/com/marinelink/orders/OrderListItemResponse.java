@@ -8,6 +8,8 @@ public record OrderListItemResponse(
         UUID id,
         String orderCode,
         OrderStatus status,
+        PaymentMethodCode paymentMethod,
+        PaymentStatus paymentStatus,
         BigDecimal totalAmount,
         Instant createdAt) {
 
@@ -16,6 +18,8 @@ public record OrderListItemResponse(
                 order.getPublicId(),
                 order.getOrderCode(),
                 order.getStatus(),
+                order.getPaymentMethod().getCode(),
+                order.getPaymentStatus(),
                 order.getTotalAmount(),
                 order.getCreatedAt());
     }

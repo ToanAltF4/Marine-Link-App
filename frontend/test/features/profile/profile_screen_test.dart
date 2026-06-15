@@ -207,8 +207,9 @@ void main() {
     expect(find.text('Orders route probe'), findsOneWidget);
   });
 
-  testWidgets('shows logout confirmation dialog and handles confirm',
-      (tester) async {
+  testWidgets('shows logout confirmation dialog and handles confirm', (
+    tester,
+  ) async {
     await _pumpProfile(tester, mockAuthBloc);
     await tester.pumpAndSettle();
 

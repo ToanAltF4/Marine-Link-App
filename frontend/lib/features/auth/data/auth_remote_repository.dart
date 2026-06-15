@@ -24,10 +24,7 @@ class AuthRemoteRepository implements AuthRepository {
   }) async {
     final response = await apiClient.post<LoginResponseDto>(
       ApiEndpoints.login,
-      data: {
-        'emailOrPhone': emailOrPhone,
-        'password': password,
-      },
+      data: {'emailOrPhone': emailOrPhone, 'password': password},
       fromJson: (json) =>
           LoginResponseDto.fromJson(json as Map<String, dynamic>),
     );
@@ -160,10 +157,7 @@ class AuthRemoteRepository implements AuthRepository {
   }) async {
     final response = await apiClient.post<void>(
       ApiEndpoints.changePassword,
-      data: {
-        'oldPassword': oldPassword,
-        'newPassword': newPassword,
-      },
+      data: {'oldPassword': oldPassword, 'newPassword': newPassword},
       fromJson: (_) {},
     );
 
@@ -192,7 +186,10 @@ class AuthRemoteRepository implements AuthRepository {
         return null;
       }
 
-      await _persistSession(await tokenStorage.getToken() ?? '', response.data!);
+      await _persistSession(
+        await tokenStorage.getToken() ?? '',
+        response.data!,
+      );
       return response.data!;
     } on ApiException catch (e) {
       if (e.type == ApiExceptionType.unauthorized ||

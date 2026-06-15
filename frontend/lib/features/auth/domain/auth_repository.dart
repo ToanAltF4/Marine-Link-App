@@ -23,10 +23,7 @@ abstract class AuthRepository {
     String? taxCode,
   });
 
-  Future<void> verifyEmail({
-    required String email,
-    required String otpCode,
-  });
+  Future<void> verifyEmail({required String email, required String otpCode});
 
   Future<void> resendOtp({required String email});
 

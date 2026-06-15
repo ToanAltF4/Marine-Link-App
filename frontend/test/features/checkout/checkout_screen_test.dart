@@ -8,6 +8,7 @@ import 'package:marinelink/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:marinelink/features/checkout/domain/shipping_address.dart';
 import 'package:marinelink/features/checkout/domain/shipping_address_repository.dart';
 import 'package:marinelink/features/checkout/domain/checkout_repository.dart';
+import 'package:marinelink/features/checkout/domain/vnpay_payment.dart';
 import 'package:marinelink/features/checkout/presentation/screens/checkout_screen.dart';
 import 'package:marinelink/features/orders/domain/order.dart';
 import 'package:marinelink/features/products/domain/product.dart';
@@ -110,6 +111,48 @@ void main() {
       expect(find.byKey(const Key('checkoutSuccessPanel')), findsOneWidget);
       expect(find.text('M\u00e3 \u0111\u01a1n ML-TEST-0001'), findsOneWidget);
       expect(cartCubit.state.cart.isEmpty, isTrue);
+    });
+
+    testWidgets('keeps cart visible while VNPAY payment is pending', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+
+      await tester.pumpWidget(
+        _wrap(
+          cartCubit: cartCubit,
+          checkoutRepository: _FakeCheckoutRepository(),
+          shippingAddressRepository: _FakeShippingAddressRepository(),
+        ),
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('checkoutReceiverNameField')),
+        'Nguyen Van A',
+      );
+      await tester.enterText(
+        find.byKey(const Key('checkoutReceiverPhoneField')),
+        '0912345678',
+      );
+      await tester.enterText(
+        find.byKey(const Key('checkoutShippingAddressField')),
+        '123 Tran Hung Dao, Can Tho',
+      );
+      await tester.ensureVisible(find.text('VNPAY'));
+      await tester.pump();
+      await tester.tap(find.text('VNPAY'));
+      await tester.pump();
+
+      await tester.ensureVisible(find.byKey(const Key('checkoutSubmitButton')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('checkoutSubmitButton')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(find.text('Chờ thanh toán VNPAY'), findsOneWidget);
+      expect(find.byKey(const Key('checkoutBackToCartButton')), findsOneWidget);
+      expect(cartCubit.state.cart.isNotEmpty, isTrue);
+      expect(cartCubit.state.cart.selectedItems, isNotEmpty);
     });
 
     testWidgets('loads saved shipping address for repeat checkout', (
@@ -255,11 +298,23 @@ class _FakeCheckoutRepository implements CheckoutRepository {
           id: 'order-001',
           orderCode: 'ML-TEST-0001',
           status: OrderStatus.pending,
+          paymentMethod: request.paymentMethod,
+          paymentStatus: request.paymentMethod == PaymentMethod.vnpay
+              ? 'PENDING'
+              : 'UNPAID',
           totalAmount: activeCart.subtotalAmount,
           createdAt: DateTime(2026, 6, 3),
         ),
         subtotalAmount: activeCart.subtotalAmount,
         totalItemCount: activeCart.totalSelectedItemCount,
+        vnpayPayment: request.paymentMethod == PaymentMethod.vnpay
+            ? const VnpayPaymentUrl(
+                orderId: 'order-001',
+                orderCode: 'ML-TEST-0001',
+                txnRef: 'txn-001',
+                paymentUrl: 'https://vnpay.test/pay',
+              )
+            : null,
       ),
     );
   }

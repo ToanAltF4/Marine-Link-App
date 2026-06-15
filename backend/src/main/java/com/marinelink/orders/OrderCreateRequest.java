@@ -12,7 +12,7 @@ public record OrderCreateRequest(
         @NotBlank @Size(max = 120) String receiverName,
         @NotBlank @Pattern(regexp = "^[0-9+\\-\\s]{8,20}$") String receiverPhone,
         @NotBlank @Size(max = 500) String shippingAddress,
-        @NotNull PaymentMethod paymentMethod,
+        @NotNull PaymentMethodCode paymentMethod,
         @Size(max = 500) String note,
         @Size(max = 100) List<@Valid OrderCreateItemRequest> items) {
 }

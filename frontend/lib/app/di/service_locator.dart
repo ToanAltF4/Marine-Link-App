@@ -16,6 +16,8 @@ import '../../features/products/data/product_remote_repository.dart';
 import '../../features/products/presentation/bloc/product_bloc.dart';
 
 // Cart
+import '../../features/cart/domain/cart_repository.dart';
+import '../../features/cart/data/cart_remote_repository.dart';
 import '../../features/cart/presentation/cubit/cart_cubit.dart';
 
 // Orders
@@ -77,6 +79,8 @@ import '../../features/checkout/data/order_checkout_repository.dart';
 import '../../features/checkout/domain/shipping_address_repository.dart';
 import '../../features/checkout/data/shipping_address_mock_repository.dart';
 import '../../features/checkout/data/shipping_address_remote_repository.dart';
+import '../../features/checkout/domain/vnpay_payment.dart';
+import '../../features/checkout/data/vnpay_payment_remote_repository.dart';
 import '../../features/checkout/presentation/bloc/checkout_bloc.dart';
 
 final GetIt sl = GetIt.instance;
@@ -129,7 +133,16 @@ Future<void> setupServiceLocator() async {
 
   // ── Cart ──────────────────────────────────────────────────────────────────────
   // CartCubit is a singleton so the cart persists across screens within a session.
-  sl.registerLazySingleton<CartCubit>(() => CartCubit());
+  if (_useRemoteRepositories) {
+    sl.registerLazySingleton<CartRepository>(
+      () => CartRemoteRepository(apiClient: sl<ApiClient>()),
+    );
+  }
+  sl.registerLazySingleton<CartCubit>(
+    () => CartCubit(
+      cartRepository: _useRemoteRepositories ? sl<CartRepository>() : null,
+    ),
+  );
 
   // ── Orders ───────────────────────────────────────────────────────────────────
   // Sprint 5: swap OrderMockRepository → OrderRemoteRepository
@@ -191,11 +204,17 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<CartSyncRepository>(
     () => CartSyncRemoteRepository(apiClient: sl<ApiClient>()),
   );
+  sl.registerLazySingleton<VnpayPaymentRepository>(
+    () => VnpayPaymentRemoteRepository(apiClient: sl<ApiClient>()),
+  );
   sl.registerLazySingleton<CheckoutRepository>(
     () => OrderCheckoutRepository(
       orderRepository: sl<OrderRepository>(),
       cartSyncRepository: _useRemoteRepositories
           ? sl<CartSyncRepository>()
+          : null,
+      vnpayPaymentRepository: _useRemoteRepositories
+          ? sl<VnpayPaymentRepository>()
           : null,
     ),
   );

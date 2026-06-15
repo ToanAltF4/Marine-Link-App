@@ -43,14 +43,14 @@ class OrderControllerTest {
                 "Nguyen Van A",
                 "0912345678",
                 "Can Tho",
-                PaymentMethod.COD,
+                PaymentMethodCode.COD,
                 "Giao buoi sang",
                 null);
         OrderSummaryResponse response = new OrderSummaryResponse(
                 orderId,
                 "ML-20260604-0001",
                 OrderStatus.PENDING,
-                PaymentMethod.COD,
+                PaymentMethodCode.COD,
                 PaymentStatus.UNPAID,
                 new BigDecimal("4200000"),
                 BigDecimal.ZERO,
@@ -81,6 +81,8 @@ class OrderControllerTest {
                 orderId,
                 "ML-20260604-0002",
                 OrderStatus.SHIPPING,
+                PaymentMethodCode.BANK_TRANSFER,
+                PaymentStatus.PAID,
                 new BigDecimal("1250000"),
                 Instant.parse("2026-06-04T02:00:00Z"));
 
@@ -95,6 +97,8 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(orderId.toString()))
                 .andExpect(jsonPath("$.data[0].status").value("SHIPPING"))
+                .andExpect(jsonPath("$.data[0].paymentMethod").value("BANK_TRANSFER"))
+                .andExpect(jsonPath("$.data[0].paymentStatus").value("PAID"))
                 .andExpect(jsonPath("$.pagination.totalElements").value(1));
     }
 
@@ -126,7 +130,7 @@ class OrderControllerTest {
                 orderId,
                 "ML-20260604-0003",
                 OrderStatus.PENDING,
-                PaymentMethod.BANK_TRANSFER,
+                PaymentMethodCode.BANK_TRANSFER,
                 PaymentStatus.UNPAID,
                 "Nguyen Van A",
                 "0912345678",
@@ -170,7 +174,7 @@ class OrderControllerTest {
                 orderId,
                 "ML-20260604-0004",
                 OrderStatus.CONFIRMED,
-                PaymentMethod.COD,
+                PaymentMethodCode.COD,
                 PaymentStatus.UNPAID,
                 "Nguyen Van A",
                 "0912345678",
@@ -224,5 +228,33 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Order status updated"))
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
+    }
+
+    @Test
+    void staffCanMarkOrderPaymentAsPaid() throws Exception {
+        UUID staffId = UUID.fromString("550e8400-e29b-41d4-a716-446655440004");
+        UUID orderId = UUID.fromString("550e8400-e29b-41d4-a716-446655440105");
+        OrderPaymentStatusUpdateRequest request = new OrderPaymentStatusUpdateRequest(
+                PaymentStatus.PAID,
+                "Da nhan chuyen khoan");
+        OrderPaymentStatusUpdateResponse response = new OrderPaymentStatusUpdateResponse(
+                orderId,
+                PaymentStatus.PAID);
+
+        when(orderService.updatePaymentStatus(staffId, orderId, PaymentStatus.PAID,
+                "Da nhan chuyen khoan"))
+                .thenReturn(response);
+
+        mockMvc.perform(put("/api/orders/{id}/payment-status", orderId)
+                        .principal(new TestingAuthenticationToken(
+                                staffId.toString(),
+                                null,
+                                "ROLE_STAFF"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Order payment status updated"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"));
     }
 }

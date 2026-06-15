@@ -39,11 +39,13 @@ enum OrderStatus {
 
 enum PaymentMethod {
   cod,
-  bankTransfer;
+  bankTransfer,
+  vnpay;
 
   static PaymentMethod fromString(String value) {
     return switch (value.toUpperCase()) {
       'BANK_TRANSFER' => PaymentMethod.bankTransfer,
+      'VNPAY' => PaymentMethod.vnpay,
       _ => PaymentMethod.cod,
     };
   }
@@ -51,11 +53,13 @@ enum PaymentMethod {
   String get apiValue => switch (this) {
     PaymentMethod.cod => 'COD',
     PaymentMethod.bankTransfer => 'BANK_TRANSFER',
+    PaymentMethod.vnpay => 'VNPAY',
   };
 
   String get displayLabel => switch (this) {
     PaymentMethod.cod => 'Thanh toán khi nhận hàng (COD)',
     PaymentMethod.bankTransfer => 'Chuyển khoản ngân hàng',
+    PaymentMethod.vnpay => 'VNPAY QR',
   };
 }
 
@@ -110,6 +114,8 @@ class Order extends Equatable {
   final String id;
   final String orderCode;
   final OrderStatus status;
+  final PaymentMethod paymentMethod;
+  final String paymentStatus;
   final double totalAmount;
   final DateTime createdAt;
 
@@ -117,20 +123,41 @@ class Order extends Equatable {
     required this.id,
     required this.orderCode,
     required this.status,
+    this.paymentMethod = PaymentMethod.cod,
+    this.paymentStatus = 'UNPAID',
     required this.totalAmount,
     required this.createdAt,
   });
 
+  bool get isWaitingForPayment {
+    if (status != OrderStatus.pending) {
+      return false;
+    }
+    final methodRequiresPayment =
+        paymentMethod == PaymentMethod.bankTransfer ||
+        paymentMethod == PaymentMethod.vnpay;
+    return methodRequiresPayment && paymentStatus.toUpperCase() != 'PAID';
+  }
+
+  String get displayStatusLabel =>
+      isWaitingForPayment ? 'Chờ thanh toán' : status.displayLabel;
+
   @override
-  List<Object?> get props => [id, orderCode, status, totalAmount, createdAt];
+  List<Object?> get props => [
+    id,
+    orderCode,
+    status,
+    paymentMethod,
+    paymentStatus,
+    totalAmount,
+    createdAt,
+  ];
 }
 
 class OrderDetail extends Order {
   final String receiverName;
   final String receiverPhone;
   final String shippingAddress;
-  final PaymentMethod paymentMethod;
-  final String paymentStatus;
   final double subtotalAmount;
   final double shippingFee;
   final double discountAmount;
@@ -142,13 +169,13 @@ class OrderDetail extends Order {
     required super.id,
     required super.orderCode,
     required super.status,
+    required super.paymentMethod,
+    required super.paymentStatus,
     required super.totalAmount,
     required super.createdAt,
     required this.receiverName,
     required this.receiverPhone,
     required this.shippingAddress,
-    required this.paymentMethod,
-    required this.paymentStatus,
     required this.subtotalAmount,
     required this.shippingFee,
     required this.discountAmount,

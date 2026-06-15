@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,13 @@ import java.util.UUID;
 public class CartController {
 
     private final CartService cartService;
+
+    @GetMapping
+    public ApiResponse<CartResponse> getActiveCart(Authentication authentication) {
+        return ApiResponse.ok(
+                cartService.getActiveCart(currentUserId(authentication)),
+                "Cart loaded");
+    }
 
     @PostMapping("/sync")
     public ApiResponse<CartResponse> sync(

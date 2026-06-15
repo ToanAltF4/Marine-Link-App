@@ -26,12 +26,17 @@ abstract class ApiEndpoints {
   static String productDetail(String id) => '/api/products/$id';
 
   // ── Cart ──────────────────────────────────────────────────────────────────
+  static const String cart = '/api/cart';
   static const String cartSync = '/api/cart/sync';
 
   // ── Orders ────────────────────────────────────────────────────────────────
   static const String orders = '/api/orders';
   static String orderDetail(String id) => '/api/orders/$id';
   static String orderStatus(String id) => '/api/orders/$id/status';
+
+  // ── Payments ──────────────────────────────────────────────────────────────
+  static const String vnpayPaymentUrl = '/api/payments/vnpay/payment-url';
+  static const String vnpayCancel = '/api/payments/vnpay/cancel';
 
   // ── Chat ──────────────────────────────────────────────────────────────────
   static const String chatSend = '/api/chat/send';

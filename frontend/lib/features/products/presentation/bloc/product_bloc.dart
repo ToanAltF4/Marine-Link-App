@@ -40,7 +40,9 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(ProductListError(response.message ?? 'Lỗi tải danh sách sản phẩm'));
+        emit(
+          ProductListError(response.message ?? 'Lỗi tải danh sách sản phẩm'),
+        );
         return;
       }
 
@@ -54,7 +56,8 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
             products: products,
             currentPage: pagination?.page ?? 0,
             totalPages: pagination?.totalPages ?? 1,
-            hasMore: pagination != null &&
+            hasMore:
+                pagination != null &&
                 pagination.page < pagination.totalPages - 1,
           ),
         );
@@ -70,13 +73,12 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   ) async {
     emit(const ProductDetailLoading());
     try {
-      final response =
-          await _productRepository.getProductDetail(event.productId);
+      final response = await _productRepository.getProductDetail(
+        event.productId,
+      );
 
       if (!response.success || response.data == null) {
-        emit(ProductDetailError(
-          response.message ?? 'Không tìm thấy sản phẩm',
-        ));
+        emit(ProductDetailError(response.message ?? 'Không tìm thấy sản phẩm'));
         return;
       }
 

@@ -23,11 +23,25 @@ const _cartSurfaceShadow = BoxShadow(
   offset: Offset(0, 8),
 );
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   final VoidCallback? onCheckout;
   final VoidCallback? onContinueShopping;
 
   const CartScreen({super.key, this.onCheckout, this.onContinueShopping});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CartCubit>().loadCart();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,16 +79,16 @@ class CartScreen extends StatelessWidget {
   }
 
   void _goProducts(BuildContext context) {
-    if (onContinueShopping != null) {
-      onContinueShopping!();
+    if (widget.onContinueShopping != null) {
+      widget.onContinueShopping!();
       return;
     }
     BuyerNavigation.push(context, AppRoutes.productList);
   }
 
   void _goCheckout(BuildContext context) {
-    if (onCheckout != null) {
-      onCheckout!();
+    if (widget.onCheckout != null) {
+      widget.onCheckout!();
       return;
     }
     GoRouter.maybeOf(context)?.go(AppRoutes.checkout);

@@ -26,11 +26,8 @@ void main() {
     'emits [loading, success] when repository returns data',
     build: () => AdminDashboardCubit(
       repository: _FakeRepo(
-        () async => const ApiResponse(
-          success: true,
-          message: 'OK',
-          data: _dashboard,
-        ),
+        () async =>
+            const ApiResponse(success: true, message: 'OK', data: _dashboard),
       ),
     ),
     act: (cubit) => cubit.load(),

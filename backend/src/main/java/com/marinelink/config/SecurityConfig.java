@@ -71,6 +71,8 @@ public class SecurityConfig {
                     "/api/auth/resend-otp").permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/products", "/api/products/**",
+                    "/api/payments/vnpay/return",
+                    "/api/payments/vnpay/ipn",
                     "/api/warehouses",
                     "/swagger-ui/**", "/swagger-ui.html",
                     "/api-docs/**", "/api-docs",
@@ -81,6 +83,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                 // Staff + Admin for order status updates
                 .requestMatchers(HttpMethod.PUT, "/api/orders/*/status")
+                    .hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/orders/*/payment-status")
                     .hasAnyRole("STAFF", "ADMIN")
                 // Everything else requires authentication
                 .anyRequest().authenticated()

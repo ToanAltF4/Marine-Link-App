@@ -167,6 +167,11 @@ Orders:
 | GET | `/api/orders` | USER own orders, STAFF, ADMIN |
 | GET | `/api/orders/{id}` | Owner, STAFF, ADMIN |
 | PUT | `/api/orders/{id}/status` | STAFF, ADMIN |
+| PUT | `/api/orders/{id}/payment-status` | STAFF, ADMIN |
+| POST | `/api/payments/vnpay/payment-url` | USER owner |
+| POST | `/api/payments/vnpay/cancel` | USER owner |
+| GET | `/api/payments/vnpay/return` | Public VNPAY redirect |
+| GET | `/api/payments/vnpay/ipn` | Public VNPAY server callback |
 | POST | `/api/chat/send` | All roles |
 | GET | `/api/chat/room` | USER (get-or-create phòng hỗ trợ của chính mình) |
 | GET | `/api/chat/orders/{orderId}/room` | USER owner, order `COMPLETED` |
@@ -495,8 +500,19 @@ Cart response chuẩn:
         "quantity": 10,
         "selected": true,
         "selectedPriceTierId": "550e8400-e29b-41d4-a716-446655440007",
+        "baseUnitPrice": 450000,
         "unitPrice": 420000,
-        "lineTotal": 4200000
+        "lineTotal": 4200000,
+        "minOrderQuantity": 2,
+        "stockQuantity": 120,
+        "priceTiers": [
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440007",
+            "minQuantity": 10,
+            "maxQuantity": null,
+            "unitPrice": 420000
+          }
+        ]
       }
     ],
     "totalItemCount": 10,
@@ -666,7 +682,11 @@ Rules:
 - Product còn hàng và quantity hợp lệ.
 - Snapshot `productName`, `unit`, `unitPrice` vào `order_items`.
 - Tạo notification khi order được tạo hoặc đổi trạng thái.
-- Clear `cart_items` trong cùng transaction sau khi checkout thành công.
+- Với `COD`, clear `cart_items` selected trong cùng transaction sau khi tạo order thành công.
+- Với `BANK_TRANSFER` và `VNPAY`, không clear giỏ ở thời điểm tạo order vì đơn chưa thanh toán; FE phải giữ giỏ để user có thể hủy/quay lại.
+- `paymentMethod` hỗ trợ `COD`, `BANK_TRANSFER`, `VNPAY`. Với `VNPAY`, order bắt đầu với `paymentStatus = PENDING`; IPN của VNPAY cập nhật sang `PAID` hoặc `FAILED`.
+- Với `BANK_TRANSFER` và `VNPAY`, hệ thống chỉ gửi thông báo/email “đơn hàng sẽ được duyệt trong thời gian sớm nhất” sau khi `paymentStatus = PAID`.
+- FE hiển thị `status = PENDING` + `paymentMethod = BANK_TRANSFER|VNPAY` + `paymentStatus != PAID` là “Chờ thanh toán”, không hiển thị “Chờ duyệt”.
 
 ### GET `/api/orders`
 
@@ -689,6 +709,8 @@ Response `200`:
       "id": "550e8400-e29b-41d4-a716-446655440009",
       "orderCode": "ML-20260528-0001",
       "status": "PENDING",
+      "paymentMethod": "VNPAY",
+      "paymentStatus": "PENDING",
       "totalAmount": 4200000,
       "createdAt": "2026-05-28T08:30:00Z"
     }
@@ -742,7 +764,7 @@ Response `200`:
 
 ### PUT `/api/orders/{id}/status`
 
-Staff/Admin cập nhật trạng thái đơn.
+Staff/Admin cập nhật trạng thái đơn. Với `BANK_TRANSFER` và `VNPAY`, chỉ được chuyển `PENDING -> CONFIRMED` sau khi `paymentStatus = PAID`; trước đó đơn vẫn là “Chờ thanh toán”.
 
 Request:
 
@@ -776,9 +798,110 @@ Allowed transitions:
 | `COMPLETED` | Không đổi |
 | `CANCELLED` | Không đổi |
 
-Invalid transition trả `409` hoặc `422`.
+Invalid transition hoặc xác nhận đơn chưa thanh toán trả `409` hoặc `422`.
 
-## 13. Messaging APIs
+### PUT `/api/orders/{id}/payment-status`
+
+Staff/Admin cập nhật trạng thái thanh toán thủ công, dùng cho đối soát chuyển khoản ngân hàng.
+Khi chuyển sang `PAID` lần đầu, backend gửi notification và email cho user rằng đơn hàng sẽ được duyệt trong thời gian sớm nhất.
+
+Request:
+
+```json
+{
+  "status": "PAID",
+  "note": "Da nhan chuyen khoan"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Order payment status updated",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440009",
+    "paymentStatus": "PAID"
+  }
+}
+```
+
+## 13. Payment APIs
+
+### POST `/api/payments/vnpay/payment-url`
+
+Tạo URL thanh toán VNPAY cho đơn hàng của user hiện tại. Chỉ dùng cho order có `paymentMethod = "VNPAY"`.
+
+Request:
+
+```json
+{
+  "orderId": "550e8400-e29b-41d4-a716-446655440009",
+  "bankCode": "VNPAYQR"
+}
+```
+
+`bankCode` optional. Nếu không gửi, người dùng chọn phương thức/ngân hàng trên cổng VNPAY.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "orderId": "550e8400-e29b-41d4-a716-446655440009",
+    "orderCode": "ML-20260528-0001",
+    "txnRef": "8d9b7f2b3cc94b4cbac2d98f5e1d8a21",
+    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?..."
+  }
+}
+```
+
+### GET `/api/payments/vnpay/return`
+
+Return URL nhận redirect từ VNPAY sau khi người dùng hoàn tất thanh toán. Backend verify checksum và trả envelope kết quả để FE hoặc browser hiển thị.
+
+### POST `/api/payments/vnpay/cancel`
+
+User hủy giao dịch VNPAY đang chờ thanh toán. FE gọi endpoint này khi user bấm hủy hoặc khi bộ đếm 15 phút hết hạn. Backend chỉ cho hủy nếu order thuộc user hiện tại, `paymentMethod = "VNPAY"`, order còn `PENDING`, và payment chưa `PAID`. Khi hủy thành công, order chuyển `CANCELLED`, payment chuyển `FAILED`; giỏ hàng của user không bị xóa ở bước tạo VNPAY nên user có thể quay lại giỏ.
+
+Request:
+
+```json
+{
+  "orderId": "550e8400-e29b-41d4-a716-446655440009"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "VNPAY payment cancelled",
+  "data": {
+    "txnRef": "8d9b7f2b3cc94b4cbac2d98f5e1d8a21",
+    "orderCode": "ML-20260528-0001",
+    "paymentStatus": "FAILED",
+    "responseCode": "USER_CANCELLED",
+    "message": "Payment cancelled"
+  }
+}
+```
+
+### GET `/api/payments/vnpay/ipn`
+
+IPN URL server-to-server cần gửi cho VNPAY khi cấu hình merchant sandbox/production:
+
+```text
+https://<backend-domain>/api/payments/vnpay/ipn
+```
+
+Backend verify `vnp_SecureHash`, kiểm tra `vnp_TxnRef`, đối chiếu `vnp_Amount`, rồi cập nhật `payments.status` và `orders.payment_status`.
+
+## 14. Messaging APIs
 
 ### POST `/api/chat/send`
 
@@ -1032,7 +1155,7 @@ Response `201`:
 }
 ```
 
-## 14. Notification APIs
+## 15. Notification APIs
 
 ### GET `/api/notifications`
 
@@ -1078,7 +1201,7 @@ Response `200`:
 
 Only owner can mark notification read.
 
-## 15. Warehouse API
+## 16. Warehouse API
 
 ### GET `/api/warehouses`
 
@@ -1103,7 +1226,7 @@ Response `200`:
 }
 ```
 
-## 16. Admin APIs
+## 17. Admin APIs
 
 ### GET `/api/admin/dashboard`
 
@@ -1218,7 +1341,7 @@ Rules:
 - Không trả password hash.
 - Ghi audit cho thay đổi role/status nếu backend có audit module.
 
-## 17. API To Database Mapping
+## 18. API To Database Mapping
 
 | API | Tables chính |
 |---|---|
@@ -1246,7 +1369,7 @@ Rules:
 | `CRUD /api/admin/products` | `products`, `categories`, `price_tiers`, `product_images` |
 | `CRUD /api/admin/users` | `users`, `roles` |
 
-## 18. Security Checklist
+## 19. Security Checklist
 
 - Không hardcode JWT secret, DB password, Supabase service role key hoặc API key trong source.
 - Không trả `passwordHash`, stack trace, SQL error raw, hoặc internal exception class cho client.
@@ -1256,7 +1379,7 @@ Rules:
 - File chat attachment chỉ dùng bucket private hoặc signed URL/backend proxy.
 - Admin endpoints phải require role `ADMIN`; Staff không được truy cập nhầm full admin CRUD.
 
-## 19. Contract Test Checklist
+## 20. Contract Test Checklist
 
 - Login success/failure.
 - Register duplicate email/phone.
