@@ -128,6 +128,24 @@ void main() {
       expect(find.text('3.920.000\u0111'), findsOneWidget);
     });
 
+    testWidgets('allows entering item quantity directly', (tester) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+
+      await tester.pumpWidget(_wrap(cartCubit: cartCubit));
+
+      await tester.enterText(
+        find.byKey(const Key('cartQuantityInput-prod-001')),
+        '50',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
+      expect(find.text('Khuyến mãi mua nhiều (2%):'), findsOneWidget);
+      expect(find.text('-80.000\u0111'), findsOneWidget);
+      expect(find.text('3.920.000\u0111'), findsOneWidget);
+    });
+
     testWidgets('toggles selected item out of totals and checkout state', (
       tester,
     ) async {

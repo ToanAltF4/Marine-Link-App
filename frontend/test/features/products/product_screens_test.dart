@@ -636,6 +636,57 @@ void main() {
       expect(cartCubit.state.cart.items, hasLength(1));
       expect(cartCubit.state.cart.items.single.productId, 'prod-001');
     });
+
+    testWidgets('allows entering quantity before adding to cart', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: cartCubit,
+            child: ProductDetailScreen(
+              productId: 'prod-001',
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('productDetailQuantityInput')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final quantityTextField = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('productDetailQuantityInput')),
+          matching: find.byType(TextField),
+        ),
+      );
+      final quantityFrame = tester.widget<DecoratedBox>(
+        find.byKey(const Key('productDetailQuantityInputFrame')),
+      );
+      final frameDecoration = quantityFrame.decoration as BoxDecoration;
+      expect(frameDecoration.border, isA<Border>());
+      expect(quantityTextField.decoration?.border, InputBorder.none);
+      expect(quantityTextField.decoration?.focusedBorder, InputBorder.none);
+      await tester.enterText(
+        find.byKey(const Key('productDetailQuantityInput')),
+        '50',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('addToCartButton')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
+    });
   });
 }
 

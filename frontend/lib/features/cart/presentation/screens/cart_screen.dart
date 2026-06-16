@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -435,10 +436,42 @@ class _ProductImageFallback extends StatelessWidget {
   }
 }
 
-class _QuantityStepper extends StatelessWidget {
+class _QuantityStepper extends StatefulWidget {
   final CartItem item;
 
   const _QuantityStepper({required this.item});
+
+  @override
+  State<_QuantityStepper> createState() => _QuantityStepperState();
+}
+
+class _QuantityStepperState extends State<_QuantityStepper> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  CartItem get item => widget.item;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: '${item.quantity}');
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuantityStepper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (item.quantity != oldWidget.item.quantity && !_focusNode.hasFocus) {
+      _controller.text = '${item.quantity}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -463,15 +496,33 @@ class _QuantityStepper extends StatelessWidget {
                   : null,
             ),
             SizedBox(
-              width: 38,
-              child: Text(
-                '${item.quantity}',
+              width: 42,
+              child: TextField(
+                key: Key('cartQuantityInput-${item.productId}'),
+                controller: _controller,
+                focusNode: _focusNode,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
                 textAlign: TextAlign.center,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.primaryDark,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onSubmitted: _commit,
+                onEditingComplete: () => _commit(_controller.text),
               ),
             ),
             _QuantityButton(
@@ -486,6 +537,20 @@ class _QuantityStepper extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _commit(String value) {
+    final parsed = int.tryParse(value);
+    final next = (parsed ?? item.minOrderQuantity).clamp(
+      item.minOrderQuantity,
+      item.stockQuantity,
+    );
+    _controller.text = '$next';
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+    context.read<CartCubit>().updateQuantity(item.productId, next);
+    _focusNode.unfocus();
   }
 }
 
