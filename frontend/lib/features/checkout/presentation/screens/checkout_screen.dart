@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -708,7 +709,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${cart.totalSelectedItemCount} m\u1ee5c',
+                _checkoutTotalQuantityLabel(cart),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
@@ -776,6 +777,18 @@ class _CheckoutSummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _checkoutTotalQuantityLabel(Cart cart) {
+  final selectedItems = cart.selectedItems;
+  final quantity = cart.totalSelectedItemCount;
+  if (selectedItems.isEmpty) {
+    return '0 kg';
+  }
+
+  final unit = selectedItems.first.unit;
+  final sameUnit = selectedItems.every((item) => item.unit == unit);
+  return sameUnit ? '$quantity $unit' : '$quantity m\u1ee5c';
 }
 
 class _CheckoutItemRow extends StatelessWidget {
@@ -1108,7 +1121,13 @@ class _CheckoutSuccessViewState extends State<_CheckoutSuccessView> {
     if (payment == null) return;
     final uri = Uri.tryParse(payment.paymentUrl);
     if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        !await launchUrl(
+          uri,
+          mode: kIsWeb
+              ? LaunchMode.platformDefault
+              : LaunchMode.externalApplication,
+          webOnlyWindowName: kIsWeb ? '_self' : null,
+        )) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Kh\u00f4ng th\u1ec3 m\u1edf VNPAY')),

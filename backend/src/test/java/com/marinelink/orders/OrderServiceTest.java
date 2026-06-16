@@ -180,11 +180,11 @@ class OrderServiceTest {
                         "Can Tho",
                         PaymentMethodCode.COD,
                         null,
-                        List.of(new OrderCreateItemRequest(product.getPublicId(), 5))));
+                        List.of(new OrderCreateItemRequest(product.getPublicId(), 50))));
 
-        assertEquals(new BigDecimal("2250000"), response.subtotalAmount());
-        assertEquals(new BigDecimal("112500.00"), response.discountAmount());
-        assertEquals(new BigDecimal("2137500.00"), response.totalAmount());
+        assertEquals(new BigDecimal("22500000"), response.subtotalAmount());
+        assertEquals(new BigDecimal("450000.00"), response.discountAmount());
+        assertEquals(new BigDecimal("22050000.00"), response.totalAmount());
     }
 
     @Test
@@ -415,7 +415,7 @@ class OrderServiceTest {
                 .basePrice(new BigDecimal("450000"))
                 .unit("kg")
                 .minOrderQuantity(2)
-                .stockQuantity(20)
+                .stockQuantity(600)
                 .status(ProductStatus.ACTIVE)
                 .build();
     }

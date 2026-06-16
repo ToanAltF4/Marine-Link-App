@@ -36,14 +36,22 @@ class CartPricingSummary {
 }
 
 class CartBulkDiscountPolicy {
-  static const double fivePercent = 0.05;
-  static const double tenPercent = 0.10;
+  static const int twoPercentMinQuantity = 50;
+  static const int fourPercentMinQuantity = 100;
+  static const int sixPercentMinQuantity = 200;
+  static const int eightPercentMinQuantity = 500;
+  static const double twoPercent = 0.02;
+  static const double fourPercent = 0.04;
+  static const double sixPercent = 0.06;
+  static const double eightPercent = 0.08;
 
   const CartBulkDiscountPolicy._();
 
   static double rateForQuantity(int totalQuantity) {
-    if (totalQuantity >= 10) return tenPercent;
-    if (totalQuantity >= 5) return fivePercent;
+    if (totalQuantity >= eightPercentMinQuantity) return eightPercent;
+    if (totalQuantity >= sixPercentMinQuantity) return sixPercent;
+    if (totalQuantity >= fourPercentMinQuantity) return fourPercent;
+    if (totalQuantity >= twoPercentMinQuantity) return twoPercent;
     return 0;
   }
 }

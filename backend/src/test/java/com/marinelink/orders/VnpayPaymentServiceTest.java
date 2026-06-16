@@ -5,6 +5,7 @@ import com.marinelink.cart.CartRepository;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.users.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -32,6 +33,49 @@ class VnpayPaymentServiceTest {
             orderPaymentNotificationService,
             cartRepository,
             cartItemRepository);
+
+    @Test
+    void createPaymentUrlEmbedsSignedWebClientReturnUrl() {
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        User user = User.builder().publicId(userId).build();
+        PaymentMethod method = paymentMethod(PaymentMethodCode.VNPAY);
+        Order order = Order.builder()
+                .publicId(orderId)
+                .orderCode("ML-20260616-0001")
+                .user(user)
+                .paymentMethod(method)
+                .paymentStatus(PaymentStatus.PENDING)
+                .totalAmount(new BigDecimal("850000"))
+                .build();
+        Payment payment = Payment.builder()
+                .order(order)
+                .paymentMethod(method)
+                .amount(new BigDecimal("850000"))
+                .status(PaymentStatus.PENDING)
+                .txnRef("txn-001")
+                .build();
+
+        ReflectionTestUtils.setField(service, "tmnCode", "TESTTMN");
+        ReflectionTestUtils.setField(service, "hashSecret", "0123456789abcdef");
+        ReflectionTestUtils.setField(service, "paymentUrl", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
+        ReflectionTestUtils.setField(service, "returnUrl", "http://localhost:8080/api/payments/vnpay/return");
+        when(orderRepository.findDetailByPublicId(orderId)).thenReturn(Optional.of(order));
+        when(paymentRepository.findTopByOrderPublicIdOrderByCreatedAtDesc(orderId))
+                .thenReturn(Optional.of(payment));
+
+        VnpayPaymentUrlResponse response = service.createPaymentUrl(
+                userId,
+                orderId,
+                null,
+                "127.0.0.1",
+                "http://localhost:3000/payments/vnpay/result");
+
+        assertEquals("txn-001", response.txnRef());
+        org.junit.jupiter.api.Assertions.assertTrue(response.paymentUrl().contains("clientReturnUrl"));
+        org.junit.jupiter.api.Assertions.assertTrue(response.paymentUrl().contains("clientReturnSig"));
+        verify(paymentRepository).save(payment);
+    }
 
     @Test
     void cancelPendingPaymentMarksOrderCancelledAndPaymentFailed() {

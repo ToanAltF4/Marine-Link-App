@@ -40,7 +40,8 @@ public class VnpayPaymentController {
                 currentUserId(authentication),
                 request.orderId(),
                 request.bankCode(),
-                clientIp(servletRequest)));
+                clientIp(servletRequest),
+                clientReturnUrl(servletRequest)));
     }
 
     @PostMapping("/cancel")
@@ -58,7 +59,7 @@ public class VnpayPaymentController {
     public ResponseEntity<Void> handleReturn(@RequestParam Map<String, String> params) {
         VnpayPaymentResultResponse result = vnpayPaymentService.handleReturn(params);
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(frontendReturnUri(result))
+                .location(frontendReturnUri(result, params))
                 .build();
     }
 
@@ -87,8 +88,15 @@ public class VnpayPaymentController {
     }
 
     private URI frontendReturnUri(VnpayPaymentResultResponse result) {
+        return frontendReturnUri(result, Map.of());
+    }
+
+    private URI frontendReturnUri(
+            VnpayPaymentResultResponse result,
+            Map<String, String> params) {
+        String targetReturnUrl = trustedClientReturnUrl(params);
         UriComponentsBuilder builder = UriComponentsBuilder
-                .fromUriString(frontendReturnUrl.trim())
+                .fromUriString(targetReturnUrl == null ? frontendReturnUrl.trim() : targetReturnUrl)
                 .queryParam("success", result.paymentStatus() == PaymentStatus.PAID)
                 .queryParam("txnRef", result.txnRef())
                 .queryParam("orderCode", result.orderCode())
@@ -97,5 +105,103 @@ public class VnpayPaymentController {
                 .queryParam("transactionStatus", result.transactionStatus())
                 .queryParam("message", result.message());
         return builder.build().encode().toUri();
+    }
+
+    private String trustedClientReturnUrl(Map<String, String> params) {
+        String clientReturnUrl = trimToNull(params.get("clientReturnUrl"));
+        if (clientReturnUrl == null || !isAllowedFrontendReturnUrl(clientReturnUrl)) {
+            return null;
+        }
+        if (!vnpayPaymentService.hasValidClientReturnUrlSignature(params)) {
+            return null;
+        }
+        return clientReturnUrl;
+    }
+
+    private String clientReturnUrl(HttpServletRequest request) {
+        String origin = trimToNull(request.getHeader("Origin"));
+        if (origin == null) {
+            origin = originFromReferer(request.getHeader("Referer"));
+        }
+        if (origin == null) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(origin);
+            if (!isHttpScheme(uri)) {
+                return null;
+            }
+            return UriComponentsBuilder.fromUri(uri)
+                    .replacePath("/payments/vnpay/result")
+                    .replaceQuery(null)
+                    .fragment(null)
+                    .build()
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private String originFromReferer(String referer) {
+        String value = trimToNull(referer);
+        if (value == null) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(value);
+            if (!isHttpScheme(uri) || uri.getHost() == null) {
+                return null;
+            }
+            return UriComponentsBuilder.newInstance()
+                    .scheme(uri.getScheme())
+                    .host(uri.getHost())
+                    .port(uri.getPort())
+                    .build()
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private boolean isAllowedFrontendReturnUrl(String value) {
+        try {
+            URI uri = URI.create(value);
+            if (!isHttpScheme(uri) || uri.getHost() == null) {
+                return false;
+            }
+            if (!"/payments/vnpay/result".equals(uri.getPath())) {
+                return false;
+            }
+            if (isLocalHost(uri.getHost())) {
+                return true;
+            }
+            URI configured = URI.create(frontendReturnUrl.trim());
+            return isHttpScheme(configured)
+                    && uri.getScheme().equalsIgnoreCase(configured.getScheme())
+                    && uri.getHost().equalsIgnoreCase(configured.getHost())
+                    && uri.getPort() == configured.getPort();
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    private boolean isHttpScheme(URI uri) {
+        return "http".equalsIgnoreCase(uri.getScheme())
+                || "https".equalsIgnoreCase(uri.getScheme());
+    }
+
+    private boolean isLocalHost(String host) {
+        return "localhost".equalsIgnoreCase(host)
+                || "127.0.0.1".equals(host)
+                || "::1".equals(host)
+                || "[::1]".equals(host);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

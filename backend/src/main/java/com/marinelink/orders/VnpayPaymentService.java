@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -56,7 +57,8 @@ public class VnpayPaymentService {
             UUID userPublicId,
             UUID orderPublicId,
             String bankCode,
-            String ipAddress) {
+            String ipAddress,
+            String clientReturnUrl) {
         requireConfigured();
         Order order = orderRepository.findDetailByPublicId(orderPublicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don hang"));
@@ -88,7 +90,7 @@ public class VnpayPaymentService {
         params.put("vnp_OrderInfo", normalizeOrderInfo("Thanh toan don hang " + order.getOrderCode()));
         params.put("vnp_OrderType", "other");
         params.put("vnp_Locale", "vn");
-        params.put("vnp_ReturnUrl", returnUrl.trim());
+        params.put("vnp_ReturnUrl", callbackReturnUrl(clientReturnUrl));
         params.put("vnp_IpAddr", ipAddress);
         params.put("vnp_CreateDate", VNPAY_DATE_FORMAT.format(now));
         params.put("vnp_ExpireDate", VNPAY_DATE_FORMAT.format(now.plusSeconds(15 * 60L)));
@@ -230,9 +232,30 @@ public class VnpayPaymentService {
             return false;
         }
         TreeMap<String, String> sorted = new TreeMap<>(params);
-        sorted.remove("vnp_SecureHash");
-        sorted.remove("vnp_SecureHashType");
+        sorted.entrySet().removeIf(entry ->
+                !entry.getKey().startsWith("vnp_")
+                        || "vnp_SecureHash".equals(entry.getKey())
+                        || "vnp_SecureHashType".equals(entry.getKey()));
         return secureHash.equalsIgnoreCase(hmacSha512(hashSecret.trim(), buildQuery(sorted)));
+    }
+
+    public boolean hasValidClientReturnUrlSignature(Map<String, String> params) {
+        String clientReturnUrl = trimToNull(params.get("clientReturnUrl"));
+        String signature = trimToNull(params.get("clientReturnSig"));
+        if (clientReturnUrl == null || signature == null || hashSecret == null || hashSecret.isBlank()) {
+            return false;
+        }
+        return signature.equalsIgnoreCase(hmacSha512(hashSecret.trim(), clientReturnUrl));
+    }
+
+    private String callbackReturnUrl(String clientReturnUrl) {
+        String cleanReturnUrl = trimToNull(clientReturnUrl);
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(returnUrl.trim());
+        if (cleanReturnUrl != null) {
+            builder.queryParam("clientReturnUrl", cleanReturnUrl);
+            builder.queryParam("clientReturnSig", hmacSha512(hashSecret.trim(), cleanReturnUrl));
+        }
+        return builder.build().encode().toUriString();
     }
 
     private String buildQuery(Map<String, String> params) {

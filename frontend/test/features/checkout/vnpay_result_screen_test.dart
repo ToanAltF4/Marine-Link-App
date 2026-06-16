@@ -28,7 +28,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Thanh toán VNPAY thành công'), findsOneWidget);
+    expect(find.text('Đặt hàng thành công'), findsOneWidget);
     expect(find.text('ML-20260614-0027'), findsOneWidget);
     expect(cartCubit.state.cart.isEmpty, isTrue);
   });
@@ -50,7 +50,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Thanh toán VNPAY thành công'), findsOneWidget);
+    expect(find.text('Đặt hàng thành công'), findsOneWidget);
     expect(find.text('ML-20260614-0028'), findsOneWidget);
     expect(cartCubit.state.cart.isEmpty, isTrue);
   });

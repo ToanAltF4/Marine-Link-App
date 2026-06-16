@@ -74,7 +74,7 @@ void main() {
     testWidgets('shows the same bulk discount total as the cart', (
       tester,
     ) async {
-      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 5);
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 50);
 
       await tester.pumpWidget(
         _wrap(
@@ -84,9 +84,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Khuyến mãi mua nhiều (5%)'), findsOneWidget);
-      expect(find.textContaining('25.000'), findsOneWidget);
-      expect(find.textContaining('475.000'), findsOneWidget);
+      expect(find.text('Khuyến mãi mua nhiều (2%)'), findsOneWidget);
+      expect(find.text('50 kg'), findsOneWidget);
+      expect(find.textContaining('-100.000'), findsOneWidget);
+      expect(find.textContaining('4.900.000'), findsOneWidget);
     });
 
     testWidgets('submits checkout, shows success, and clears cart cache', (
@@ -285,7 +286,7 @@ ProductDetail _product() {
     basePrice: 100000,
     unit: 'kg',
     minOrderQuantity: 2,
-    stockQuantity: 10,
+    stockQuantity: 600,
     status: ProductStatus.active,
     priceTiers: [
       PriceTier(

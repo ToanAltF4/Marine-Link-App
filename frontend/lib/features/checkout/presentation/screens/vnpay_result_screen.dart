@@ -40,10 +40,10 @@ class _VnpayResultScreenState extends State<VnpayResultScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = _success
-        ? 'Thanh toán VNPAY thành công'
+        ? 'Đặt hàng thành công'
         : 'Thanh toán VNPAY chưa hoàn tất';
     final message = _success
-        ? 'Đơn hàng ${_orderCode ?? ''} đã ghi nhận thanh toán và sẽ được duyệt trong thời gian sớm nhất.'
+        ? 'Đơn hàng ${_orderCode ?? ''} đã thanh toán VNPAY thành công và sẽ được duyệt trong thời gian sớm nhất.'
         : 'Giao dịch chưa thành công hoặc đã bị hủy. Bạn có thể quay lại giỏ hàng để thử lại.';
 
     return Scaffold(

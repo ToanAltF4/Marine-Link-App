@@ -12,6 +12,7 @@ import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/dashboard_header.dart';
+import '../../../cart/domain/cart_pricing.dart';
 import '../../../products/domain/product.dart';
 import '../../../products/domain/product_repository.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
@@ -21,6 +22,11 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 
 const _compactFeaturedGridMaxWidth = 348.0;
 const _compactFeaturedCardAspectRatio = 0.80;
+const _bulkPromotionTitle = 'Ưu đãi mua nhiều';
+const _bulkPromotionBannerText =
+    'Giảm đến 8% cho đơn hàng từ ${CartBulkDiscountPolicy.eightPercentMinQuantity}kg';
+const _bulkPromotionPolicyText =
+    '${CartBulkDiscountPolicy.twoPercentMinQuantity}-99kg giảm 2% • ${CartBulkDiscountPolicy.fourPercentMinQuantity}-199kg giảm 4% • ${CartBulkDiscountPolicy.sixPercentMinQuantity}-499kg giảm 6% • ≥ ${CartBulkDiscountPolicy.eightPercentMinQuantity}kg giảm 8%';
 
 class HomeScreen extends StatefulWidget {
   final ProductRepository? productRepository;
@@ -234,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Mua t\u1eeb 50kg gi\u1ea3m 5% \u2022 T\u1eeb 100kg gi\u1ea3m 10%',
+                                  _bulkPromotionPolicyText,
                                   style: theme.textTheme.bodyLarge?.copyWith(
                                     color: AppColors.textPrimary,
                                     height: 1.45,
@@ -557,7 +563,7 @@ class _PromoBanner extends StatelessWidget {
                 ),
                 SizedBox(height: compact ? 6 : 10),
                 Text(
-                  'Flash Sale Th\u00e1ng 5',
+                  _bulkPromotionTitle,
                   style:
                       (compact
                               ? theme.textTheme.titleMedium
@@ -569,7 +575,7 @@ class _PromoBanner extends StatelessWidget {
                 ),
                 SizedBox(height: compact ? 4 : 6),
                 Text(
-                  'Gi\u1ea3m \u0111\u1ebfn 10% cho \u0111\u01a1n h\u00e0ng t\u1eeb 100kg',
+                  _bulkPromotionBannerText,
                   style:
                       (compact
                               ? theme.textTheme.bodyMedium

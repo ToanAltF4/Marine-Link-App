@@ -118,14 +118,14 @@ void main() {
     testWidgets('applies bulk discount when selected quantity reaches tier', (
       tester,
     ) async {
-      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 5);
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 50);
 
       await tester.pumpWidget(_wrap(cartCubit: cartCubit));
 
-      expect(cartCubit.state.subtotalAmount, 400000);
-      expect(find.text('Khuyến mãi mua nhiều (5%):'), findsOneWidget);
-      expect(find.text('-20.000\u0111'), findsOneWidget);
-      expect(find.text('380.000\u0111'), findsOneWidget);
+      expect(cartCubit.state.subtotalAmount, 4000000);
+      expect(find.text('Khuyến mãi mua nhiều (2%):'), findsOneWidget);
+      expect(find.text('-80.000\u0111'), findsOneWidget);
+      expect(find.text('3.920.000\u0111'), findsOneWidget);
     });
 
     testWidgets('toggles selected item out of totals and checkout state', (
@@ -200,7 +200,7 @@ ProductDetail _product() {
     basePrice: 100000,
     unit: 'kg',
     minOrderQuantity: 2,
-    stockQuantity: 10,
+    stockQuantity: 600,
     status: ProductStatus.active,
     priceTiers: [
       PriceTier(

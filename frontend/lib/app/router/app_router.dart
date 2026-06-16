@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/assets/app_assets.dart';
@@ -10,6 +11,8 @@ import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/staff_chat_management_screen.dart';
 import '../../features/auth/domain/user.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -96,7 +99,6 @@ class AppRouter {
   );
 
   static final GoRouter router = GoRouter(
-    initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     navigatorKey: rootNavigatorKey,
     routes: [
@@ -374,36 +376,50 @@ class _SplashPageState extends State<_SplashPage> {
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) context.go(AppRoutes.login);
+      if (!mounted) return;
+      _routeForAuthState(context, context.read<AuthBloc>().state);
     });
+  }
+
+  void _routeForAuthState(BuildContext context, AuthState state) {
+    if (state is AuthAuthenticated) {
+      AppRouter._routeByRole(context, state.user);
+      return;
+    }
+    if (state is AuthUnauthenticated || state is AuthFailure) {
+      context.go(AppRoutes.login);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.colorScheme.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(AppAssets.appIcon, width: 104, height: 104),
-            const SizedBox(height: 18),
-            Text(
-              'MarineLink',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                color: theme.colorScheme.onPrimary,
-                fontWeight: FontWeight.w900,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: _routeForAuthState,
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.primary,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(AppAssets.appIcon, width: 104, height: 104),
+              const SizedBox(height: 18),
+              Text(
+                'MarineLink',
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'B2B Seafood Ordering',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+              const SizedBox(height: 12),
+              Text(
+                'B2B Seafood Ordering',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
