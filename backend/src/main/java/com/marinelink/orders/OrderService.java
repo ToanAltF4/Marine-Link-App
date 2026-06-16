@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -57,21 +58,29 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
+    private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
+    private final OrderPaymentNotificationService orderPaymentNotificationService;
 
     @Transactional
     public OrderSummaryResponse createFromActiveCart(UUID userPublicId, OrderCreateRequest request) {
         User user = userRepository.findActiveByPublicId(userPublicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nguoi dung"));
         OrderSource orderSource = resolveOrderSource(userPublicId, request);
+        PaymentMethod paymentMethod = resolvePaymentMethod(request.paymentMethod());
+        PaymentStatus initialPaymentStatus = request.paymentMethod() == PaymentMethodCode.VNPAY
+                || request.paymentMethod() == PaymentMethodCode.BANK_TRANSFER
+                ? PaymentStatus.PENDING
+                : PaymentStatus.UNPAID;
 
         Order order = Order.builder()
                 .publicId(UUID.randomUUID())
                 .orderCode(nextOrderCode())
                 .user(user)
                 .status(OrderStatus.PENDING)
-                .paymentMethod(request.paymentMethod())
-                .paymentStatus(PaymentStatus.UNPAID)
+                .paymentMethod(paymentMethod)
+                .paymentStatus(initialPaymentStatus)
                 .receiverName(request.receiverName().trim())
                 .receiverPhone(request.receiverPhone().trim())
                 .shippingAddress(request.shippingAddress().trim())
@@ -81,12 +90,14 @@ public class OrderService {
                 .build();
 
         BigDecimal subtotal = BigDecimal.ZERO;
+        int totalQuantity = 0;
         for (OrderLine line : orderSource.lines()) {
             Product product = line.product();
             validateItem(product, line.quantity());
 
             BigDecimal unitPrice = resolveUnitPrice(product, line.priceTier(), line.quantity());
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(line.quantity()));
+            totalQuantity += line.quantity();
             OrderItem orderItem = OrderItem.builder()
                     .publicId(UUID.randomUUID())
                     .order(order)
@@ -101,8 +112,13 @@ public class OrderService {
             subtotal = subtotal.add(lineTotal);
         }
 
+        BigDecimal discountRate = BulkDiscountPolicy.rateForQuantity(totalQuantity);
+        BigDecimal discountAmount = discountRate.signum() == 0
+                ? BigDecimal.ZERO
+                : subtotal.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
         order.setSubtotalAmount(subtotal);
-        order.setTotalAmount(subtotal.add(order.getShippingFee()).subtract(order.getDiscountAmount()));
+        order.setDiscountAmount(discountAmount);
+        order.setTotalAmount(subtotal.add(order.getShippingFee()).subtract(discountAmount));
         order.getStatusHistory().add(OrderStatusHistory.builder()
                 .publicId(UUID.randomUUID())
                 .order(order)
@@ -113,20 +129,42 @@ public class OrderService {
                 .build());
 
         Order saved = orderRepository.save(order);
-        if (orderSource.cartIdToClear() != null) {
+        paymentRepository.save(Payment.builder()
+                .publicId(UUID.randomUUID())
+                .order(saved)
+                .paymentMethod(paymentMethod)
+                .amount(saved.getTotalAmount())
+                .status(initialPaymentStatus)
+                .txnRef(newPaymentReference())
+                .build());
+        if (orderSource.cartIdToClear() != null && request.paymentMethod() == PaymentMethodCode.COD) {
             cartItemRepository.deleteSelectedByCartId(orderSource.cartIdToClear());
         }
 
-        // Send notification to user
-        notificationService.createNotification(
-                user,
-                NotificationType.ORDER,
-                "Đơn hàng mới đã được tạo",
-                "Đơn hàng " + saved.getOrderCode() + " đang chờ được xác nhận.",
-                saved
-        );
+        if (request.paymentMethod() == PaymentMethodCode.COD) {
+            orderPaymentNotificationService.notifyOrderWaitingForApproval(saved);
+        }
 
         return OrderSummaryResponse.from(saved);
+    }
+
+    private PaymentMethod resolvePaymentMethod(PaymentMethodCode paymentMethodCode) {
+        return paymentMethodRepository.findByCodeAndActiveTrue(paymentMethodCode)
+                .orElseThrow(() -> new BusinessException("Phuong thuc thanh toan khong hop le",
+                        HttpStatus.UNPROCESSABLE_ENTITY));
+    }
+
+    private String newPaymentReference() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private boolean requiresPaymentBeforeApproval(Order order) {
+        if (order.getPaymentMethod() == null) {
+            return false;
+        }
+        PaymentMethodCode methodCode = order.getPaymentMethod().getCode();
+        return (methodCode == PaymentMethodCode.BANK_TRANSFER || methodCode == PaymentMethodCode.VNPAY)
+                && order.getPaymentStatus() != PaymentStatus.PAID;
     }
 
     private OrderSource resolveOrderSource(UUID userPublicId, OrderCreateRequest request) {
@@ -229,6 +267,9 @@ public class OrderService {
         if (!ALLOWED_TRANSITIONS.getOrDefault(currentStatus, List.of()).contains(targetStatus)) {
             throw new BusinessException("Khong the chuyen trang thai don hang", HttpStatus.UNPROCESSABLE_ENTITY);
         }
+        if (targetStatus == OrderStatus.CONFIRMED && requiresPaymentBeforeApproval(order)) {
+            throw new BusinessException("Don hang chua thanh toan", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
 
         order.setStatus(targetStatus);
         Instant now = Instant.now();
@@ -277,6 +318,38 @@ public class OrderService {
         );
 
         return OrderStatusUpdateResponse.from(savedOrder);
+    }
+
+    @Transactional
+    public OrderPaymentStatusUpdateResponse updatePaymentStatus(
+            UUID changedByPublicId,
+            UUID orderPublicId,
+            PaymentStatus targetStatus,
+            String note) {
+        userRepository.findActiveByPublicId(changedByPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nguoi dung"));
+        Order order = orderRepository.findDetailByPublicId(orderPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay don hang"));
+        PaymentStatus previousStatus = order.getPaymentStatus();
+
+        order.setPaymentStatus(targetStatus);
+        Payment payment = paymentRepository.findTopByOrderOrderByCreatedAtDesc(order)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay giao dich thanh toan"));
+        payment.setStatus(targetStatus);
+        if (targetStatus == PaymentStatus.PAID && payment.getPaidAt() == null) {
+            payment.setPaidAt(Instant.now());
+        }
+        if (note != null && !note.isBlank()) {
+            payment.setRawResponse("Manual payment update: " + note.trim());
+        }
+        paymentRepository.save(payment);
+
+        Order savedOrder = orderRepository.save(order);
+        if (previousStatus != PaymentStatus.PAID && targetStatus == PaymentStatus.PAID) {
+            clearSelectedCartItems(savedOrder);
+            orderPaymentNotificationService.notifyPaidOrderWaitingForApproval(savedOrder);
+        }
+        return OrderPaymentStatusUpdateResponse.from(savedOrder);
     }
 
     private void validateItem(Product product, int quantity) {
@@ -354,6 +427,16 @@ public class OrderService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void clearSelectedCartItems(Order order) {
+        if (order.getUser() == null || order.getUser().getPublicId() == null) {
+            return;
+        }
+        var cart = cartRepository.findActiveByUserPublicId(order.getUser().getPublicId());
+        if (cart != null) {
+            cart.ifPresent(activeCart -> cartItemRepository.deleteSelectedByCartId(activeCart.getId()));
+        }
     }
 
     private record OrderSource(List<OrderLine> lines, Long cartIdToClear) {

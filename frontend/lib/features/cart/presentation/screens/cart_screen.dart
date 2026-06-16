@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -9,6 +10,7 @@ import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../domain/cart.dart';
+import '../../domain/cart_pricing.dart';
 import '../cubit/cart_cubit.dart';
 
 const _cartSurfaceRadius = 18.0;
@@ -23,11 +25,25 @@ const _cartSurfaceShadow = BoxShadow(
   offset: Offset(0, 8),
 );
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   final VoidCallback? onCheckout;
   final VoidCallback? onContinueShopping;
 
   const CartScreen({super.key, this.onCheckout, this.onContinueShopping});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CartCubit>().loadCart();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,16 +81,16 @@ class CartScreen extends StatelessWidget {
   }
 
   void _goProducts(BuildContext context) {
-    if (onContinueShopping != null) {
-      onContinueShopping!();
+    if (widget.onContinueShopping != null) {
+      widget.onContinueShopping!();
       return;
     }
     BuyerNavigation.push(context, AppRoutes.productList);
   }
 
   void _goCheckout(BuildContext context) {
-    if (onCheckout != null) {
-      onCheckout!();
+    if (widget.onCheckout != null) {
+      widget.onCheckout!();
       return;
     }
     GoRouter.maybeOf(context)?.go(AppRoutes.checkout);
@@ -420,10 +436,42 @@ class _ProductImageFallback extends StatelessWidget {
   }
 }
 
-class _QuantityStepper extends StatelessWidget {
+class _QuantityStepper extends StatefulWidget {
   final CartItem item;
 
   const _QuantityStepper({required this.item});
+
+  @override
+  State<_QuantityStepper> createState() => _QuantityStepperState();
+}
+
+class _QuantityStepperState extends State<_QuantityStepper> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  CartItem get item => widget.item;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: '${item.quantity}');
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuantityStepper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (item.quantity != oldWidget.item.quantity && !_focusNode.hasFocus) {
+      _controller.text = '${item.quantity}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -448,15 +496,33 @@ class _QuantityStepper extends StatelessWidget {
                   : null,
             ),
             SizedBox(
-              width: 38,
-              child: Text(
-                '${item.quantity}',
+              width: 42,
+              child: TextField(
+                key: Key('cartQuantityInput-${item.productId}'),
+                controller: _controller,
+                focusNode: _focusNode,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
                 textAlign: TextAlign.center,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.primaryDark,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onSubmitted: _commit,
+                onEditingComplete: () => _commit(_controller.text),
               ),
             ),
             _QuantityButton(
@@ -471,6 +537,20 @@ class _QuantityStepper extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _commit(String value) {
+    final parsed = int.tryParse(value);
+    final next = (parsed ?? item.minOrderQuantity).clamp(
+      item.minOrderQuantity,
+      item.stockQuantity,
+    );
+    _controller.text = '$next';
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+    context.read<CartCubit>().updateQuantity(item.productId, next);
+    _focusNode.unfocus();
   }
 }
 
@@ -512,9 +592,7 @@ class _OrderSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subtotal = state.subtotalAmount;
-    final discount = subtotal > 0 ? subtotal * 0.05 : 0.0;
-    final total = subtotal - discount;
+    final pricing = CartPricingSummary.fromCart(state.cart);
 
     return _CartCard(
       child: Column(
@@ -539,14 +617,20 @@ class _OrderSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           _SummaryRow(
             label: 'T\u1ea1m t\u00ednh:',
-            value: _formatVnd(subtotal),
+            value: _formatVnd(pricing.subtotalAmount),
             valueColor: AppColors.primaryDark,
           ),
           const SizedBox(height: 12),
           _SummaryRow(
-            label: 'Gi\u1ea3m gi\u00e1 s\u1ec9 (5%):',
-            value: '-${_formatVnd(discount)}',
-            valueColor: AppColors.success,
+            label: pricing.hasDiscount
+                ? 'Khuyến mãi mua nhiều (${pricing.discountPercent}%):'
+                : 'Khuyến mãi mua nhiều:',
+            value: pricing.hasDiscount
+                ? '-${_formatVnd(pricing.discountAmount)}'
+                : 'Chưa áp dụng',
+            valueColor: pricing.hasDiscount
+                ? AppColors.success
+                : AppColors.textSecondary,
           ),
           const SizedBox(height: 12),
           const _SummaryRow(
@@ -574,7 +658,7 @@ class _OrderSummaryCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    _formatVnd(total),
+                    _formatVnd(pricing.totalAmount),
                     textAlign: TextAlign.end,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: AppColors.primaryDark,

@@ -25,10 +25,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   static const int _resendCooldownSeconds = 60;
   static const int _otpExpiryMinutes = 10;
 
-  final List<TextEditingController> _controllers =
-      List.generate(_otpLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_otpLength, (_) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(
+    _otpLength,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(
+    _otpLength,
+    (_) => FocusNode(),
+  );
 
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
@@ -145,11 +149,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   void _submit() {
     if (!_isComplete) return;
     context.read<AuthBloc>().add(
-          AuthVerifyEmailRequested(
-            email: widget.email,
-            otpCode: _otpCode,
-          ),
-        );
+      AuthVerifyEmailRequested(email: widget.email, otpCode: _otpCode),
+    );
   }
 
   void _resend() {
@@ -265,8 +266,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF0B3D91)
-                                        .withValues(alpha: 0.30),
+                                    color: const Color(
+                                      0xFF0B3D91,
+                                    ).withValues(alpha: 0.30),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
@@ -285,9 +287,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                           Text(
                             'Xác thực email',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
+                            style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
                                   color: const Color(0xFF052449),
                                   fontWeight: FontWeight.w800,
@@ -297,13 +297,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                           RichText(
                             textAlign: TextAlign.center,
                             text: TextSpan(
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(color: const Color(0xFF4A5160)),
                               children: [
                                 const TextSpan(
-                                    text: 'Nhập mã 6 chữ số đã gửi đến\n'),
+                                  text: 'Nhập mã 6 chữ số đã gửi đến\n',
+                                ),
                                 TextSpan(
                                   text: widget.email,
                                   style: const TextStyle(
@@ -322,11 +321,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                             builder: (context, child) {
                               final shake = _shakeController.isAnimating
                                   ? ((_shakeAnimation.value * 8) *
-                                          (1 -
-                                              (_shakeController.value > 0.5
-                                                  ? 1
-                                                  : 0)) -
-                                      4)
+                                            (1 -
+                                                (_shakeController.value > 0.5
+                                                    ? 1
+                                                    : 0)) -
+                                        4)
                                   : 0.0;
                               return Transform.translate(
                                 offset: Offset(shake, 0),
@@ -358,8 +357,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFF0B3D91).withValues(alpha: 0.08),
+                                  color: const Color(
+                                    0xFF0B3D91,
+                                  ).withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -390,15 +390,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    const Color(0xFFD32F2F).withValues(alpha: 0.08),
+                                color: const Color(
+                                  0xFFD32F2F,
+                                ).withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.warning_amber_rounded,
-                                      size: 15, color: Color(0xFFD32F2F)),
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 15,
+                                    color: Color(0xFFD32F2F),
+                                  ),
                                   SizedBox(width: 5),
                                   Text(
                                     'Mã OTP đã hết hạn — hãy gửi lại',
@@ -419,8 +423,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                               final isLoading = state is AuthLoading;
                               return FilledButton.icon(
                                 key: const Key('otpVerifyButton'),
-                                onPressed:
-                                    (isLoading || !_isComplete) ? null : _submit,
+                                onPressed: (isLoading || !_isComplete)
+                                    ? null
+                                    : _submit,
                                 icon: isLoading
                                     ? const SizedBox.square(
                                         dimension: 18,
@@ -479,8 +484,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                     TextButton.icon(
                       key: const Key('otpBackToRegisterButton'),
                       onPressed: () => context.go('/register'),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 14),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 14,
+                      ),
                       label: const Text('Quay lại đăng ký'),
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF4A5160),
@@ -528,8 +535,8 @@ class _OtpDigitBox extends StatelessWidget {
           color: focusNode.hasFocus
               ? const Color(0xFF0B3D91)
               : isFilled
-                  ? const Color(0xFF0B3D91).withValues(alpha: 0.4)
-                  : const Color(0xFFD8DEF0),
+              ? const Color(0xFF0B3D91).withValues(alpha: 0.4)
+              : const Color(0xFFD8DEF0),
           width: focusNode.hasFocus ? 2.5 : 1.5,
         ),
         boxShadow: focusNode.hasFocus

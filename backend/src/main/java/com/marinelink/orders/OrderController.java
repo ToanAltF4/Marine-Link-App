@@ -82,6 +82,20 @@ public class OrderController {
                 "Order status updated");
     }
 
+    @PutMapping("/{id}/payment-status")
+    public ApiResponse<OrderPaymentStatusUpdateResponse> updatePaymentStatus(
+            Authentication authentication,
+            @PathVariable UUID id,
+            @Valid @RequestBody OrderPaymentStatusUpdateRequest request) {
+        return ApiResponse.ok(
+                orderService.updatePaymentStatus(
+                        currentUserId(authentication),
+                        id,
+                        request.status(),
+                        request.note()),
+                "Order payment status updated");
+    }
+
     private UUID currentUserId(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new BusinessException("Authentication required", HttpStatus.UNAUTHORIZED);

@@ -3,6 +3,7 @@ package com.marinelink.cart;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ResourceNotFoundException;
 import com.marinelink.products.PriceTier;
+import com.marinelink.products.PriceTierResponse;
 import com.marinelink.products.Product;
 import com.marinelink.products.ProductRepository;
 import com.marinelink.products.ProductStatus;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +29,19 @@ public class CartService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public CartResponse getActiveCart(UUID userPublicId) {
+        return cartRepository.findActiveByUserPublicId(userPublicId)
+                .map(this::toResponse)
+                .orElseGet(() -> new CartResponse(
+                        null,
+                        true,
+                        List.of(),
+                        0,
+                        0,
+                        BigDecimal.ZERO));
+    }
 
     @Transactional
     public CartResponse syncCart(UUID userPublicId, CartSyncRequest request) {
@@ -94,23 +110,41 @@ public class CartService {
     }
 
     private CartResponse toResponse(Cart cart) {
-        List<CartItemResponse> items = cart.getItems()
+        List<MergedCartItem> mergedItems = mergedItems(cart.getItems());
+        List<CartItemResponse> items = mergedItems
                 .stream()
-                .map(item -> CartItemResponse.from(item, unitPrice(item)))
+                .map(item -> new CartItemResponse(
+                        item.product().getPublicId(),
+                        item.product().getName(),
+                        item.product().getImageUrl(),
+                        item.product().getUnit(),
+                        item.quantity(),
+                        item.selected(),
+                        item.priceTier() != null ? item.priceTier().getPublicId() : null,
+                        item.product().getBasePrice(),
+                        unitPrice(item.product(), item.priceTier()),
+                        unitPrice(item.product(), item.priceTier()).multiply(BigDecimal.valueOf(item.quantity())),
+                        item.product().getMinOrderQuantity(),
+                        item.product().getStockQuantity(),
+                        item.product().getPriceTiers()
+                                .stream()
+                                .sorted(Comparator.comparingInt(PriceTier::getMinQuantity))
+                                .map(PriceTierResponse::from)
+                                .toList()))
                 .toList();
-        int totalItemCount = cart.getItems()
+        int totalItemCount = mergedItems
                 .stream()
-                .mapToInt(CartItem::getQuantity)
+                .mapToInt(MergedCartItem::quantity)
                 .sum();
-        int totalSelectedItemCount = cart.getItems()
+        int totalSelectedItemCount = mergedItems
                 .stream()
-                .filter(CartItem::isSelected)
-                .mapToInt(CartItem::getQuantity)
+                .filter(MergedCartItem::selected)
+                .mapToInt(MergedCartItem::quantity)
                 .sum();
-        BigDecimal subtotalAmount = cart.getItems()
+        BigDecimal subtotalAmount = mergedItems
                 .stream()
-                .filter(CartItem::isSelected)
-                .map(item -> unitPrice(item).multiply(BigDecimal.valueOf(item.getQuantity())))
+                .filter(MergedCartItem::selected)
+                .map(item -> unitPrice(item.product(), item.priceTier()).multiply(BigDecimal.valueOf(item.quantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new CartResponse(
@@ -122,9 +156,29 @@ public class CartService {
                 subtotalAmount);
     }
 
-    private BigDecimal unitPrice(CartItem item) {
-        return item.getPriceTier() != null
-                ? item.getPriceTier().getUnitPrice()
-                : item.getProduct().getBasePrice();
+    private List<MergedCartItem> mergedItems(List<CartItem> items) {
+        Map<UUID, MergedCartItem> merged = new LinkedHashMap<>();
+        for (CartItem item : items) {
+            Product product = item.getProduct();
+            MergedCartItem existing = merged.get(product.getPublicId());
+            int quantity = item.getQuantity();
+            boolean selected = item.isSelected();
+            if (existing != null) {
+                quantity += existing.quantity();
+                selected = selected || existing.selected();
+            }
+            PriceTier tier = resolvePriceTier(product, quantity);
+            merged.put(
+                    product.getPublicId(),
+                    new MergedCartItem(product, tier, quantity, selected));
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private BigDecimal unitPrice(Product product, PriceTier tier) {
+        return tier != null ? tier.getUnitPrice() : product.getBasePrice();
+    }
+
+    private record MergedCartItem(Product product, PriceTier priceTier, int quantity, boolean selected) {
     }
 }

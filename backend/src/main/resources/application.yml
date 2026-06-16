@@ -76,6 +76,12 @@ app:
     # Comma-separated OAuth client IDs accepted as the ID token audience
     # (Web client ID used as serverClientId for Android/iOS google_sign_in).
     client-ids: ${GOOGLE_CLIENT_IDS:}
+  vnpay:
+    tmn-code: ${VNPAY_TMN_CODE:${VNP_TMN_CODE:}}
+    hash-secret: ${VNPAY_HASH_SECRET:${VNP_HASH_SECRET:}}
+    payment-url: ${VNPAY_PAYMENT_URL:${VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}}
+    return-url: ${VNPAY_RETURN_URL:${VNP_RETURN_URL:http://localhost:8080/api/payments/vnpay/return}}
+    frontend-return-url: ${VNPAY_FRONTEND_RETURN_URL:marinelink:///payments/vnpay/result}
 
 springdoc:
   api-docs:

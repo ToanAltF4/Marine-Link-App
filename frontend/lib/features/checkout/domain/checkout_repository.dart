@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../core/api/api_response.dart';
 import '../../cart/domain/cart.dart';
 import '../../orders/domain/order.dart';
+import 'vnpay_payment.dart';
 
 class CheckoutRequest extends Equatable {
   final String receiverName;
@@ -36,15 +37,22 @@ class CheckoutResult extends Equatable {
   final Order order;
   final double subtotalAmount;
   final int totalItemCount;
+  final VnpayPaymentUrl? vnpayPayment;
 
   const CheckoutResult({
     required this.order,
     required this.subtotalAmount,
     required this.totalItemCount,
+    this.vnpayPayment,
   });
 
   @override
-  List<Object?> get props => [order, subtotalAmount, totalItemCount];
+  List<Object?> get props => [
+    order,
+    subtotalAmount,
+    totalItemCount,
+    vnpayPayment,
+  ];
 }
 
 abstract class CheckoutRepository {

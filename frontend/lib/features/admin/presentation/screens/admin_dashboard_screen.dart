@@ -55,7 +55,8 @@ class _AdminDashboardView extends StatelessWidget {
                       );
                     case AdminDashboardStatus.failure:
                       return _DashboardError(
-                        message: state.errorMessage ??
+                        message:
+                            state.errorMessage ??
                             'Không tải được dữ liệu tổng quan.',
                         onRetry: () =>
                             context.read<AdminDashboardCubit>().load(),

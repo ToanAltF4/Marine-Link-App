@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marinelink/features/cart/domain/cart_repository.dart';
 import 'package:marinelink/features/cart/domain/cart.dart';
 import 'package:marinelink/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:marinelink/features/products/domain/product.dart';
@@ -225,7 +226,57 @@ void main() {
       },
       expect: () => <CartState>[],
     );
+
+    blocTest<CartCubit, CartState>(
+      'loads active remote cart into local state',
+      build: () => CartCubit(
+        cartRepository: _FakeCartRepository(
+          loadCartResult: Cart(items: [_cartItem(productId: 'prod-remote')]),
+        ),
+      ),
+      act: (cubit) => cubit.loadCart(),
+      expect: () => [
+        isA<CartState>()
+            .having((state) => state.cart.items.length, 'item length', 1)
+            .having(
+              (state) => state.cart.items.single.productId,
+              'productId',
+              'prod-remote',
+            ),
+      ],
+    );
+
+    test(
+      'syncs after adding an item when a remote cart repository is provided',
+      () async {
+        final repository = _FakeCartRepository();
+        final cubit = CartCubit(cartRepository: repository);
+
+        cubit.addItem(product: _product(), quantity: 2);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(repository.syncedCart?.items, hasLength(1));
+        expect(repository.syncedCart?.items.single.productId, 'prod-001');
+        expect(repository.syncedCart?.items.single.quantity, 2);
+      },
+    );
   });
+}
+
+class _FakeCartRepository implements CartRepository {
+  final Cart loadCartResult;
+  Cart? syncedCart;
+
+  _FakeCartRepository({this.loadCartResult = const Cart()});
+
+  @override
+  Future<Cart> loadCart() async => loadCartResult;
+
+  @override
+  Future<Cart> syncCart(Cart cart) async {
+    syncedCart = cart;
+    return cart;
+  }
 }
 
 CartItem _cartItem({

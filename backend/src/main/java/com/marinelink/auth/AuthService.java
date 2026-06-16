@@ -183,7 +183,7 @@ public class AuthService {
                         "Không tìm thấy tài khoản đang chờ xác thực với email này",
                         HttpStatus.NOT_FOUND));
 
-        user.setStatus(UserStatus.ACTIVE);
+        user.setStatus(UserStatus.PENDING_APPROVAL);
         userRepository.save(user);
     }
 

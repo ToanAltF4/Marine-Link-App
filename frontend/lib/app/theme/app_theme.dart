@@ -3,31 +3,32 @@ import 'package:flutter/material.dart';
 /// MarineLink design system based on `stitch_marinelink_b2b_seafood_ui_kit`.
 abstract class AppTheme {
   static ThemeData light() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: AppColors.primary,
-      onPrimary: Colors.white,
-      primaryContainer: AppColors.primaryDark,
-      onPrimaryContainer: const Color(0xFFD4E3FF),
-      secondary: AppColors.secondary,
-      onSecondary: Colors.white,
-      secondaryContainer: AppColors.surfaceSky,
-      onSecondaryContainer: AppColors.primaryDark,
-      surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
-      onSurfaceVariant: AppColors.textSecondary,
-      outline: AppColors.border,
-      outlineVariant: const Color(0xFFE2E8F0),
-      error: AppColors.error,
-      onError: Colors.white,
-      surfaceContainerLowest: AppColors.surface,
-      surfaceContainerLow: const Color(0xFFF7FBFF),
-      surfaceContainer: const Color(0xFFEAF6FF),
-      surfaceContainerHigh: const Color(0xFFE3F0FB),
-      surfaceContainerHighest: const Color(0xFFDCEBF9),
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          primaryContainer: AppColors.primaryDark,
+          onPrimaryContainer: const Color(0xFFD4E3FF),
+          secondary: AppColors.secondary,
+          onSecondary: Colors.white,
+          secondaryContainer: AppColors.surfaceSky,
+          onSecondaryContainer: AppColors.primaryDark,
+          surface: AppColors.surface,
+          onSurface: AppColors.textPrimary,
+          onSurfaceVariant: AppColors.textSecondary,
+          outline: AppColors.border,
+          outlineVariant: const Color(0xFFE2E8F0),
+          error: AppColors.error,
+          onError: Colors.white,
+          surfaceContainerLowest: AppColors.surface,
+          surfaceContainerLow: const Color(0xFFF7FBFF),
+          surfaceContainer: const Color(0xFFEAF6FF),
+          surfaceContainerHigh: const Color(0xFFE3F0FB),
+          surfaceContainerHighest: const Color(0xFFDCEBF9),
+        );
 
     final baseTextTheme = ThemeData(
       useMaterial3: true,
@@ -111,7 +112,10 @@ abstract class AppTheme {
         filled: true,
         fillColor: Colors.white,
         hintStyle: const TextStyle(color: AppColors.textSecondary),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),

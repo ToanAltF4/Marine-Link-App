@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import '../../../cart/domain/cart_pricing.dart';
 import '../../domain/product.dart';
 import 'product_detail_card.dart';
 import 'product_detail_price_formatter.dart';
@@ -197,6 +198,10 @@ class _WholesaleRow {
 }
 
 List<_WholesaleRow> _buildWholesaleRows(ProductDetail detail) {
+  if (detail.unit == 'kg') {
+    return _buildBulkDiscountPolicyRows(detail);
+  }
+
   final sortedTiers = [...detail.priceTiers]
     ..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
   final showContactRow = _shouldShowContactRow(detail, sortedTiers);
@@ -241,6 +246,61 @@ List<_WholesaleRow> _buildWholesaleRows(ProductDetail detail) {
   return rows;
 }
 
+List<_WholesaleRow> _buildBulkDiscountPolicyRows(ProductDetail detail) {
+  return [
+    _bulkDiscountPolicyRow(
+      detail: detail,
+      keyId: 'bulk-50-99',
+      minQuantity: CartBulkDiscountPolicy.twoPercentMinQuantity,
+      maxQuantity: CartBulkDiscountPolicy.fourPercentMinQuantity - 1,
+      discountRate: CartBulkDiscountPolicy.twoPercent,
+    ),
+    _bulkDiscountPolicyRow(
+      detail: detail,
+      keyId: 'bulk-100-199',
+      minQuantity: CartBulkDiscountPolicy.fourPercentMinQuantity,
+      maxQuantity: CartBulkDiscountPolicy.sixPercentMinQuantity - 1,
+      discountRate: CartBulkDiscountPolicy.fourPercent,
+    ),
+    _bulkDiscountPolicyRow(
+      detail: detail,
+      keyId: 'bulk-200-499',
+      minQuantity: CartBulkDiscountPolicy.sixPercentMinQuantity,
+      maxQuantity: CartBulkDiscountPolicy.eightPercentMinQuantity - 1,
+      discountRate: CartBulkDiscountPolicy.sixPercent,
+    ),
+    _bulkDiscountPolicyRow(
+      detail: detail,
+      keyId: 'bulk-500-plus',
+      minQuantity: CartBulkDiscountPolicy.eightPercentMinQuantity,
+      maxQuantity: null,
+      discountRate: CartBulkDiscountPolicy.eightPercent,
+    ),
+  ];
+}
+
+_WholesaleRow _bulkDiscountPolicyRow({
+  required ProductDetail detail,
+  required String keyId,
+  required int minQuantity,
+  required int? maxQuantity,
+  required double discountRate,
+}) {
+  return _WholesaleRow(
+    keyId: keyId,
+    rangeLabel: _formatQuantityRange(
+      minQuantity: minQuantity,
+      maxQuantity: maxQuantity,
+      unit: detail.unit,
+    ),
+    priceLabel: productDetailUnitPrice(
+      detail.basePrice * (1 - discountRate),
+      detail.unit,
+    ),
+    discountLabel: _formatPolicyDiscount(discountRate),
+  );
+}
+
 bool _shouldShowContactRow(ProductDetail detail, List<PriceTier> sortedTiers) {
   if (detail.unit != 'kg' || sortedTiers.isEmpty) {
     return false;
@@ -269,4 +329,8 @@ String? _formatDiscount(num basePrice, num unitPrice) {
     return null;
   }
   return '(-$discount%)';
+}
+
+String _formatPolicyDiscount(double discountRate) {
+  return '(-${(discountRate * 100).round()}%)';
 }

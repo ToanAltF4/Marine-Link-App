@@ -256,7 +256,11 @@ class _Header extends StatelessWidget {
                     ),
                   ),
                 ),
-                OrderStatusBadge(status: order.status.apiValue),
+                OrderStatusBadge(
+                  status: order.status.apiValue,
+                  paymentMethod: order.paymentMethod.apiValue,
+                  paymentStatus: order.paymentStatus,
+                ),
               ],
             ),
             const SizedBox(height: 6),
@@ -346,7 +350,7 @@ class _AdminStatusControlState extends State<_AdminStatusControl> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Trạng thái hiện tại: ${widget.order.status.displayLabel}',
+                'Trạng thái hiện tại: ${widget.order.displayStatusLabel}',
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),

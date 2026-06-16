@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/product.dart';
@@ -12,6 +13,7 @@ class OrderQuantityCard extends StatelessWidget {
   final bool outOfStock;
   final VoidCallback? onDecrease;
   final VoidCallback? onIncrease;
+  final ValueChanged<int> onQuantityChanged;
   final VoidCallback? onAddToCart;
 
   const OrderQuantityCard({
@@ -22,6 +24,7 @@ class OrderQuantityCard extends StatelessWidget {
     required this.outOfStock,
     required this.onDecrease,
     required this.onIncrease,
+    required this.onQuantityChanged,
     required this.onAddToCart,
   });
 
@@ -47,12 +50,13 @@ class OrderQuantityCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    Text(
-                      '$quantity ${detail.unit}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    _QuantityInput(
+                      key: const Key('productDetailQuantityInput'),
+                      quantity: quantity,
+                      unit: detail.unit,
+                      minQuantity: detail.minOrderQuantity,
+                      maxQuantity: detail.stockQuantity,
+                      onQuantityChanged: onQuantityChanged,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -85,6 +89,129 @@ class OrderQuantityCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _QuantityInput extends StatefulWidget {
+  final int quantity;
+  final String unit;
+  final int minQuantity;
+  final int maxQuantity;
+  final ValueChanged<int> onQuantityChanged;
+
+  const _QuantityInput({
+    super.key,
+    required this.quantity,
+    required this.unit,
+    required this.minQuantity,
+    required this.maxQuantity,
+    required this.onQuantityChanged,
+  });
+
+  @override
+  State<_QuantityInput> createState() => _QuantityInputState();
+}
+
+class _QuantityInputState extends State<_QuantityInput> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: '${widget.quantity}');
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuantityInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.quantity != oldWidget.quantity && !_focusNode.hasFocus) {
+      _controller.text = '${widget.quantity}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final quantityStyle = theme.textTheme.titleLarge?.copyWith(
+      color: AppColors.primaryDark,
+      fontWeight: FontWeight.w800,
+    );
+
+    return DecoratedBox(
+      key: const Key('productDetailQuantityInputFrame'),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD6E6F2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 58,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                textAlign: TextAlign.right,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: quantityStyle,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onSubmitted: _commit,
+                onEditingComplete: () => _commit(_controller.text),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              widget.unit,
+              style: quantityStyle?.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _commit(String value) {
+    final parsed = int.tryParse(value);
+    final next = (parsed ?? widget.minQuantity).clamp(
+      widget.minQuantity,
+      widget.maxQuantity,
+    );
+    _controller.text = '$next';
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+    widget.onQuantityChanged(next);
+    _focusNode.unfocus();
   }
 }
 

@@ -19,6 +19,44 @@ void main() {
   tearDown(AppBackExitController.resetForTesting);
 
   group('HomeScreen', () {
+    testWidgets('shows bulk discount promotion copy matching cart policy', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: HomeScreen(productRepository: ProductMockRepository()),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Ưu đãi mua nhiều'), findsOneWidget);
+      expect(
+        find.text('Giảm đến 8% cho đơn hàng từ 500kg'),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text(
+          '50-99kg giảm 2% • 100-199kg giảm 4% • 200-499kg giảm 6% • ≥ 500kg giảm 8%',
+        ),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.text(
+          '50-99kg giảm 2% • 100-199kg giảm 4% • 200-499kg giảm 6% • ≥ 500kg giảm 8%',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('5 sản phẩm'), findsNothing);
+      expect(find.textContaining('10 sản phẩm'), findsNothing);
+    });
+
     testWidgets('hides menu icon and keeps featured cards compact on phones', (
       tester,
     ) async {
@@ -546,7 +584,9 @@ void main() {
       expect(navRect.bottom, closeTo(844, 1));
     });
 
-    testWidgets('shows price tiers and adds item to cart', (tester) async {
+    testWidgets('shows fixed wholesale discount tiers and adds item to cart', (
+      tester,
+    ) async {
       final cartCubit = CartCubit();
 
       await tester.pumpWidget(
@@ -565,11 +605,25 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       await tester.scrollUntilVisible(
-        find.byKey(const Key('priceTier-tier-001-a')),
+        find.byKey(const Key('priceTier-bulk-50-99')),
         250,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.byKey(const Key('priceTier-tier-001-a')), findsOneWidget);
+      expect(find.byKey(const Key('priceTier-bulk-50-99')), findsOneWidget);
+      expect(find.text('50 - 99 kg'), findsOneWidget);
+      expect(find.text('441.000\u0111/kg'), findsOneWidget);
+      expect(find.text('(-2%)'), findsOneWidget);
+      expect(find.text('100 - 199 kg'), findsOneWidget);
+      expect(find.text('432.000\u0111/kg'), findsOneWidget);
+      expect(find.text('(-4%)'), findsOneWidget);
+      expect(find.text('200 - 499 kg'), findsOneWidget);
+      expect(find.text('423.000\u0111/kg'), findsOneWidget);
+      expect(find.text('(-6%)'), findsOneWidget);
+      expect(find.text('500 kg+'), findsOneWidget);
+      expect(find.text('414.000\u0111/kg'), findsOneWidget);
+      expect(find.text('(-8%)'), findsOneWidget);
+      expect(find.text('(-5%)'), findsNothing);
+      expect(find.text('(-10%)'), findsNothing);
 
       await tester.scrollUntilVisible(
         find.byKey(const Key('addToCartButton')),
@@ -581,6 +635,57 @@ void main() {
 
       expect(cartCubit.state.cart.items, hasLength(1));
       expect(cartCubit.state.cart.items.single.productId, 'prod-001');
+    });
+
+    testWidgets('allows entering quantity before adding to cart', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: cartCubit,
+            child: ProductDetailScreen(
+              productId: 'prod-001',
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('productDetailQuantityInput')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final quantityTextField = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('productDetailQuantityInput')),
+          matching: find.byType(TextField),
+        ),
+      );
+      final quantityFrame = tester.widget<DecoratedBox>(
+        find.byKey(const Key('productDetailQuantityInputFrame')),
+      );
+      final frameDecoration = quantityFrame.decoration as BoxDecoration;
+      expect(frameDecoration.border, isA<Border>());
+      expect(quantityTextField.decoration?.border, InputBorder.none);
+      expect(quantityTextField.decoration?.focusedBorder, InputBorder.none);
+      await tester.enterText(
+        find.byKey(const Key('productDetailQuantityInput')),
+        '50',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('addToCartButton')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
     });
   });
 }

@@ -383,10 +383,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
               child: Material(
                 type: MaterialType.transparency,
                 child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    overscroll: false,
-                    scrollbars: false,
-                  ),
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(overscroll: false, scrollbars: false),
                   child: SingleChildScrollView(
                     key: const Key('productScrollableFilters'),
                     clipBehavior: Clip.hardEdge,

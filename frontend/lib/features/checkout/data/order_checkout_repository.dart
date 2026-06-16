@@ -3,19 +3,24 @@
 import '../../../core/api/api_response.dart';
 import '../../../core/api/api_client.dart';
 import '../../cart/domain/cart.dart';
+import '../../orders/domain/order.dart';
 import '../../orders/domain/order_repository.dart';
 import 'cart_sync_repository.dart';
 import '../domain/checkout_repository.dart';
+import '../domain/vnpay_payment.dart';
 
 class OrderCheckoutRepository implements CheckoutRepository {
   final OrderRepository _orderRepository;
   final CartSyncRepository? _cartSyncRepository;
+  final VnpayPaymentRepository? _vnpayPaymentRepository;
 
   const OrderCheckoutRepository({
     required OrderRepository orderRepository,
     CartSyncRepository? cartSyncRepository,
+    VnpayPaymentRepository? vnpayPaymentRepository,
   }) : _orderRepository = orderRepository,
-       _cartSyncRepository = cartSyncRepository;
+       _cartSyncRepository = cartSyncRepository,
+       _vnpayPaymentRepository = vnpayPaymentRepository;
 
   @override
   Future<ApiResponse<CheckoutResult>> createOrder({
@@ -74,6 +79,11 @@ class OrderCheckoutRepository implements CheckoutRepository {
         );
       }
 
+      final vnpayPayment = await _createVnpayPaymentIfNeeded(
+        request: request,
+        orderId: response.data!.id,
+      );
+
       return ApiResponse<CheckoutResult>(
         success: true,
         message: response.message,
@@ -81,6 +91,7 @@ class OrderCheckoutRepository implements CheckoutRepository {
           order: response.data!,
           subtotalAmount: activeCart.subtotalAmount,
           totalItemCount: activeCart.totalSelectedItemCount,
+          vnpayPayment: vnpayPayment,
         ),
       );
     } on ApiException catch (exception) {
@@ -89,6 +100,20 @@ class OrderCheckoutRepository implements CheckoutRepository {
         message: exception.message,
       );
     }
+  }
+
+  Future<VnpayPaymentUrl?> _createVnpayPaymentIfNeeded({
+    required CheckoutRequest request,
+    required String orderId,
+  }) async {
+    if (request.paymentMethod != PaymentMethod.vnpay) {
+      return null;
+    }
+    final repository = _vnpayPaymentRepository;
+    if (repository == null) {
+      return null;
+    }
+    return repository.createPaymentUrl(orderId: orderId);
   }
 
   Future<void> _trySyncCart(

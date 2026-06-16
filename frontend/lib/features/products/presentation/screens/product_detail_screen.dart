@@ -99,6 +99,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     BuyerNavigation.push(context, AppRoutes.notifications),
                 onDecrease: _decreaseQuantity,
                 onIncrease: _increaseQuantity,
+                onQuantityChanged: _setQuantity,
                 onAddToCart: _addToCart,
               );
             },
@@ -126,6 +127,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     setState(() => _quantity += 1);
   }
 
+  void _setQuantity(ProductDetail detail, int quantity) {
+    final clamped = quantity.clamp(
+      detail.minOrderQuantity,
+      detail.stockQuantity,
+    );
+    setState(() => _quantity = clamped);
+  }
+
   void _addToCart(ProductDetail detail) {
     context.read<CartCubit>().addItem(product: detail, quantity: _quantity);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -146,6 +155,7 @@ class _ProductDetailContent extends StatelessWidget {
   final VoidCallback onNotifications;
   final void Function(ProductDetail detail) onDecrease;
   final void Function(ProductDetail detail) onIncrease;
+  final void Function(ProductDetail detail, int quantity) onQuantityChanged;
   final void Function(ProductDetail detail) onAddToCart;
 
   const _ProductDetailContent({
@@ -155,6 +165,7 @@ class _ProductDetailContent extends StatelessWidget {
     required this.onNotifications,
     required this.onDecrease,
     required this.onIncrease,
+    required this.onQuantityChanged,
     required this.onAddToCart,
   });
 
@@ -195,6 +206,8 @@ class _ProductDetailContent extends StatelessWidget {
                       onIncrease: quantity < detail.stockQuantity
                           ? () => onIncrease(detail)
                           : null,
+                      onQuantityChanged: (value) =>
+                          onQuantityChanged(detail, value),
                       onAddToCart: outOfStock
                           ? null
                           : () => onAddToCart(detail),

@@ -210,10 +210,7 @@ void main() {
         ),
       ),
       wait: const Duration(milliseconds: 600),
-      expect: () => [
-        const AuthLoading(),
-        const AuthPasswordChangeSuccess(),
-      ],
+      expect: () => [const AuthLoading(), const AuthPasswordChangeSuccess()],
     );
 
     blocTest<AuthBloc, AuthState>(
@@ -226,10 +223,7 @@ void main() {
         ),
       ),
       wait: const Duration(milliseconds: 600),
-      expect: () => [
-        const AuthLoading(),
-        isA<AuthFailure>(),
-      ],
+      expect: () => [const AuthLoading(), isA<AuthFailure>()],
     );
   });
 }

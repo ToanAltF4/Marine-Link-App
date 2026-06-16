@@ -361,7 +361,11 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                OrderStatusBadge(status: order.status.apiValue),
+                OrderStatusBadge(
+                  status: order.status.apiValue,
+                  paymentMethod: order.paymentMethod.apiValue,
+                  paymentStatus: order.paymentStatus,
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -378,7 +382,7 @@ class _OrderCard extends StatelessWidget {
                 Expanded(
                   child: _Metric(
                     label: 'Trạng thái',
-                    value: order.status.displayLabel,
+                    value: order.displayStatusLabel,
                   ),
                 ),
                 const SizedBox(width: 12),

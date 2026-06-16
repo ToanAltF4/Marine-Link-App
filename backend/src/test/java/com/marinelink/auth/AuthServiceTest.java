@@ -194,6 +194,46 @@ class AuthServiceTest {
                 .hasMessageContaining("không chính xác");
     }
 
+    @Test
+    void verifyEmailTransitionsUserToPendingApprovalOnValidOtp() {
+        String email = "pending@example.com";
+        String otp = "123456";
+        VerifyEmailRequest request = new VerifyEmailRequest(email, otp);
+
+        User user = User.builder()
+                .id(12L)
+                .email(email)
+                .status(UserStatus.PENDING_VERIFICATION)
+                .role(Role.builder().code("USER").build())
+                .build();
+
+        when(userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(user));
+
+        authService.verifyEmail(request);
+
+        verify(emailOtpService).verifyOtp(email, otp);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_APPROVAL);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void verifyEmailThrowsWhenPendingUserNotFound() {
+        String email = "notfound@example.com";
+        String otp = "123456";
+        VerifyEmailRequest request = new VerifyEmailRequest(email, otp);
+
+        when(userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.verifyEmail(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Không tìm thấy tài khoản đang chờ xác thực");
+
+        verify(emailOtpService).verifyOtp(email, otp);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
     private User activeUser(String roleCode) {
         Role role = Role.builder().id(1L).code(roleCode).name(roleCode).build();
         return User.builder()

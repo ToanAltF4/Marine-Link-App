@@ -270,6 +270,7 @@ class OrderMockRepository implements OrderRepository {
     final code =
         'ML-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${(_orders.length + 1).toString().padLeft(4, '0')}';
 
+    final parsedPaymentMethod = PaymentMethod.fromString(paymentMethod);
     final newOrder = OrderDetail(
       id: 'order-mock-${_orders.length + 1}',
       orderCode: code,
@@ -279,8 +280,12 @@ class OrderMockRepository implements OrderRepository {
       receiverName: receiverName,
       receiverPhone: receiverPhone,
       shippingAddress: shippingAddress,
-      paymentMethod: PaymentMethod.fromString(paymentMethod),
-      paymentStatus: 'UNPAID',
+      paymentMethod: parsedPaymentMethod,
+      paymentStatus:
+          parsedPaymentMethod == PaymentMethod.bankTransfer ||
+              parsedPaymentMethod == PaymentMethod.vnpay
+          ? 'PENDING'
+          : 'UNPAID',
       subtotalAmount: 0,
       shippingFee: 0,
       discountAmount: 0,
@@ -328,6 +333,12 @@ class OrderMockRepository implements OrderRepository {
         success: false,
         message:
             'Không thể chuyển trạng thái từ ${order.status.displayLabel} sang ${targetStatus.displayLabel}',
+      );
+    }
+    if (targetStatus == OrderStatus.confirmed && order.isWaitingForPayment) {
+      return const ApiResponse<void>(
+        success: false,
+        message: 'Đơn hàng chưa thanh toán',
       );
     }
 

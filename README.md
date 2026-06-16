@@ -54,19 +54,76 @@ Legacy mock product thumbnails live in `frontend/assets/products/` and are used 
 
 ## Running Against Spring Boot
 
-Mock repositories remain the default for fast local widget tests. To test with real backend/Supabase data:
+Mock repositories remain the default for fast local widget tests. To test with real backend/Supabase data, run the backend first, then run Flutter with `USE_REMOTE_REPOSITORIES=true`.
+
+Use PowerShell for the commands below. Start backend and frontend in separate terminals. Restart the backend after changing any `VNPAY_*` environment variable.
+
+### Backend
+
+Run this when the frontend is Flutter web on the Windows host:
 
 ```powershell
-# Terminal 1
 cd backend
+$env:VNPAY_RETURN_URL="http://localhost:8080/api/payments/vnpay/return"
+$env:VNPAY_FRONTEND_RETURN_URL="http://localhost:3000/payments/vnpay/result"
 mvn spring-boot:run
-
-# Terminal 2
-cd frontend
-flutter run --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
-For Windows desktop/browser testing, change `API_BASE_URL` to `http://localhost:8080`.
+Run this when the frontend is an Android emulator:
+
+```powershell
+cd backend
+$env:VNPAY_RETURN_URL="http://10.0.2.2:8080/api/payments/vnpay/return"
+$env:VNPAY_FRONTEND_RETURN_URL="marinelink:///payments/vnpay/result"
+mvn spring-boot:run
+```
+
+`VNPAY_RETURN_URL` is the backend callback that VNPAY returns to. `VNPAY_FRONTEND_RETURN_URL` is the fallback route shown to the user after the backend validates the payment. On web, the backend also signs the active browser origin and returns to that same frontend route.
+
+### Frontend Web / Chrome
+
+Use this mode when running Flutter in Chrome on the Windows host:
+
+```powershell
+cd frontend
+flutter run -d chrome --web-port=3000 --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://localhost:8080
+```
+
+Optional Google Sign-In web run:
+
+```powershell
+cd frontend
+flutter run -d chrome --web-port=3000 --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://localhost:8080 --dart-define=GOOGLE_SERVER_CLIENT_ID=119084335388-i2er0h3h7b7jnret4ul95n6aa50a8if2.apps.googleusercontent.com
+```
+
+Keep `--web-port=3000` unless you also change `VNPAY_FRONTEND_RETURN_URL`. VNPAY opens in the same browser tab and should return to:
+
+```text
+http://localhost:3000/payments/vnpay/result
+```
+
+### Frontend Android App / Emulator
+
+Use this mode when running Flutter on an Android emulator. Android cannot call the host backend through `localhost`, so use `10.0.2.2`:
+
+```powershell
+cd frontend
+flutter devices
+flutter run -d emulator-5554 --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+Optional Google Sign-In Android run:
+
+```powershell
+cd frontend
+flutter run -d emulator-5554 --dart-define=USE_REMOTE_REPOSITORIES=true --dart-define=API_BASE_URL=http://10.0.2.2:8080 --dart-define=GOOGLE_SERVER_CLIENT_ID=119084335388-i2er0h3h7b7jnret4ul95n6aa50a8if2.apps.googleusercontent.com
+```
+
+If your emulator id is different, replace `emulator-5554` with the id shown by `flutter devices`. After VNPAY returns to the backend, Android should open the app deep link:
+
+```text
+marinelink:///payments/vnpay/result
+```
 
 ### Smoke Test API Thật
 

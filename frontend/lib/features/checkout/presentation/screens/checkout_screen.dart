@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -11,11 +15,13 @@ import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../cart/domain/cart.dart';
+import '../../../cart/domain/cart_pricing.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
 import '../../../orders/domain/order.dart';
 import '../../domain/checkout_repository.dart';
 import '../../domain/shipping_address.dart';
 import '../../domain/shipping_address_repository.dart';
+import '../../domain/vnpay_payment.dart';
 import '../bloc/checkout_bloc.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -243,6 +249,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   icon: Icon(Icons.account_balance_outlined),
                   label: Text('Chuy\u1ec3n kho\u1ea3n'),
                 ),
+                ButtonSegment<PaymentMethod>(
+                  value: PaymentMethod.vnpay,
+                  icon: Icon(Icons.qr_code_rounded),
+                  label: Text('VNPAY'),
+                ),
               ],
               selected: {_paymentMethod},
               onSelectionChanged: isSubmitting
@@ -293,7 +304,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _handleCheckoutState(BuildContext context, CheckoutState state) {
     if (state is CheckoutSuccess) {
-      context.read<CartCubit>().clearCart();
+      if (!state.result.order.isWaitingForPayment) {
+        context.read<CartCubit>().clearCart();
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -678,6 +691,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final selectedItems = cart.selectedItems;
+    final pricing = CartPricingSummary.fromCart(cart);
 
     return _CheckoutCard(
       child: Column(
@@ -695,7 +709,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${cart.totalSelectedItemCount} m\u1ee5c',
+                _checkoutTotalQuantityLabel(cart),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w700,
@@ -710,11 +724,34 @@ class _CheckoutSummaryCard extends StatelessWidget {
               const Divider(height: 1, color: Color(0xFFF0F4F8)),
           ],
           const Divider(height: 22, color: Color(0xFFEAF0F5)),
+          _CheckoutMetricRow(
+            label: 'Tạm tính',
+            value: MoneyFormatter.format(pricing.subtotalAmount),
+          ),
+          const SizedBox(height: 8),
+          _CheckoutMetricRow(
+            label: pricing.hasDiscount
+                ? 'Khuyến mãi mua nhiều (${pricing.discountPercent}%)'
+                : 'Khuyến mãi mua nhiều',
+            value: pricing.hasDiscount
+                ? '-${MoneyFormatter.format(pricing.discountAmount)}'
+                : 'Chưa áp dụng',
+            valueColor: pricing.hasDiscount
+                ? AppColors.success
+                : AppColors.textSecondary,
+          ),
+          const SizedBox(height: 8),
+          const _CheckoutMetricRow(
+            label: 'Phí vận chuyển',
+            value: 'Miễn phí',
+            valueColor: AppColors.success,
+          ),
+          const Divider(height: 22, color: Color(0xFFEAF0F5)),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'T\u1ed5ng t\u1ea1m t\u00ednh',
+                  'Tổng cộng',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: AppColors.primaryDark,
                     fontWeight: FontWeight.w800,
@@ -726,7 +763,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    MoneyFormatter.format(cart.subtotalAmount),
+                    MoneyFormatter.format(pricing.totalAmount),
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w900,
@@ -740,6 +777,18 @@ class _CheckoutSummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _checkoutTotalQuantityLabel(Cart cart) {
+  final selectedItems = cart.selectedItems;
+  final quantity = cart.totalSelectedItemCount;
+  if (selectedItems.isEmpty) {
+    return '0 kg';
+  }
+
+  final unit = selectedItems.first.unit;
+  final sameUnit = selectedItems.every((item) => item.unit == unit);
+  return sameUnit ? '$quantity $unit' : '$quantity m\u1ee5c';
 }
 
 class _CheckoutItemRow extends StatelessWidget {
@@ -809,14 +858,93 @@ class _CheckoutItemRow extends StatelessWidget {
   }
 }
 
-class _CheckoutSuccessView extends StatelessWidget {
+class _CheckoutMetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _CheckoutMetricRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor ?? AppColors.primaryDark,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CheckoutSuccessView extends StatefulWidget {
   final CheckoutResult result;
 
   const _CheckoutSuccessView({required this.result});
 
   @override
+  State<_CheckoutSuccessView> createState() => _CheckoutSuccessViewState();
+}
+
+class _CheckoutSuccessViewState extends State<_CheckoutSuccessView> {
+  static const _paymentTimeout = Duration(minutes: 15);
+
+  Timer? _timer;
+  Duration _remaining = _paymentTimeout;
+  bool _isCancelling = false;
+  bool _cancelled = false;
+
+  CheckoutResult get result => widget.result;
+
+  @override
+  void initState() {
+    super.initState();
+    if (result.vnpayPayment != null) {
+      _timer = Timer.periodic(const Duration(seconds: 1), _handleTick);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final payment = result.vnpayPayment;
+    final isVnpay = payment != null;
+    final fallbackDiscountRate = CartBulkDiscountPolicy.rateForQuantity(
+      result.totalItemCount,
+    );
+    final fallbackTotal =
+        result.subtotalAmount - (result.subtotalAmount * fallbackDiscountRate);
+    final totalAmount = result.order.totalAmount > 0
+        ? result.order.totalAmount
+        : fallbackTotal;
 
     return Center(
       child: SingleChildScrollView(
@@ -835,7 +963,9 @@ class _CheckoutSuccessView extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  '\u0110\u1eb7t h\u00e0ng th\u00e0nh c\u00f4ng',
+                  isVnpay
+                      ? 'Ch\u1edd thanh to\u00e1n VNPAY'
+                      : '\u0110\u1eb7t h\u00e0ng th\u00e0nh c\u00f4ng',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: AppColors.primaryDark,
@@ -851,16 +981,92 @@ class _CheckoutSuccessView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
+                if (isVnpay) ...[
+                  _VnpayCountdownPanel(
+                    remaining: _remaining,
+                    cancelled: _cancelled,
+                  ),
+                  const SizedBox(height: 18),
+                ],
                 _SuccessMetricRow(
                   label: 'S\u1ed1 l\u01b0\u1ee3ng',
                   value: '${result.totalItemCount} m\u1ee5c',
                 ),
                 const Divider(height: 18, color: Color(0xFFEAF0F5)),
                 _SuccessMetricRow(
-                  label: 'T\u1ed5ng t\u1ea1m t\u00ednh',
-                  value: MoneyFormatter.format(result.subtotalAmount),
+                  label: 'Tổng thanh toán',
+                  value: MoneyFormatter.format(totalAmount),
                 ),
                 const SizedBox(height: 20),
+                if (payment != null && !_cancelled) ...[
+                  FilledButton.icon(
+                    key: const Key('checkoutOpenVnpayButton'),
+                    onPressed: () => _openVnpay(context),
+                    icon: const Icon(Icons.qr_code_2_rounded),
+                    label: const Text('Thanh to\u00e1n qua VNPAY'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    key: const Key('checkoutBackToCartButton'),
+                    onPressed: () => context.go(AppRoutes.cart),
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    label: const Text('Quay lại giỏ hàng'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    key: const Key('checkoutCancelVnpayButton'),
+                    onPressed: _isCancelling
+                        ? null
+                        : () => _cancelPayment(auto: false),
+                    icon: _isCancelling
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.close_rounded),
+                    label: Text(
+                      _isCancelling
+                          ? '\u0110ang h\u1ee7y'
+                          : 'H\u1ee7y thanh to\u00e1n',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (payment != null && _cancelled) ...[
+                  OutlinedButton.icon(
+                    key: const Key('checkoutBackToCartButton'),
+                    onPressed: () => context.go(AppRoutes.cart),
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    label: const Text('Về giỏ hàng'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 FilledButton.icon(
                   key: const Key('checkoutViewOrdersButton'),
                   onPressed: () =>
@@ -890,6 +1096,134 @@ class _CheckoutSuccessView extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _handleTick(Timer timer) {
+    if (_cancelled) {
+      timer.cancel();
+      return;
+    }
+    final next = _remaining - const Duration(seconds: 1);
+    if (next <= Duration.zero) {
+      setState(() => _remaining = Duration.zero);
+      timer.cancel();
+      _cancelPayment(auto: true);
+      return;
+    }
+    setState(() => _remaining = next);
+  }
+
+  Future<void> _openVnpay(BuildContext context) async {
+    final payment = result.vnpayPayment;
+    if (payment == null) return;
+    final uri = Uri.tryParse(payment.paymentUrl);
+    if (uri == null ||
+        !await launchUrl(
+          uri,
+          mode: kIsWeb
+              ? LaunchMode.platformDefault
+              : LaunchMode.externalApplication,
+          webOnlyWindowName: kIsWeb ? '_self' : null,
+        )) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kh\u00f4ng th\u1ec3 m\u1edf VNPAY')),
+        );
+      }
+    }
+  }
+
+  Future<void> _cancelPayment({required bool auto}) async {
+    final payment = result.vnpayPayment;
+    if (payment == null || _isCancelling || _cancelled) return;
+    setState(() => _isCancelling = true);
+    try {
+      final repository = sl<VnpayPaymentRepository>();
+      await repository.cancelPayment(orderId: payment.orderId);
+      _timer?.cancel();
+      if (!mounted) return;
+      setState(() {
+        _cancelled = true;
+        _isCancelling = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            auto
+                ? 'Thanh to\u00e1n VNPAY \u0111\u00e3 t\u1ef1 h\u1ee7y do qu\u00e1 h\u1ea1n'
+                : '\u0110\u00e3 h\u1ee7y thanh to\u00e1n VNPAY',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isCancelling = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            auto
+                ? 'Kh\u00f4ng th\u1ec3 t\u1ef1 h\u1ee7y thanh to\u00e1n'
+                : 'Kh\u00f4ng th\u1ec3 h\u1ee7y thanh to\u00e1n',
+          ),
+        ),
+      );
+    }
+  }
+}
+
+class _VnpayCountdownPanel extends StatelessWidget {
+  final Duration remaining;
+  final bool cancelled;
+
+  const _VnpayCountdownPanel({
+    required this.remaining,
+    required this.cancelled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final minutes = remaining.inMinutes
+        .remainder(60)
+        .toString()
+        .padLeft(2, '0');
+    final seconds = remaining.inSeconds
+        .remainder(60)
+        .toString()
+        .padLeft(2, '0');
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cancelled ? const Color(0xFFFFF1F2) : const Color(0xFFEAF6FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: cancelled ? const Color(0xFFFECACA) : const Color(0xFFCFE8FA),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Icon(
+              cancelled ? Icons.cancel_outlined : Icons.timer_outlined,
+              color: cancelled ? AppColors.error : AppColors.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                cancelled
+                    ? 'Thanh to\u00e1n VNPAY \u0111\u00e3 h\u1ee7y'
+                    : 'Ho\u00e0n t\u1ea5t thanh to\u00e1n trong $minutes:$seconds',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
