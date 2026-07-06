@@ -624,10 +624,10 @@ class ProductMockRepository implements ProductRepository {
   List<Product> _sortProducts(List<Product> products, String? sort) {
     final sorted = List<Product>.from(products);
     switch (sort) {
-      case 'price':
+      case 'price_asc':
         sorted.sort((left, right) => left.basePrice.compareTo(right.basePrice));
         break;
-      case '-price':
+      case 'price_desc':
         sorted.sort((left, right) => right.basePrice.compareTo(left.basePrice));
         break;
       case 'name':
