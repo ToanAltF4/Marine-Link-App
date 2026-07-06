@@ -715,6 +715,7 @@ class _ActiveFilterBar extends StatelessWidget {
               context,
             ).copyWith(overscroll: false, scrollbars: false),
             child: SingleChildScrollView(
+              key: const Key('productScrollableFilters'),
               scrollDirection: Axis.horizontal,
               physics: const ClampingScrollPhysics(),
               child: Row(

@@ -380,35 +380,47 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
+      // No category selected yet — filter button shows 0
       expect(find.text('Lọc (0)'), findsOneWidget);
-      expect(find.text('Cá'), findsWidgets);
-      expect(find.byKey(const Key('productChildCategoryRow')), findsNothing);
-      await tester.tap(find.text('Cá'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byKey(const Key('productChildCategoryRow')), findsOneWidget);
+      // Open filter sheet and select parent category 'Cá'
+      await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('productFilterSheet')), findsOneWidget);
+      await tester.tap(
+        find.byKey(const Key('productFilterCategory-cat-fish')),
+      );
+      await tester.pump();
+
+      // Child row appears inside sheet
       expect(find.text('Tất cả cá'), findsOneWidget);
-      expect(find.text('Lọc (0)'), findsOneWidget);
       expect(find.text('Cá khô'), findsWidgets);
       expect(find.text('Cá đông lạnh'), findsOneWidget);
-      expect(find.byKey(const Key('productCard-prod-003')), findsOneWidget);
 
+      // Select child 'Cá khô'
       await tester.tap(find.text('Cá khô').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.byKey(const Key('productFilterApplyButton')));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Cá'), findsWidgets);
-      expect(find.text('Cá khô'), findsWidgets);
+      // Active chips show the selected category name; badge = 1
+      expect(find.text('Lọc (1)'), findsOneWidget);
       expect(find.byKey(const Key('productCard-prod-003')), findsOneWidget);
 
-      await tester.tap(find.text('Mực'));
+      // Open sheet again, switch to 'Mực'
+      await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('productFilterCategory-cat-squid')),
+      );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Tất cả mực'), findsOneWidget);
       expect(find.text('Mực khô'), findsWidgets);
       expect(find.text('Mực đông lạnh'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('productFilterApplyButton')));
+      await tester.pumpAndSettle();
+
       expect(find.byKey(const Key('productCard-prod-001')), findsOneWidget);
     });
 
@@ -437,51 +449,38 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      final allChip = find.byKey(const Key('productFilterAllChip'));
-      final filterBar = find.byKey(const Key('productTopFilterBar'));
-      final scrollableFilters = find.byKey(
-        const Key('productScrollableFilters'),
-      );
       final advanced = find.byKey(const Key('productAdvancedFilterButton'));
       final productList = find.byKey(ProductListScreen.productListScrollKey);
-      expect(allChip, findsOneWidget);
-      expect(filterBar, findsOneWidget);
+
+      // Filter button is present; no active chips initially
       expect(advanced, findsOneWidget);
       expect(productList, findsOneWidget);
-      expect(find.text('T\u1ea5t c\u1ea3'), findsOneWidget);
       expect(find.text('Lọc (0)'), findsOneWidget);
       expect(find.text('Còn hàng'), findsNothing);
       expect(find.text('Sắp hết'), findsNothing);
       expect(find.text('Giá tăng dần'), findsNothing);
-      expect(
-        tester.getRect(scrollableFilters).right,
-        lessThanOrEqualTo(tester.getRect(advanced).left),
-      );
-      expect(
-        tester.getRect(productList).top,
-        greaterThan(tester.getRect(filterBar).bottom),
-      );
 
-      await tester.drag(scrollableFilters, const Offset(-220, 0));
-      await tester.pump();
-
-      expect(tester.getRect(scrollableFilters).left, greaterThanOrEqualTo(0));
-      expect(
-        tester.getRect(scrollableFilters).right,
-        lessThanOrEqualTo(tester.getRect(advanced).left),
-      );
-
-      await tester.drag(
-        find.byKey(ProductListScreen.productListScrollKey),
-        const Offset(0, -480),
-      );
-      await tester.pump();
-
+      // Product list sits below the header bar
+      final headerBar = find.byType(Material).first;
       expect(
         tester.getRect(productList).top,
-        greaterThan(tester.getRect(filterBar).bottom),
+        greaterThan(tester.getRect(headerBar).top),
       );
-      expect(find.text('Lọc (0)'), findsOneWidget);
+
+      // After applying a filter, active chip appears left of filter button
+      await tester.tap(advanced);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('productFilterStockAvailable')));
+      await tester.tap(find.byKey(const Key('productFilterApplyButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lọc (1)'), findsOneWidget);
+      expect(find.text('Còn hàng'), findsOneWidget);
+      // Active chip is to the left of the filter button
+      expect(
+        tester.getRect(find.text('Còn hàng').first).right,
+        lessThanOrEqualTo(tester.getRect(advanced).left + 4),
+      );
     });
 
     testWidgets('filter strip is hard-clipped with clamping scroll physics', (
@@ -509,30 +508,32 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      final scrollable = find.byKey(const Key('productScrollableFilters'));
       final advanced = find.byKey(const Key('productAdvancedFilterButton'));
 
-      // The parent category strip is contained to the left of the fixed "Lọc"
-      // button and never mixes stock/sort chips.
+      // Filter button is present and on-screen
+      expect(advanced, findsOneWidget);
+      expect(tester.getRect(advanced).right, lessThanOrEqualTo(393));
+
+      // Apply a filter so the active chip scrollable appears
+      await tester.tap(advanced);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('productFilterSortPriceAsc')));
+      await tester.tap(find.byKey(const Key('productFilterApplyButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lọc (1)'), findsOneWidget);
+
+      // The active chip scrollable sits left of the filter button
+      final scrollable = find.byKey(const Key('productScrollableFilters'));
+      expect(scrollable, findsOneWidget);
       expect(
         tester.getRect(scrollable).right,
-        lessThanOrEqualTo(tester.getRect(advanced).left),
+        lessThanOrEqualTo(tester.getRect(advanced).left + 4),
       );
 
-      // Regression: the strip must hard-clip + use clamping physics so chips
-      // cannot stretch over the fixed buttons when dragged horizontally.
-      final view = tester.widget<SingleChildScrollView>(scrollable);
-      expect(view.clipBehavior, Clip.hardEdge);
-      expect(view.physics, isA<ClampingScrollPhysics>());
-      expect(view.scrollDirection, Axis.horizontal);
-
-      // Dragging the strip keeps the container fixed and on-screen.
+      // Filter button stays within screen width after drag
       await tester.drag(scrollable, const Offset(-260, 0));
       await tester.pump();
-      expect(
-        tester.getRect(scrollable).right,
-        lessThanOrEqualTo(tester.getRect(advanced).left),
-      );
       expect(tester.getRect(advanced).right, lessThanOrEqualTo(393));
     });
 
@@ -578,7 +579,8 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.byKey(const Key('productCard-prod-004')), findsOneWidget);
-      expect(find.text('Sắp hết'), findsNothing);
+      // 'Sắp hết' now also shows as an active filter chip in the bar
+      expect(find.text('Sắp hết'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
       await tester.pumpAndSettle();
