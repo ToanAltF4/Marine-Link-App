@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/chat.dart';
 import '../../domain/chat_repository.dart';
 
@@ -43,16 +44,22 @@ class ChatCubit extends Cubit<ChatState> {
         _emitLoadFailure(
           roomId: roomId,
           cachedThread: cachedThread,
-          message:
-              response.message ??
-              'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
+          message: userFacingResponseMessage(
+            response.message,
+            fallback:
+                'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
+          ),
         );
       }
     } on ApiException catch (error) {
       _emitLoadFailure(
         roomId: roomId,
         cachedThread: cachedThread,
-        message: error.message,
+        message: userFacingErrorMessage(
+          error,
+          fallback:
+              'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
+        ),
       );
     } catch (_) {
       _emitLoadFailure(
@@ -95,14 +102,20 @@ class ChatCubit extends Cubit<ChatState> {
         _emitLoadFailure(
           roomId: state.roomId ?? '',
           cachedThread: cachedThread,
-          message: response.message ?? 'Không tải được phòng chat hỗ trợ.',
+          message: userFacingResponseMessage(
+            response.message,
+            fallback: 'Không tải được phòng chat hỗ trợ.',
+          ),
         );
       }
     } on ApiException catch (error) {
       _emitLoadFailure(
         roomId: state.roomId ?? '',
         cachedThread: cachedThread,
-        message: error.message,
+        message: userFacingErrorMessage(
+          error,
+          fallback: 'Không tải được phòng chat hỗ trợ.',
+        ),
       );
     } catch (_) {
       _emitLoadFailure(
@@ -143,16 +156,22 @@ class ChatCubit extends Cubit<ChatState> {
         _emitLoadFailure(
           roomId: state.roomId ?? '',
           cachedThread: cachedThread,
-          message:
-              response.message ??
-              'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+          message: userFacingResponseMessage(
+            response.message,
+            fallback:
+                'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+          ),
         );
       }
     } on ApiException catch (error) {
       _emitLoadFailure(
         roomId: state.roomId ?? '',
         cachedThread: cachedThread,
-        message: error.message,
+        message: userFacingErrorMessage(
+          error,
+          fallback:
+              'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+        ),
       );
     } catch (_) {
       _emitLoadFailure(
@@ -254,9 +273,11 @@ class ChatCubit extends Cubit<ChatState> {
           state.copyWith(
             sending: false,
             canRetrySend: true,
-            sendErrorMessage:
-                response.message ??
-                'Kh\u00f4ng g\u1eedi \u0111\u01b0\u1ee3c tin nh\u1eafn.',
+            sendErrorMessage: userFacingResponseMessage(
+              response.message,
+              fallback:
+                  'Kh\u00f4ng g\u1eedi \u0111\u01b0\u1ee3c tin nh\u1eafn.',
+            ),
           ),
         );
       }
@@ -265,7 +286,10 @@ class ChatCubit extends Cubit<ChatState> {
         state.copyWith(
           sending: false,
           canRetrySend: true,
-          sendErrorMessage: error.message,
+          sendErrorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Kh\u00f4ng g\u1eedi \u0111\u01b0\u1ee3c tin nh\u1eafn.',
+          ),
         ),
       );
     } catch (_) {

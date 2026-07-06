@@ -144,7 +144,21 @@ class ApiClient {
 
   String? _extractMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
-      return data['message'] as String?;
+      final errors = data['errors'];
+      if (errors is List && errors.isNotEmpty) {
+        final firstError = errors.first;
+        if (firstError is Map<String, dynamic>) {
+          final fieldMessage = firstError['message'];
+          if (fieldMessage is String && fieldMessage.trim().isNotEmpty) {
+            return fieldMessage.trim();
+          }
+        }
+      }
+
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message.trim();
+      }
     }
     return null;
   }
@@ -192,5 +206,5 @@ class ApiException implements Exception {
   });
 
   @override
-  String toString() => 'ApiException($type, $statusCode): $message';
+  String toString() => message;
 }

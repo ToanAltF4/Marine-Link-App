@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/notification.dart';
 import '../../domain/notification_repository.dart';
 
@@ -52,8 +53,10 @@ class NotificationCubit extends Cubit<NotificationState> {
         state.copyWith(
           status: NotificationStatus.failure,
           filter: nextFilter,
-          errorMessage:
-              response.message ?? 'Không tải được danh sách thông báo.',
+          errorMessage: userFacingResponseMessage(
+            response.message,
+            fallback: 'Không tải được danh sách thông báo.',
+          ),
         ),
       );
     } on ApiException catch (error) {
@@ -61,7 +64,10 @@ class NotificationCubit extends Cubit<NotificationState> {
         state.copyWith(
           status: NotificationStatus.failure,
           filter: nextFilter,
-          errorMessage: error.message,
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Không tải được danh sách thông báo.',
+          ),
         ),
       );
     } catch (_) {

@@ -3,6 +3,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../cart/domain/cart.dart';
 import '../../domain/checkout_repository.dart';
 
@@ -41,18 +42,23 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       if (!response.success || response.data == null) {
         emit(
           CheckoutFailure(
-            response.message ??
-                'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
+            ),
           ),
         );
         return;
       }
 
       emit(CheckoutSuccess(response.data!));
-    } catch (_) {
+    } catch (error) {
       emit(
-        const CheckoutFailure(
-          'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
+        CheckoutFailure(
+          userFacingErrorMessage(
+            error,
+            fallback: 'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
+          ),
         ),
       );
     }

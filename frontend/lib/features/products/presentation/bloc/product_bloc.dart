@@ -2,6 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 
@@ -41,7 +42,12 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
 
       if (!response.success || response.data == null) {
         emit(
-          ProductListError(response.message ?? 'Lỗi tải danh sách sản phẩm'),
+          ProductListError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Lỗi tải danh sách sản phẩm.',
+            ),
+          ),
         );
         return;
       }
@@ -63,7 +69,11 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         );
       }
     } catch (e) {
-      emit(ProductListError(e.toString()));
+      emit(
+        ProductListError(
+          userFacingErrorMessage(e, fallback: 'Lỗi tải danh sách sản phẩm.'),
+        ),
+      );
     }
   }
 
@@ -78,13 +88,24 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(ProductDetailError(response.message ?? 'Không tìm thấy sản phẩm'));
+        emit(
+          ProductDetailError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Không tìm thấy sản phẩm.',
+            ),
+          ),
+        );
         return;
       }
 
       emit(ProductDetailLoaded(response.data!));
     } catch (e) {
-      emit(ProductDetailError(e.toString()));
+      emit(
+        ProductDetailError(
+          userFacingErrorMessage(e, fallback: 'Không tìm thấy sản phẩm.'),
+        ),
+      );
     }
   }
 

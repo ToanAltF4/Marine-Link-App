@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/admin_product.dart';
 import '../../domain/admin_product_repository.dart';
 
@@ -30,16 +31,21 @@ class AdminProductCubit extends Cubit<AdminProductState> {
         emit(
           state.copyWith(
             status: AdminProductStatusView.failure,
-            errorMessage:
-                response.message ?? 'Không tải được danh sách sản phẩm.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không tải được danh sách sản phẩm.',
+            ),
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           status: AdminProductStatusView.failure,
-          errorMessage: 'Đã xảy ra lỗi khi tải danh sách sản phẩm.',
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Đã xảy ra lỗi khi tải danh sách sản phẩm.',
+          ),
         ),
       );
     }
@@ -86,15 +92,21 @@ class AdminProductCubit extends Cubit<AdminProductState> {
         emit(
           state.copyWith(
             actionStatus: AdminProductActionStatus.failure,
-            errorMessage: response.message ?? 'Không tạo được sản phẩm.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không tạo được sản phẩm.',
+            ),
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           actionStatus: AdminProductActionStatus.failure,
-          errorMessage: 'Đã xảy ra lỗi khi tạo sản phẩm.',
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Đã xảy ra lỗi khi tạo sản phẩm.',
+          ),
         ),
       );
     }
@@ -129,16 +141,22 @@ class AdminProductCubit extends Cubit<AdminProductState> {
         emit(
           state.copyWith(
             actionStatus: AdminProductActionStatus.failure,
-            errorMessage: response.message ?? 'Không cập nhật được sản phẩm.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không cập nhật được sản phẩm.',
+            ),
             clearEditingProductId: true,
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           actionStatus: AdminProductActionStatus.failure,
-          errorMessage: 'Đã xảy ra lỗi khi cập nhật sản phẩm.',
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Đã xảy ra lỗi khi cập nhật sản phẩm.',
+          ),
           clearEditingProductId: true,
         ),
       );
@@ -172,16 +190,22 @@ class AdminProductCubit extends Cubit<AdminProductState> {
         emit(
           state.copyWith(
             actionStatus: AdminProductActionStatus.failure,
-            errorMessage: response.message ?? 'Không xoá được sản phẩm.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không xoá được sản phẩm.',
+            ),
             clearDeletingProductId: true,
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           actionStatus: AdminProductActionStatus.failure,
-          errorMessage: 'Đã xảy ra lỗi khi xoá sản phẩm.',
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Đã xảy ra lỗi khi xoá sản phẩm.',
+          ),
           clearDeletingProductId: true,
         ),
       );

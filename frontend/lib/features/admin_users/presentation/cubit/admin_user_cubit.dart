@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/admin_user.dart';
 import '../../domain/admin_user_repository.dart';
 
@@ -29,16 +30,21 @@ class AdminUserCubit extends Cubit<AdminUserState> {
         emit(
           state.copyWith(
             status: AdminUserStatusView.failure,
-            errorMessage:
-                response.message ?? 'Không tải được danh sách tài khoản.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không tải được danh sách tài khoản.',
+            ),
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           status: AdminUserStatusView.failure,
-          errorMessage: 'Đã xảy ra lỗi khi tải danh sách tài khoản.',
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Đã xảy ra lỗi khi tải danh sách tài khoản.',
+          ),
         ),
       );
     }
@@ -80,16 +86,22 @@ class AdminUserCubit extends Cubit<AdminUserState> {
         emit(
           state.copyWith(
             status: AdminUserStatusView.failure,
-            errorMessage: response.message ?? 'Không duyệt được tài khoản.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không duyệt được tài khoản.',
+            ),
             clearApprovingUserId: true,
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           status: AdminUserStatusView.failure,
-          errorMessage: 'Đã xảy ra lỗi khi duyệt tài khoản.',
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Đã xảy ra lỗi khi duyệt tài khoản.',
+          ),
           clearApprovingUserId: true,
         ),
       );
