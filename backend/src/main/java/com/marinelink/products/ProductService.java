@@ -47,6 +47,7 @@ public class ProductService {
                         cb.like(cb.lower(root.get("name")), keyword),
                         cb.like(cb.lower(root.get("slug")), keyword),
                         cb.like(cb.lower(root.get("origin")), keyword),
+                        cb.like(cb.lower(root.get("shortDescription")), keyword),
                         cb.like(cb.lower(root.get("description")), keyword)));
             }
 

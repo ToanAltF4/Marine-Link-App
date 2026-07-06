@@ -83,6 +83,7 @@ class Product extends Equatable {
   final String id;
   final String name;
   final String slug;
+  final String? shortDescription;
   final String? origin;
   final String? imageUrl; // first/thumbnail image
   final double basePrice; // VND
@@ -97,6 +98,7 @@ class Product extends Equatable {
     required this.id,
     required this.name,
     required this.slug,
+    this.shortDescription,
     this.origin,
     this.imageUrl,
     required this.basePrice,
@@ -111,7 +113,14 @@ class Product extends Equatable {
   bool get isAvailable => status == ProductStatus.active && stockQuantity > 0;
 
   @override
-  List<Object?> get props => [id, name, slug, status, stockQuantity];
+  List<Object?> get props => [
+    id,
+    name,
+    slug,
+    shortDescription,
+    status,
+    stockQuantity,
+  ];
 }
 
 /// Domain entity: ProductDetail — full product with images and price tiers.
@@ -125,6 +134,7 @@ class ProductDetail extends Product {
     required super.id,
     required super.name,
     required super.slug,
+    super.shortDescription,
     super.origin,
     super.imageUrl,
     required super.basePrice,

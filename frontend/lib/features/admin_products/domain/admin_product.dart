@@ -68,6 +68,7 @@ class AdminProductDraft extends Equatable {
   final String categoryId;
   final String name;
   final String slug;
+  final String? shortDescription;
   final String? description;
   final String? origin;
   final double basePrice;
@@ -82,6 +83,7 @@ class AdminProductDraft extends Equatable {
     required this.categoryId,
     required this.name,
     required this.slug,
+    this.shortDescription,
     this.description,
     this.origin,
     required this.basePrice,
@@ -98,6 +100,7 @@ class AdminProductDraft extends Equatable {
     categoryId,
     name,
     slug,
+    shortDescription,
     description,
     origin,
     basePrice,
@@ -114,6 +117,7 @@ class AdminProduct extends Equatable {
   final String id;
   final String name;
   final String slug;
+  final String? shortDescription;
   final String? description;
   final String? origin;
   final String? imageUrl;
@@ -131,6 +135,7 @@ class AdminProduct extends Equatable {
     required this.id,
     required this.name,
     required this.slug,
+    this.shortDescription,
     this.description,
     this.origin,
     this.imageUrl,
@@ -151,6 +156,7 @@ class AdminProduct extends Equatable {
     String? id,
     String? name,
     String? slug,
+    String? shortDescription,
     String? description,
     String? origin,
     String? imageUrl,
@@ -168,6 +174,7 @@ class AdminProduct extends Equatable {
       id: id ?? this.id,
       name: name ?? this.name,
       slug: slug ?? this.slug,
+      shortDescription: shortDescription ?? this.shortDescription,
       description: description ?? this.description,
       origin: origin ?? this.origin,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -188,6 +195,7 @@ class AdminProduct extends Equatable {
       categoryId: categoryId,
       name: name,
       slug: slug,
+      shortDescription: shortDescription,
       description: description,
       origin: origin,
       basePrice: basePrice,
@@ -205,6 +213,7 @@ class AdminProduct extends Equatable {
     id,
     name,
     slug,
+    shortDescription,
     description,
     origin,
     imageUrl,

@@ -81,6 +81,7 @@ class ProductDto {
   final String id;
   final String name;
   final String slug;
+  final String? shortDescription;
   final String? origin;
   final String? imageUrl;
   final double basePrice;
@@ -95,6 +96,7 @@ class ProductDto {
     required this.id,
     required this.name,
     required this.slug,
+    this.shortDescription,
     this.origin,
     this.imageUrl,
     required this.basePrice,
@@ -111,6 +113,7 @@ class ProductDto {
       id: json['id'] as String,
       name: json['name'] as String,
       slug: json['slug'] as String? ?? '',
+      shortDescription: json['shortDescription'] as String?,
       origin: json['origin'] as String?,
       imageUrl: json['imageUrl'] as String?,
       basePrice: (json['basePrice'] as num).toDouble(),
@@ -129,6 +132,7 @@ class ProductDto {
     id: id,
     name: name,
     slug: slug,
+    shortDescription: shortDescription,
     origin: origin,
     imageUrl: imageUrl,
     basePrice: basePrice,
@@ -151,6 +155,7 @@ class ProductDetailDto extends ProductDto {
     required super.id,
     required super.name,
     required super.slug,
+    super.shortDescription,
     super.origin,
     super.imageUrl,
     required super.basePrice,
@@ -171,6 +176,7 @@ class ProductDetailDto extends ProductDto {
       id: base.id,
       name: base.name,
       slug: base.slug,
+      shortDescription: base.shortDescription,
       origin: base.origin,
       imageUrl: base.imageUrl,
       basePrice: base.basePrice,
@@ -199,6 +205,7 @@ class ProductDetailDto extends ProductDto {
     id: id,
     name: name,
     slug: slug,
+    shortDescription: shortDescription,
     origin: origin,
     imageUrl: imageUrl,
     basePrice: basePrice,

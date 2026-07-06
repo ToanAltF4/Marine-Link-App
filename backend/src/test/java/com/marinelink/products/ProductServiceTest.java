@@ -44,6 +44,7 @@ class ProductServiceTest {
 
         assertEquals(1, result.getTotalElements());
         assertEquals("Muc kho loai 1", result.getContent().getFirst().name());
+        assertEquals("Muc kho size lon cho don si", result.getContent().getFirst().shortDescription());
         assertEquals("Muc kho", result.getContent().getFirst().category().name());
         verify(productRepository).findAll(
                 any(Specification.class),
@@ -60,6 +61,7 @@ class ProductServiceTest {
         ProductDetailResponse result = productService.getProductDetail(product.getPublicId());
 
         assertEquals("Muc kho loai 1", result.name());
+        assertEquals("Muc kho size lon cho don si", result.shortDescription());
         assertEquals(1, result.images().size());
         assertEquals(2, result.priceTiers().size());
     }
@@ -86,6 +88,7 @@ class ProductServiceTest {
                 .category(category)
                 .name("Muc kho loai 1")
                 .slug("muc-kho-loai-1")
+                .shortDescription("Muc kho size lon cho don si")
                 .description("Muc kho phuc vu don si")
                 .origin("Ca Mau")
                 .basePrice(new BigDecimal("450000"))

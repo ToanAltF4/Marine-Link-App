@@ -589,6 +589,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
   late final TextEditingController _categoryIdController;
   late final TextEditingController _nameController;
   late final TextEditingController _slugController;
+  late final TextEditingController _shortDescriptionController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _originController;
   late final TextEditingController _basePriceController;
@@ -615,6 +616,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     );
     _nameController = TextEditingController(text: product?.name ?? '');
     _slugController = TextEditingController(text: product?.slug ?? '');
+    _shortDescriptionController = TextEditingController(
+      text: product?.shortDescription ?? '',
+    );
     _descriptionController = TextEditingController(
       text: product?.description ?? '',
     );
@@ -647,6 +651,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     _categoryIdController.dispose();
     _nameController.dispose();
     _slugController.dispose();
+    _shortDescriptionController.dispose();
     _descriptionController.dispose();
     _originController.dispose();
     _basePriceController.dispose();
@@ -755,6 +760,12 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                   label: 'Xuất xứ',
                 ),
                 _TextField(
+                  key: const Key('adminProductShortDescriptionField'),
+                  controller: _shortDescriptionController,
+                  label: 'Mô tả tóm tắt',
+                  maxLines: 2,
+                ),
+                _TextField(
                   key: const Key('adminProductDescriptionField'),
                   controller: _descriptionController,
                   label: 'Mô tả',
@@ -844,6 +855,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       categoryId: _categoryIdController.text.trim(),
       name: _nameController.text.trim(),
       slug: _slugController.text.trim(),
+      shortDescription: _trimToNull(_shortDescriptionController.text),
       description: _trimToNull(_descriptionController.text),
       origin: _trimToNull(_originController.text),
       basePrice: _toDouble(_basePriceController.text),

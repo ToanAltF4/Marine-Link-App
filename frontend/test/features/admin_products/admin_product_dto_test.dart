@@ -8,6 +8,7 @@ void main() {
       'id': 'product-001',
       'name': 'Mực khô loại 1',
       'slug': 'muc-kho-loai-1',
+      'shortDescription': 'Mực size lớn cho đại lý',
       'description': 'Mực khô phục vụ đơn sỉ',
       'origin': 'Cà Mau',
       'imageUrl': 'https://example.com/muc.png',
@@ -38,6 +39,7 @@ void main() {
 
     expect(product.id, 'product-001');
     expect(product.name, 'Mực khô loại 1');
+    expect(product.shortDescription, 'Mực size lớn cho đại lý');
     expect(product.status, AdminProductStatus.active);
     expect(product.isFeatured, isTrue);
     expect(product.category?.name, 'Mực khô');
@@ -106,6 +108,7 @@ void main() {
         categoryId: 'category-001',
         name: 'Mực khô',
         slug: 'muc-kho',
+        shortDescription: 'Tóm tắt',
         description: 'Mô tả',
         origin: 'Cà Mau',
         basePrice: 450000,
@@ -126,6 +129,7 @@ void main() {
     );
 
     expect(json['categoryId'], 'category-001');
+    expect(json['shortDescription'], 'Tóm tắt');
     expect(json['status'], 'ACTIVE');
     expect(json.containsKey('imageUrl'), isFalse);
     expect(json['priceTiers'], hasLength(1));

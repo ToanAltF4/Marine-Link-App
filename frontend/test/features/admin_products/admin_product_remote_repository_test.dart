@@ -12,6 +12,7 @@ const _product = AdminProduct(
   id: 'product-001',
   name: 'Muc kho',
   slug: 'muc-kho',
+  shortDescription: 'Muc size lon cho dai ly',
   basePrice: 450000,
   unit: 'kg',
   minOrderQuantity: 2,
@@ -23,6 +24,7 @@ const _draft = AdminProductDraft(
   categoryId: 'category-001',
   name: 'Muc kho',
   slug: 'muc-kho',
+  shortDescription: 'Muc size lon cho dai ly',
   basePrice: 450000,
   unit: 'kg',
   minOrderQuantity: 2,
@@ -97,6 +99,7 @@ void main() {
               ).captured.single
               as Map<String, dynamic>;
       expect(data['categoryId'], 'category-001');
+      expect(data['shortDescription'], 'Muc size lon cho dai ly');
       expect(data['status'], 'ACTIVE');
       expect(data['isFeatured'], isTrue);
     },
