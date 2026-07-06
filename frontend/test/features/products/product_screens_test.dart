@@ -363,6 +363,41 @@ void main() {
       expect(find.byKey(const Key('productListEmptyState')), findsOneWidget);
     });
 
+    testWidgets('uses parent category filters before child filters', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider(
+            create: (_) => CartCubit(),
+            child: ProductListScreen(
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Cá'), findsOneWidget);
+      await tester.tap(find.text('Cá'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Cá khô'), findsWidgets);
+      expect(find.text('Cá đông lạnh'), findsOneWidget);
+      expect(find.byKey(const Key('productCard-prod-003')), findsOneWidget);
+
+      await tester.tap(find.text('Cá khô').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Cá'), findsOneWidget);
+      expect(find.text('Cá khô'), findsWidgets);
+      expect(find.byKey(const Key('productCard-prod-003')), findsOneWidget);
+    });
+
     testWidgets('keeps the all filter chip visible while filters scroll', (
       tester,
     ) async {

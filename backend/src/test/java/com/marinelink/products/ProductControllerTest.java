@@ -27,6 +27,32 @@ class ProductControllerTest {
             .build();
 
     @Test
+    void listCategoriesReturnsHierarchyEnvelope() throws Exception {
+        UUID fishId = UUID.fromString("550e8400-e29b-41d4-a716-446655460101");
+        UUID driedFishId = UUID.fromString("550e8400-e29b-41d4-a716-446655450103");
+        when(productService.listCategories()).thenReturn(List.of(
+                new CategoryResponse(
+                        fishId,
+                        "Cá",
+                        null,
+                        null,
+                        List.of(new CategoryResponse(
+                                driedFishId,
+                                "Cá khô",
+                                fishId,
+                                "Cá",
+                                List.of())))));
+
+        mockMvc.perform(get("/api/products/categories")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value("Cá"))
+                .andExpect(jsonPath("$.data[0].children[0].name").value("Cá khô"))
+                .andExpect(jsonPath("$.data[0].children[0].parentId").value(fishId.toString()));
+    }
+
+    @Test
     void listProductsReturnsPaginatedEnvelope() throws Exception {
         UUID categoryId = UUID.fromString("550e8400-e29b-41d4-a716-446655440021");
         ProductListItemResponse product = new ProductListItemResponse(

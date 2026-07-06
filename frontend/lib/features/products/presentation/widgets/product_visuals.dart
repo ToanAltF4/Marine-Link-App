@@ -66,8 +66,13 @@ String displayCategoryName(Category? category) {
     'cat-001' => 'M\u1ef1c kh\u00f4',
     'cat-002' => 'T\u00f4m kh\u00f4',
     'cat-003' => 'C\u00e1 kh\u00f4',
-    'cat-004' => 'M\u1ef1c m\u1ed9t n\u1eafng',
+    'cat-004' => 'H\u1ea3i s\u1ea3n kh\u00f4 cao c\u1ea5p',
     'cat-005' => 'N\u01b0\u1edbc m\u1eafm',
+    'cat-fish' => 'C\u00e1',
+    'cat-shrimp' => 'T\u00f4m',
+    'cat-squid' => 'M\u1ef1c',
+    'cat-seafood' => 'H\u1ea3i s\u1ea3n',
+    'cat-seasoning' => 'Gia v\u1ecb',
     _ => _localizedCategoryName(category.name),
   };
 }
@@ -110,8 +115,15 @@ String _localizedCategoryName(String name) {
     'ca kho' => 'C\u00e1 kh\u00f4',
     'ca dong lanh' => 'C\u00e1 \u0111\u00f4ng l\u1ea1nh',
     'muc mot nang' => 'M\u1ef1c m\u1ed9t n\u1eafng',
+    'muc dong lanh' => 'M\u1ef1c \u0111\u00f4ng l\u1ea1nh',
+    'tom dong lanh' => 'T\u00f4m \u0111\u00f4ng l\u1ea1nh',
     'nuoc mam' => 'N\u01b0\u1edbc m\u1eafm',
     'hai san kho cao cap' => 'H\u1ea3i s\u1ea3n kh\u00f4 cao c\u1ea5p',
+    'ca' => 'C\u00e1',
+    'tom' => 'T\u00f4m',
+    'muc' => 'M\u1ef1c',
+    'hai san' => 'H\u1ea3i s\u1ea3n',
+    'gia vi' => 'Gia v\u1ecb',
     _ => name,
   };
 }
@@ -153,6 +165,9 @@ String? categoryPreviewAsset(String? categoryId) {
     'cat-002' => 'assets/products/dried_shrimp.png',
     'cat-003' => 'assets/products/dried_yellowstripe_scad.png',
     'cat-004' => 'assets/products/semi_dried_squid.png',
+    'cat-fish' => 'assets/products/dried_yellowstripe_scad.png',
+    'cat-shrimp' => 'assets/products/dried_shrimp.png',
+    'cat-squid' => 'assets/products/dried_squid.png',
     _ => null,
   };
 }
@@ -164,6 +179,11 @@ IconData categorySymbolIcon(String? categoryId) {
     'cat-003' => Icons.phishing_outlined,
     'cat-004' => Icons.waves_outlined,
     'cat-005' => Icons.water_drop_outlined,
+    'cat-fish' => Icons.phishing_outlined,
+    'cat-shrimp' => Icons.spa_outlined,
+    'cat-squid' => Icons.set_meal_outlined,
+    'cat-seafood' => Icons.waves_outlined,
+    'cat-seasoning' => Icons.water_drop_outlined,
     _ => Icons.inventory_2_outlined,
   };
 }

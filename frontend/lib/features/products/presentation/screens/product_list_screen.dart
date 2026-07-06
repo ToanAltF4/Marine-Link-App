@@ -111,9 +111,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 final baseProducts = state is ProductListLoaded
                     ? state.products
                     : const <Product>[];
-                final variantOptions = _selectedCategoryId == null
-                    ? const <String>[]
-                    : _buildVariantOptions(baseProducts);
+                final selectedCategory = _selectedCategory();
+                final categoryOptions = _buildVisibleCategoryOptions(
+                  selectedCategory,
+                );
+                final variantOptions =
+                    _selectedCategoryId != null && categoryOptions.isEmpty
+                    ? _buildVariantOptions(baseProducts)
+                    : const <String>[];
                 final visibleProducts = state is ProductListLoaded
                     ? _applyLocalFilters(baseProducts)
                     : const <Product>[];
@@ -209,7 +214,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            _buildTopFilters(variantOptions),
+                            _buildTopFilters(categoryOptions, variantOptions),
                           ],
                         ),
                       ),
@@ -226,6 +231,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _loadCategories() async {
+    final response = await _productRepository.getCategories();
+    var categories = response.data ?? const <Category>[];
+
+    if (categories.isEmpty) {
+      categories = await _loadCategoriesFromProducts();
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _categories = categories;
+    });
+  }
+
+  Future<List<Category>> _loadCategoriesFromProducts() async {
     final response = await _productRepository.getProducts(
       page: 0,
       size: 100,
@@ -238,17 +259,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
         uniqueCategories.putIfAbsent(category.id, () => category);
       }
     }
-    final categories = uniqueCategories.values.toList()
+    return uniqueCategories.values.toList()
       ..sort(
         (a, b) => displayCategoryName(a).compareTo(displayCategoryName(b)),
       );
-
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _categories = categories;
-    });
   }
 
   Widget _buildBody(
@@ -346,8 +360,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  Widget _buildTopFilters(List<String> variantOptions) {
-    final scrollingFilters = _buildScrollableTopFilters(variantOptions);
+  Widget _buildTopFilters(
+    List<Category> categoryOptions,
+    List<String> variantOptions,
+  ) {
+    final scrollingFilters = _buildScrollableTopFilters(
+      categoryOptions,
+      variantOptions,
+    );
 
     return KeyedSubtree(
       key: const Key('productTopFilterBar'),
@@ -402,11 +422,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  List<Widget> _buildScrollableTopFilters(List<String> variantOptions) {
+  List<Widget> _buildScrollableTopFilters(
+    List<Category> categoryOptions,
+    List<String> variantOptions,
+  ) {
     final widgets = <Widget>[];
 
-    if (_selectedCategoryId == null) {
-      for (final category in _categories) {
+    if (categoryOptions.isNotEmpty) {
+      for (final category in categoryOptions) {
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -418,7 +441,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
         );
       }
-    } else {
+    } else if (_selectedCategoryId != null) {
       for (final option in variantOptions) {
         widgets.add(
           Padding(
@@ -484,6 +507,26 @@ class _ProductListScreenState extends State<ProductListScreen> {
       }
     }
     return ordered;
+  }
+
+  List<Category> _buildVisibleCategoryOptions(Category? selectedCategory) {
+    if (_selectedCategoryId == null) {
+      return _categories;
+    }
+
+    if (selectedCategory == null) {
+      return const [];
+    }
+
+    if (selectedCategory.children.isNotEmpty) {
+      return [selectedCategory, ...selectedCategory.children];
+    }
+
+    final parent = _findCategoryById(selectedCategory.parentId);
+    if (parent == null) {
+      return const [];
+    }
+    return [parent, ...parent.children];
   }
 
   List<Product> _applyLocalFilters(List<Product> products) {
@@ -633,11 +676,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
 
     for (final category in _categories) {
-      if (category.id == _selectedCategoryId) {
-        return displayCategoryName(category);
-      }
+      final matched = _findCategoryById(_selectedCategoryId, category);
+      if (matched != null) return displayCategoryName(matched);
     }
     return 'Sản phẩm';
+  }
+
+  Category? _selectedCategory() {
+    return _findCategoryById(_selectedCategoryId);
+  }
+
+  Category? _findCategoryById(String? categoryId, [Category? root]) {
+    if (categoryId == null) {
+      return null;
+    }
+
+    final candidates = root == null ? _categories : [root];
+    for (final category in candidates) {
+      final matched = _findCategoryInTree(categoryId, category);
+      if (matched != null) return matched;
+    }
+    return null;
+  }
+
+  Category? _findCategoryInTree(String categoryId, Category category) {
+    if (category.id == categoryId) {
+      return category;
+    }
+    for (final child in category.children) {
+      final matched = _findCategoryInTree(categoryId, child);
+      if (matched != null) return matched;
+    }
+    return null;
   }
 
   void _selectCategory(String categoryId) {
