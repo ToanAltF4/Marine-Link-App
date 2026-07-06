@@ -50,6 +50,7 @@ public class AdminProductService {
                         cb.like(cb.lower(root.get("name")), keyword),
                         cb.like(cb.lower(root.get("slug")), keyword),
                         cb.like(cb.lower(root.get("origin")), keyword),
+                        cb.like(cb.lower(root.get("shortDescription")), keyword),
                         cb.like(cb.lower(root.get("description")), keyword)));
             }
             if (categoryId != null) {
@@ -113,6 +114,7 @@ public class AdminProductService {
         product.setCategory(findCategory(request.categoryId()));
         product.setName(request.name().trim());
         product.setSlug(request.slug().trim());
+        product.setShortDescription(trimToNull(request.shortDescription()));
         product.setDescription(trimToNull(request.description()));
         product.setOrigin(trimToNull(request.origin()));
         product.setBasePrice(request.basePrice());

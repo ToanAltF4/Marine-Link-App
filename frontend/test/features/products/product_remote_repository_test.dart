@@ -22,6 +22,10 @@ void main() {
       );
 
       expect(first.data, same(second.data));
+      expect(
+        first.data?.single.shortDescription,
+        'Muc kho size lon cho don si',
+      );
       expect(apiClient.getCallCount('/api/products'), 1);
     });
 
@@ -108,6 +112,7 @@ class _FakeApiClient implements ApiClient {
           'id': 'prod-001',
           'name': 'Muc kho loai 1',
           'slug': 'muc-kho-loai-1',
+          'shortDescription': 'Muc kho size lon cho don si',
           'basePrice': 100000,
           'unit': 'kg',
           'minOrderQuantity': 2,
@@ -121,6 +126,7 @@ class _FakeApiClient implements ApiClient {
       'id': 'prod-001',
       'name': 'Muc kho loai 1',
       'slug': 'muc-kho-loai-1',
+      'shortDescription': 'Muc kho size lon cho don si',
       'basePrice': 100000,
       'unit': 'kg',
       'minOrderQuantity': 2,

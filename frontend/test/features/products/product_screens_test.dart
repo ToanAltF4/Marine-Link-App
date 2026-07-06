@@ -36,10 +36,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Ưu đãi mua nhiều'), findsOneWidget);
-      expect(
-        find.text('Giảm đến 8% cho đơn hàng từ 500kg'),
-        findsOneWidget,
-      );
+      expect(find.text('Giảm đến 8% cho đơn hàng từ 500kg'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text(
           '50-99kg giảm 2% • 100-199kg giảm 4% • 200-499kg giảm 6% • ≥ 500kg giảm 8%',
@@ -348,6 +345,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.byKey(const Key('productCard-prod-001')), findsOneWidget);
+      expect(
+        find.text(
+          'Size lon, kho deu mau, phu hop dai ly can nguon hang on dinh.',
+        ),
+        findsOneWidget,
+      );
 
       await tester.enterText(
         find.byKey(const Key('productSearchField')),

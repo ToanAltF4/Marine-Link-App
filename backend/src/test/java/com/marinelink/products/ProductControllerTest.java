@@ -33,6 +33,7 @@ class ProductControllerTest {
                 UUID.fromString("550e8400-e29b-41d4-a716-446655440031"),
                 "Muc kho loai 1",
                 "muc-kho-loai-1",
+                "Muc kho size lon cho don si",
                 "Ca Mau",
                 null,
                 new BigDecimal("450000"),
@@ -58,6 +59,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].slug").value("muc-kho-loai-1"))
+                .andExpect(jsonPath("$.data[0].shortDescription").value("Muc kho size lon cho don si"))
                 .andExpect(jsonPath("$.data[0].category.name").value("Muc kho"))
                 .andExpect(jsonPath("$.pagination.page").value(0))
                 .andExpect(jsonPath("$.pagination.totalPages").value(1));
@@ -70,6 +72,7 @@ class ProductControllerTest {
                 productId,
                 "Tom kho size lon",
                 "tom-kho-size-lon",
+                "Tom kho dong goi dep cho dai ly",
                 "Tom kho phuc vu don si",
                 "Bac Lieu",
                 null,
@@ -100,6 +103,7 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value("Tom kho size lon"))
+                .andExpect(jsonPath("$.data.shortDescription").value("Tom kho dong goi dep cho dai ly"))
                 .andExpect(jsonPath("$.data.priceTiers[0].minQuantity").value(1))
                 .andExpect(jsonPath("$.data.images[0].displayOrder").value(0));
     }

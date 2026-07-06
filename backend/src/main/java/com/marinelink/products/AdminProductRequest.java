@@ -20,6 +20,8 @@ public record AdminProductRequest(
         @NotBlank(message = "Slug không được để trống")
         @Size(max = 180, message = "Slug tối đa 180 ký tự")
         String slug,
+        @Size(max = 240, message = "Mô tả tóm tắt tối đa 240 ký tự")
+        String shortDescription,
         @Size(max = 2000, message = "Mô tả tối đa 2000 ký tự")
         String description,
         @Size(max = 120, message = "Xuất xứ tối đa 120 ký tự")

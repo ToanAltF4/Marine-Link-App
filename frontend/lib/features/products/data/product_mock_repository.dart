@@ -13,6 +13,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-001',
       name: 'Muc kho loai 1',
       slug: 'muc-kho-loai-1',
+      shortDescription:
+          'Size lon, kho deu mau, phu hop dai ly can nguon hang on dinh.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 450000,
@@ -27,6 +29,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-002',
       name: 'Tom kho dac biet',
       slug: 'tom-kho-dac-biet',
+      shortDescription:
+          'Tom kho mau dep, tien dong goi combo qua bieu va ke dac san.',
       origin: 'Ca Mau',
       imageUrl: _driedShrimp,
       basePrice: 680000,
@@ -41,6 +45,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-003',
       name: 'Ca chi vang',
       slug: 'ca-chi-vang',
+      shortDescription:
+          'Ca phoi kho vua do, vi dam, de trung bay cho cua hang dac san.',
       origin: 'Phan Thiet',
       imageUrl: _driedFish,
       basePrice: 280000,
@@ -55,6 +61,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-004',
       name: 'Muc mot nang',
       slug: 'muc-mot-nang',
+      shortDescription:
+          'Muc thit day, phu hop nha hang va khach san can dong premium.',
       origin: 'Ca Mau',
       imageUrl: _semiDriedSquid,
       basePrice: 380000,
@@ -69,6 +77,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-005',
       name: 'Muc kho xe soi',
       slug: 'muc-kho-xe-soi',
+      shortDescription:
+          'Dang xe soi tien ban le, hop kenh qua tang va dac san cao cap.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 520000,
@@ -83,6 +93,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-006',
       name: 'Muc kho loai 2',
       slug: 'muc-kho-loai-2',
+      shortDescription:
+          'Gia tot cho kenh phan phoi, chat luong on dinh khi trung bay.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 380000,
@@ -97,6 +109,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-007',
       name: 'Nuoc mam nhi Phu Quoc',
       slug: 'nuoc-mam-nhi-phu-quoc',
+      shortDescription:
+          'Dong chai tien loi cho sieu thi mini va cua hang dac san.',
       origin: 'Phu Quoc',
       imageUrl: null,
       basePrice: 180000,
@@ -114,6 +128,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-001',
       name: 'Muc kho loai 1',
       slug: 'muc-kho-loai-1',
+      shortDescription:
+          'Size lon, kho deu mau, phu hop dai ly can nguon hang on dinh.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 450000,
@@ -158,6 +174,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-002',
       name: 'Tom kho dac biet',
       slug: 'tom-kho-dac-biet',
+      shortDescription:
+          'Tom kho mau dep, tien dong goi combo qua bieu va ke dac san.',
       origin: 'Ca Mau',
       imageUrl: _driedShrimp,
       basePrice: 680000,
@@ -204,6 +222,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-003',
       name: 'Ca chi vang',
       slug: 'ca-chi-vang',
+      shortDescription:
+          'Ca phoi kho vua do, vi dam, de trung bay cho cua hang dac san.',
       origin: 'Phan Thiet',
       imageUrl: _driedFish,
       basePrice: 280000,
@@ -248,6 +268,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-004',
       name: 'Muc mot nang',
       slug: 'muc-mot-nang',
+      shortDescription:
+          'Muc thit day, phu hop nha hang va khach san can dong premium.',
       origin: 'Ca Mau',
       imageUrl: _semiDriedSquid,
       basePrice: 380000,
@@ -294,6 +316,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-005',
       name: 'Muc kho xe soi',
       slug: 'muc-kho-xe-soi',
+      shortDescription:
+          'Dang xe soi tien ban le, hop kenh qua tang va dac san cao cap.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 520000,
@@ -340,6 +364,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-006',
       name: 'Muc kho loai 2',
       slug: 'muc-kho-loai-2',
+      shortDescription:
+          'Gia tot cho kenh phan phoi, chat luong on dinh khi trung bay.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 380000,
@@ -386,6 +412,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-007',
       name: 'Nuoc mam nhi Phu Quoc',
       slug: 'nuoc-mam-nhi-phu-quoc',
+      shortDescription:
+          'Dong chai tien loi cho sieu thi mini va cua hang dac san.',
       origin: 'Phu Quoc',
       imageUrl: null,
       basePrice: 180000,
