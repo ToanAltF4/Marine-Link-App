@@ -55,6 +55,7 @@ void main() {
       find.byKey(const Key('loginPasswordField')),
       'Admin@123',
     );
+    await tester.pump();
     await tester.ensureVisible(find.byKey(const Key('loginSubmitButton')));
     await tester.tap(find.byKey(const Key('loginSubmitButton')));
     await tester.pump();
@@ -153,6 +154,7 @@ void main() {
       find.byKey(const Key('loginPasswordField')),
       'Staff@123',
     );
+    await tester.pump();
     await tester.ensureVisible(find.byKey(const Key('loginSubmitButton')));
     await tester.tap(find.byKey(const Key('loginSubmitButton')));
     await tester.pump();
@@ -283,6 +285,7 @@ void main() {
       find.byKey(const Key('loginPasswordField')),
       'Daily@123',
     );
+    await tester.pump();
     await tester.ensureVisible(find.byKey(const Key('loginSubmitButton')));
     await tester.tap(find.byKey(const Key('loginSubmitButton')));
     await tester.pump();

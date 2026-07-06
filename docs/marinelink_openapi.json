@@ -191,6 +191,68 @@
         }
       }
     },
+    "/api/auth/email-availability": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Check whether an email can be used for registration",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "example": "daily-new@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email availability result"
+          },
+          "400": {
+            "description": "Invalid email format"
+          }
+        }
+      }
+    },
+    "/api/auth/phone-availability": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Check whether a phone number can be used for registration",
+        "parameters": [
+          {
+            "name": "phone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(0|\\+84)[0-9]{9,10}$"
+            },
+            "example": "0912345678"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "example": "daily-new@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone availability result"
+          },
+          "400": {
+            "description": "Invalid phone or email format"
+          }
+        }
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": ["Authentication"],

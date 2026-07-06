@@ -147,6 +147,8 @@ Orders:
 | Method | Endpoint | Role |
 |---|---|---|
 | POST | `/api/auth/login` | Public |
+| GET | `/api/auth/email-availability` | Public |
+| GET | `/api/auth/phone-availability` | Public |
 | POST | `/api/auth/register` | Public |
 | POST | `/api/auth/logout` | Authenticated |
 | GET | `/api/users/me` | Authenticated |
@@ -236,6 +238,65 @@ Validation/business rules:
 - User `DISABLED` không được đăng nhập.
 - User `PENDING_APPROVAL` có thể bị chặn hoặc chỉ vào màn hình chờ duyệt tùy rule triển khai.
 - Login/register nên có rate limit.
+
+### GET `/api/auth/email-availability`
+
+Kiểm tra nhanh email đã thuộc tài khoản đã xác thực hay chưa để frontend hiển thị inline validation. Endpoint này chỉ dùng cho UX; `POST /api/auth/register` vẫn phải validate lại và là nguồn quyết định cuối cùng.
+
+Query:
+
+| Param | Type | Required | Note |
+|---|---|---|---|
+| `email` | string/email | Yes | Email đã trim/lowercase ở backend |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "available": true,
+    "message": "Email có thể sử dụng"
+  }
+}
+```
+
+Validation/business rules:
+
+- Email sai format trả `400` qua validation envelope.
+- Email đang `PENDING_VERIFICATION` vẫn được xem là available vì đăng ký lại sẽ refresh pending account và gửi OTP mới.
+- Email đã xác thực hoặc đang chờ duyệt sau xác thực trả `available: false`.
+
+### GET `/api/auth/phone-availability`
+
+Kiểm tra số điện thoại đã thuộc tài khoản chưa soft delete hay chưa để frontend hiển thị inline validation. Endpoint này chỉ dùng cho UX; `POST /api/auth/register` vẫn validate lại.
+
+Query:
+
+| Param | Type | Required | Note |
+|---|---|---|---|
+| `phone` | string | Yes | Format `0xxxxxxxxx` hoặc `+84xxxxxxxxx` |
+| `email` | string/email | No | Nếu email đang `PENDING_VERIFICATION`, backend loại trừ chính pending user đó khi check phone |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "available": false,
+    "message": "Số điện thoại đã được sử dụng"
+  }
+}
+```
+
+Validation/business rules:
+
+- Phone sai format trả `400` qua validation envelope.
+- Phone của chính pending account theo email hiện tại vẫn được xem là available để người dùng đăng ký lại và nhận OTP mới.
+- Phone thuộc account khác chưa soft delete trả `available: false`.
 
 ### POST `/api/auth/register`
 

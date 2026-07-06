@@ -10,6 +10,8 @@ abstract class ApiEndpoints {
   static const String login = '/api/auth/login';
   static const String googleLogin = '/api/auth/google';
   static const String register = '/api/auth/register';
+  static const String emailAvailability = '/api/auth/email-availability';
+  static const String phoneAvailability = '/api/auth/phone-availability';
   static const String logout = '/api/auth/logout';
   static const String changePassword = '/api/auth/change-password';
   static const String verifyEmail = '/api/auth/verify-email';

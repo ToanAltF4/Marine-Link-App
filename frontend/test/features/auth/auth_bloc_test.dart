@@ -296,6 +296,16 @@ class _FailingAuthRepository implements AuthRepository {
   }) => throw UnimplementedError();
 
   @override
+  Future<bool> isEmailAvailable({required String email}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> isPhoneAvailable({required String phone, String? email}) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> verifyEmail({required String email, required String otpCode}) =>
       throw UnimplementedError();
 

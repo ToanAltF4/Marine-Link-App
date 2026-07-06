@@ -137,6 +137,35 @@ public class AuthService {
                 .orElseGet(() -> createPendingRegistration(request, email, phone));
     }
 
+    @Transactional(readOnly = true)
+    public EmailAvailabilityResponse emailAvailability(String requestedEmail) {
+        String email = requestedEmail.trim().toLowerCase(Locale.ROOT);
+        boolean available = !userRepository.existsVerifiedByEmail(email);
+        String message = available ? "Email có thể sử dụng" : "Email đã được sử dụng";
+        return new EmailAvailabilityResponse(available, message);
+    }
+
+    @Transactional(readOnly = true)
+    public PhoneAvailabilityResponse phoneAvailability(String requestedPhone, String requestedEmail) {
+        String phone = requestedPhone.trim();
+        String email = trimToNull(requestedEmail);
+
+        boolean available = false;
+        if (email != null) {
+            available = userRepository.findByEmailAndStatus(
+                            email.toLowerCase(Locale.ROOT),
+                            UserStatus.PENDING_VERIFICATION)
+                    .map(user -> !userRepository.existsActiveByPhoneAndPublicIdNot(phone, user.getPublicId()))
+                    .orElse(false);
+        }
+        if (email == null || !available) {
+            available = !userRepository.existsActiveByPhone(phone);
+        }
+
+        String message = available ? "Số điện thoại có thể sử dụng" : "Số điện thoại đã được sử dụng";
+        return new PhoneAvailabilityResponse(available, message);
+    }
+
     private RegisterResponse refreshPendingRegistration(
             User user,
             RegisterRequest request,

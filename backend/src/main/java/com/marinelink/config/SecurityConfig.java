@@ -70,6 +70,8 @@ public class SecurityConfig {
                     "/api/auth/verify-email",
                     "/api/auth/resend-otp").permitAll()
                 .requestMatchers(HttpMethod.GET,
+                    "/api/auth/email-availability",
+                    "/api/auth/phone-availability",
                     "/api/products", "/api/products/**",
                     "/api/payments/vnpay/return",
                     "/api/payments/vnpay/ipn",

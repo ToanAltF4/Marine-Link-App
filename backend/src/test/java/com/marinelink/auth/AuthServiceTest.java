@@ -186,6 +186,53 @@ class AuthServiceTest {
     }
 
     @Test
+    void emailAvailabilityOnlyBlocksVerifiedEmails() {
+        when(userRepository.existsVerifiedByEmail("used@example.com")).thenReturn(true);
+        when(userRepository.existsVerifiedByEmail("pending@example.com")).thenReturn(false);
+
+        EmailAvailabilityResponse used = authService.emailAvailability(" Used@Example.com ");
+        EmailAvailabilityResponse pending = authService.emailAvailability("pending@example.com");
+
+        assertThat(used.available()).isFalse();
+        assertThat(used.message()).isEqualTo("Email đã được sử dụng");
+        assertThat(pending.available()).isTrue();
+        assertThat(pending.message()).isEqualTo("Email có thể sử dụng");
+    }
+
+    @Test
+    void phoneAvailabilityAllowsSamePendingRegistrationPhoneButBlocksOtherActivePhone() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        UUID publicId = UUID.randomUUID();
+        User pendingUser = User.builder()
+                .id(42L)
+                .publicId(publicId)
+                .role(userRole)
+                .fullName("Pending User")
+                .email("pending@example.com")
+                .phone("0912345678")
+                .passwordHash("hash")
+                .status(UserStatus.PENDING_VERIFICATION)
+                .build();
+        when(userRepository.findByEmailAndStatus("pending@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(pendingUser));
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0912345678", publicId)).thenReturn(false);
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0900000000", publicId)).thenReturn(true);
+        when(userRepository.existsActiveByPhone("0900000000")).thenReturn(true);
+
+        PhoneAvailabilityResponse samePendingPhone = authService.phoneAvailability(
+                "0912345678",
+                "pending@example.com");
+        PhoneAvailabilityResponse otherActivePhone = authService.phoneAvailability(
+                "0900000000",
+                "pending@example.com");
+
+        assertThat(samePendingPhone.available()).isTrue();
+        assertThat(samePendingPhone.message()).isEqualTo("Số điện thoại có thể sử dụng");
+        assertThat(otherActivePhone.available()).isFalse();
+        assertThat(otherActivePhone.message()).isEqualTo("Số điện thoại đã được sử dụng");
+    }
+
+    @Test
     void googleLoginCreatesActiveUserWhenEmailIsNew() {
         Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
         when(googleTokenVerifier.verify("google-id-token"))
