@@ -168,6 +168,33 @@ void main() {
     expect(realtime.cancelled, greaterThanOrEqualTo(1));
   });
 
+  test('send does not duplicate a message already delivered by realtime', () async {
+    final realtime = _FakeRealtime();
+    final cubit = ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async =>
+                ApiResponse(success: true, message: 'OK', data: _sentMessage),
+      ),
+      realtime: realtime,
+    );
+
+    await cubit.load('room-001');
+    // Realtime echo arrives before the REST send response returns.
+    realtime.emit(_sentMessage);
+    expect(cubit.state.thread!.messages.length, 2);
+
+    // The REST send of the very same message completes → must not duplicate.
+    await cubit.sendMessage('I will check now.', sendAsStaff: true);
+    expect(
+      cubit.state.thread!.messages.where((m) => m.id == 'message-002').length,
+      1,
+    );
+    expect(cubit.state.thread!.messages.length, 2);
+  });
+
   blocTest<ChatCubit, ChatState>(
     'loadMyRoom resolves the user support room (buyer tab)',
     build: () => ChatCubit(

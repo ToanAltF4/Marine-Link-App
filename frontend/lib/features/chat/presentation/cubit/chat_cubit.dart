@@ -295,12 +295,19 @@ class ChatCubit extends Cubit<ChatState> {
         sendAsStaff: sendAsStaff,
       );
       if (response.success && response.data != null) {
+        final sent = response.data!;
         final currentThread =
             state.thread ??
             ChatThread(roomId: roomId, isClosed: false, messages: const []);
-        final updatedThread = currentThread.copyWith(
-          messages: [...currentThread.messages, response.data!],
-        );
+        // The realtime echo can arrive before this REST response returns, so the
+        // message may already be in the thread — dedupe by id to avoid a double.
+        final alreadyPresent =
+            currentThread.messages.any((m) => m.id == sent.id);
+        final updatedThread = alreadyPresent
+            ? currentThread
+            : currentThread.copyWith(
+                messages: [...currentThread.messages, sent],
+              );
         emit(
           state.copyWith(
             status: ChatStatus.success,
