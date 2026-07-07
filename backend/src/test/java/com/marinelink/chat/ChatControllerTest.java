@@ -80,6 +80,41 @@ class ChatControllerTest {
     }
 
     @Test
+    void getMyRoomsReturnsBuyerChatHistory() throws Exception {
+        UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID roomId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000a");
+        when(chatService.listMyRooms(userId)).thenReturn(List.of(
+                new ChatRoomSummaryResponse(
+                        roomId, "Xin chao shop",
+                        Instant.parse("2026-05-28T08:30:00Z"), false)));
+
+        mockMvc.perform(get("/api/chat/rooms")
+                        .principal(new TestingAuthenticationToken(
+                                userId.toString(), null, "ROLE_USER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].roomId").value(roomId.toString()))
+                .andExpect(jsonPath("$.data[0].title").value("Xin chao shop"));
+
+        verify(chatService).listMyRooms(userId);
+    }
+
+    @Test
+    void createRoomCreatesNewSupportRoom() throws Exception {
+        UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID roomId = UUID.fromString("550e8400-e29b-41d4-a716-44665544000c");
+        when(chatService.createMySupportRoom(userId))
+                .thenReturn(new ChatThreadResponse(roomId, false, List.of()));
+
+        mockMvc.perform(post("/api/chat/rooms")
+                        .principal(new TestingAuthenticationToken(
+                                userId.toString(), null, "ROLE_USER")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.roomId").value(roomId.toString()));
+
+        verify(chatService).createMySupportRoom(userId);
+    }
+
+    @Test
     void getOrderComplaintRoomReturnsLinkedRoom() throws Exception {
         UUID userId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
         UUID orderId = UUID.fromString("550e8400-e29b-41d4-a716-446655440009");

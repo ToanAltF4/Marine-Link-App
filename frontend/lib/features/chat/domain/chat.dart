@@ -149,6 +149,25 @@ class StaffChatContext extends Equatable {
   ];
 }
 
+/// One entry in the buyer's chat history list. [title] is the room's first
+/// message content (fallback text when the room has no messages yet).
+class ChatRoomSummary extends Equatable {
+  final String roomId;
+  final String title;
+  final DateTime? lastMessageAt;
+  final bool isClosed;
+
+  const ChatRoomSummary({
+    required this.roomId,
+    required this.title,
+    required this.isClosed,
+    this.lastMessageAt,
+  });
+
+  @override
+  List<Object?> get props => [roomId, title, lastMessageAt, isClosed];
+}
+
 class StaffChatRoom extends Equatable {
   final String roomId;
   final StaffChatCustomer customer;

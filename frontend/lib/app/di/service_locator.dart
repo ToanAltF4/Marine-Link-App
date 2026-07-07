@@ -49,6 +49,7 @@ import '../../features/chat/data/chat_remote_repository.dart';
 import '../../features/chat/data/chat_realtime_service.dart';
 import '../../features/chat/data/stomp_chat_realtime_service.dart';
 import '../../features/chat/presentation/cubit/chat_cubit.dart';
+import '../../features/chat/presentation/cubit/chat_rooms_cubit.dart';
 import '../../features/chat/presentation/cubit/staff_chat_cubit.dart';
 
 // Profile
@@ -213,6 +214,9 @@ Future<void> setupServiceLocator() async {
       repository: sl<ChatRepository>(),
       realtime: sl<ChatRealtimeService>(),
     ),
+  );
+  sl.registerFactory<ChatRoomsCubit>(
+    () => ChatRoomsCubit(repository: sl<ChatRepository>()),
   );
   sl.registerFactory<StaffChatCubit>(
     () => StaffChatCubit(repository: sl<ChatRepository>()),
