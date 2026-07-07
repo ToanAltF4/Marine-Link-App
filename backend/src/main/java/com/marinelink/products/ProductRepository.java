@@ -13,11 +13,11 @@ import java.util.UUID;
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
     @Override
-    @EntityGraph(attributePaths = {"category"})
+    @EntityGraph(attributePaths = {"category", "category.parent"})
     org.springframework.data.domain.Page<Product> findAll(Specification<Product> spec,
                                                          org.springframework.data.domain.Pageable pageable);
 
-    @EntityGraph(attributePaths = {"category", "images", "priceTiers"})
+    @EntityGraph(attributePaths = {"category", "category.parent", "images", "priceTiers"})
     @Query("select p from Product p where p.publicId = :publicId and p.deletedAt is null")
     Optional<Product> findDetailByPublicId(@Param("publicId") UUID publicId);
 

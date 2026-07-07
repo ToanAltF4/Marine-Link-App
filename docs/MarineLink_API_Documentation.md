@@ -127,7 +127,7 @@ Product list:
 | Param | Type | Note |
 |---|---|---|
 | `q` | string | Search theo name/origin/description |
-| `categoryId` | uuid | Lọc theo category |
+| `categoryId` | uuid | Lọc theo category; nếu là category cha thì backend trả cả sản phẩm thuộc các category con trực tiếp |
 | `status` | `ACTIVE`, `OUT_OF_STOCK`, `DISABLED` | Public MVP mặc định gửi `ACTIVE`; chỉ expose `OUT_OF_STOCK` nếu business cho phép |
 | `featured` | boolean | Home featured products |
 | `sort` | string | Whitelist: `newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc` |
@@ -158,6 +158,7 @@ Orders:
 | PUT | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | DELETE | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | GET | `/api/products` | All roles |
+| GET | `/api/products/categories` | All roles |
 | GET | `/api/products/{id}` | All roles |
 | GET | `/api/cart` | USER |
 | POST | `/api/cart/items` | USER |
@@ -451,6 +452,8 @@ backend promotes another active address when one exists.
 
 Query params: `page`, `size`, `q`, `categoryId`, `status`, `featured`, `sort`.
 
+`categoryId` nhận cả danh mục cha và danh mục con. Ví dụ gửi ID của `Cá` sẽ trả sản phẩm trong `Cá khô`, `Cá đông lạnh`; gửi ID của `Cá khô` chỉ trả sản phẩm thuộc chính nhánh đó.
+
 Frontend Product List gửi `status=ACTIVE` cho catalog đại lý trong MVP. `sort=price_asc` là giá tăng dần, `sort=price_desc` là giá giảm dần; backend cũng hỗ trợ `newest`, `name_asc`, `name_desc`. Backend phải validate `sort` theo whitelist để tránh truyền trực tiếp field tùy ý vào query.
 
 Demo data hiện tại được seed bởi `V010__seed_dried_seafood_catalog.sql`: 21 sản phẩm đồ khô, mỗi sản phẩm có ảnh public trong Supabase Storage bucket `product-images`.
@@ -476,7 +479,10 @@ Response `200`:
       "isFeatured": true,
       "category": {
         "id": "550e8400-e29b-41d4-a716-446655440004",
-        "name": "Muc kho"
+        "name": "Muc kho",
+        "parentId": "550e8400-e29b-41d4-a716-446655460103",
+        "parentName": "Mực",
+        "children": []
       }
     }
   ],
@@ -509,7 +515,10 @@ Response `200`:
     "status": "ACTIVE",
     "category": {
       "id": "550e8400-e29b-41d4-a716-446655440004",
-      "name": "Muc kho"
+      "name": "Muc kho",
+      "parentId": "550e8400-e29b-41d4-a716-446655460103",
+      "parentName": "Mực",
+      "children": []
     },
     "images": [
       {
@@ -534,6 +543,43 @@ Response `200`:
       }
     ]
   }
+}
+```
+
+### GET `/api/products/categories`
+
+Trả cây danh mục active cho product filters. Root categories hiện gồm `Cá`, `Tôm`, `Mực`, `Hải sản`, `Gia vị`; các sản phẩm vẫn gắn vào category con như `Cá khô`, `Cá đông lạnh`, `Tôm khô`, `Mực khô`.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655460101",
+      "name": "Cá",
+      "parentId": null,
+      "parentName": null,
+      "children": [
+        {
+          "id": "550e8400-e29b-41d4-a716-446655450103",
+          "name": "Cá khô",
+          "parentId": "550e8400-e29b-41d4-a716-446655460101",
+          "parentName": "Cá",
+          "children": []
+        },
+        {
+          "id": "550e8400-e29b-41d4-a716-446655440103",
+          "name": "Cá đông lạnh",
+          "parentId": "550e8400-e29b-41d4-a716-446655460101",
+          "parentName": "Cá",
+          "children": []
+        }
+      ]
+    }
+  ]
 }
 ```
 

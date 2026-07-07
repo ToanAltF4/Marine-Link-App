@@ -9,6 +9,7 @@ class ProductRemoteRepository implements ProductRepository {
   final ApiClient apiClient;
   final Map<String, ApiResponse<List<Product>>> _productListCache = {};
   final Map<String, ApiResponse<ProductDetail>> _productDetailCache = {};
+  ApiResponse<List<Category>>? _categoryCache;
 
   ProductRemoteRepository({required this.apiClient});
 
@@ -44,6 +45,23 @@ class ProductRemoteRepository implements ProductRepository {
     );
     if (response.success && response.data != null) {
       _productListCache[cacheKey] = response;
+    }
+    return response;
+  }
+
+  @override
+  Future<ApiResponse<List<Category>>> getCategories() async {
+    final cached = _categoryCache;
+    if (cached != null) {
+      return cached;
+    }
+
+    final response = await apiClient.get<List<Category>>(
+      ApiEndpoints.productCategories,
+      fromJson: categoryListFromJson,
+    );
+    if (response.success && response.data != null) {
+      _categoryCache = response;
     }
     return response;
   }

@@ -8,6 +8,83 @@ class ProductMockRepository implements ProductRepository {
   static const _driedFish = 'assets/products/dried_yellowstripe_scad.png';
   static const _semiDriedSquid = 'assets/products/semi_dried_squid.png';
 
+  static const _driedFishCategory = Category(
+    id: 'cat-003',
+    name: 'Ca kho',
+    parentId: 'cat-fish',
+    parentName: 'Cá',
+  );
+  static const _frozenFishCategory = Category(
+    id: 'cat-006',
+    name: 'Ca dong lanh',
+    parentId: 'cat-fish',
+    parentName: 'Cá',
+  );
+  static const _driedShrimpCategory = Category(
+    id: 'cat-002',
+    name: 'Tom kho',
+    parentId: 'cat-shrimp',
+    parentName: 'Tôm',
+  );
+  static const _frozenShrimpCategory = Category(
+    id: 'cat-007',
+    name: 'Tom dong lanh',
+    parentId: 'cat-shrimp',
+    parentName: 'Tôm',
+  );
+  static const _driedSquidCategory = Category(
+    id: 'cat-001',
+    name: 'Muc kho',
+    parentId: 'cat-squid',
+    parentName: 'Mực',
+  );
+  static const _frozenSquidCategory = Category(
+    id: 'cat-008',
+    name: 'Muc dong lanh',
+    parentId: 'cat-squid',
+    parentName: 'Mực',
+  );
+  static const _premiumSeafoodCategory = Category(
+    id: 'cat-004',
+    name: 'Hai san kho cao cap',
+    parentId: 'cat-seafood',
+    parentName: 'Hải sản',
+  );
+  static const _fishSauceCategory = Category(
+    id: 'cat-005',
+    name: 'Nuoc mam',
+    parentId: 'cat-seasoning',
+    parentName: 'Gia vị',
+  );
+
+  static const List<Category> _categories = [
+    Category(
+      id: 'cat-fish',
+      name: 'Cá',
+      children: [_driedFishCategory, _frozenFishCategory],
+    ),
+    Category(
+      id: 'cat-shrimp',
+      name: 'Tôm',
+      children: [_driedShrimpCategory, _frozenShrimpCategory],
+    ),
+    Category(
+      id: 'cat-squid',
+      name: 'Mực',
+      children: [_driedSquidCategory, _frozenSquidCategory],
+    ),
+    Category(
+      id: 'cat-seafood',
+      name: 'Hải sản',
+      children: [_premiumSeafoodCategory],
+    ),
+    Category(
+      id: 'cat-seasoning',
+      name: 'Gia vị',
+      children: [_fishSauceCategory],
+    ),
+  ];
+
   static final List<Product> _products = [
     Product(
       id: 'prod-001',
@@ -23,7 +100,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 300,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-002',
@@ -39,7 +116,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 180,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-002', name: 'Tom kho'),
+      category: _driedShrimpCategory,
     ),
     Product(
       id: 'prod-003',
@@ -55,7 +132,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 70,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-003', name: 'Ca kho'),
+      category: _driedFishCategory,
     ),
     Product(
       id: 'prod-004',
@@ -71,7 +148,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 60,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-004', name: 'Muc mot nang'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-005',
@@ -87,7 +164,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 50,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-006',
@@ -103,7 +180,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 120,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-007',
@@ -119,7 +196,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 160,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-005', name: 'Nuoc mam'),
+      category: _fishSauceCategory,
     ),
   ];
 
@@ -138,7 +215,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 300,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
       description:
           'M\u1ef1c kh\u00f4 lo\u1ea1i 1, size l\u1edbn (6-8 con/kg), ph\u01a1i \u0111\u1ee7 n\u1eafng, th\u1ecbt ng\u1ecdt v\u00e0 th\u01a1m. \u0110\u00f3ng g\u00f3i h\u00fat ch\u00e2n kh\u00f4ng 1kg/t\u00fai.',
       images: const [
@@ -184,7 +261,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 180,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-002', name: 'Tom kho'),
+      category: _driedShrimpCategory,
       description:
           'T\u00f4m kh\u00f4 \u0111\u1eb7c bi\u1ec7t m\u00e0u s\u1eafc '
           '\u0111\u1ed3ng \u0111\u1ec1u, ph\u00f9 h\u1ee3p \u0111\u01a1n '
@@ -232,7 +309,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 70,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-003', name: 'Ca kho'),
+      category: _driedFishCategory,
       description:
           'Ca chi vang phoi kho vua do, hop cho qua an va cua hang dac san.',
       images: const [
@@ -278,7 +355,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 60,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-004', name: 'Muc mot nang'),
+      category: _driedSquidCategory,
       description:
           'M\u1ef1c m\u1ed9t n\u1eafng th\u1ecbt d\u00e0y, ph\u00f9 '
           'h\u1ee3p k\u00eanh nh\u00e0 h\u00e0ng v\u00e0 kh\u00e1ch '
@@ -326,7 +403,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 50,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
       description:
           'M\u1ef1c kh\u00f4 x\u00e9 s\u1ee3i ph\u00f9 h\u1ee3p k\u00eanh '
           'qu\u00e0 t\u1eb7ng v\u00e0 c\u1eeda h\u00e0ng \u0111\u1eb7c '
@@ -374,7 +451,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 120,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
       description:
           'M\u1ef1c kh\u00f4 lo\u1ea1i 2 cho k\u00eanh ph\u00e2n '
           'ph\u1ed1i gi\u00e1 t\u1ed1t, v\u1eabn gi\u1eef \u0111\u01b0\u1ee3c '
@@ -422,7 +499,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 160,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-005', name: 'Nuoc mam'),
+      category: _fishSauceCategory,
       description:
           'Nuoc mam nhi dong chai cho kenh sieu thi mini va cua hang dac san.',
       images: const [],
@@ -476,7 +553,9 @@ class ProductMockRepository implements ProductRepository {
     }
 
     if (categoryId != null) {
-      filtered = filtered.where((p) => p.category?.id == categoryId).toList();
+      filtered = filtered
+          .where((p) => _matchesCategory(p.category, categoryId))
+          .toList();
     }
 
     if (featured == true) {
@@ -509,6 +588,16 @@ class ProductMockRepository implements ProductRepository {
   }
 
   @override
+  Future<ApiResponse<List<Category>>> getCategories() async {
+    await Future.delayed(const Duration(milliseconds: 10));
+    return const ApiResponse<List<Category>>(
+      success: true,
+      message: 'OK',
+      data: _categories,
+    );
+  }
+
+  @override
   Future<ApiResponse<ProductDetail>> getProductDetail(String productId) async {
     await Future.delayed(const Duration(milliseconds: 10));
 
@@ -528,13 +617,17 @@ class ProductMockRepository implements ProductRepository {
     );
   }
 
+  bool _matchesCategory(Category? category, String categoryId) {
+    return category?.id == categoryId || category?.parentId == categoryId;
+  }
+
   List<Product> _sortProducts(List<Product> products, String? sort) {
     final sorted = List<Product>.from(products);
     switch (sort) {
-      case 'price':
+      case 'price_asc':
         sorted.sort((left, right) => left.basePrice.compareTo(right.basePrice));
         break;
-      case '-price':
+      case 'price_desc':
         sorted.sort((left, right) => right.basePrice.compareTo(left.basePrice));
         break;
       case 'name':

@@ -57,6 +57,20 @@ void main() {
       expect(first.data, same(second.data));
       expect(apiClient.getCallCount('/api/products/prod-001'), 1);
     });
+
+    test('reuses category tree responses in memory', () async {
+      final apiClient = _FakeApiClient();
+      final repository = ProductRemoteRepository(apiClient: apiClient);
+
+      final first = await repository.getCategories();
+      final second = await repository.getCategories();
+
+      expect(first.data, same(second.data));
+      expect(first.data?.single.name, 'Cá');
+      expect(first.data?.single.children.single.name, 'Cá khô');
+      expect(first.data?.single.children.single.parentId, 'cat-fish');
+      expect(apiClient.getCallCount('/api/products/categories'), 1);
+    });
   });
 }
 
@@ -119,6 +133,23 @@ class _FakeApiClient implements ApiClient {
           'stockQuantity': 10,
           'status': 'ACTIVE',
           'isFeatured': true,
+        },
+      ];
+    }
+    if (path == '/api/products/categories') {
+      return [
+        {
+          'id': 'cat-fish',
+          'name': 'Cá',
+          'children': [
+            {
+              'id': 'cat-003',
+              'name': 'Cá khô',
+              'parentId': 'cat-fish',
+              'parentName': 'Cá',
+              'children': [],
+            },
+          ],
         },
       ];
     }

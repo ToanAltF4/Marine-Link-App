@@ -423,7 +423,7 @@
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 0 } },
           { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
           { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search keyword" },
-          { "name": "categoryId", "in": "query", "schema": { "type": "string" }, "description": "UUID format category ID" },
+          { "name": "categoryId", "in": "query", "schema": { "type": "string", "format": "uuid" }, "description": "Category public UUID. Parent category IDs include products from direct child categories." },
           { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "OUT_OF_STOCK", "DISABLED"] } },
           { "name": "featured", "in": "query", "schema": { "type": "boolean" } },
           { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest", "price_asc", "price_desc", "name_asc", "name_desc"] }, "description": "Whitelisted product sort key" }
@@ -431,6 +431,17 @@
         "responses": {
           "200": {
             "description": "Seafood list"
+          }
+        }
+      }
+    },
+    "/api/products/categories": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List active product category tree",
+        "responses": {
+          "200": {
+            "description": "Active category hierarchy"
           }
         }
       }

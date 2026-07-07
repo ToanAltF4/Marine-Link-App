@@ -4,14 +4,39 @@ import '../domain/product.dart';
 class CategoryDto {
   final String id;
   final String name;
+  final String? parentId;
+  final String? parentName;
+  final List<CategoryDto> children;
 
-  const CategoryDto({required this.id, required this.name});
+  const CategoryDto({
+    required this.id,
+    required this.name,
+    this.parentId,
+    this.parentName,
+    this.children = const [],
+  });
 
   factory CategoryDto.fromJson(Map<String, dynamic> json) {
-    return CategoryDto(id: json['id'] as String, name: json['name'] as String);
+    return CategoryDto(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      parentId: json['parentId'] as String?,
+      parentName: json['parentName'] as String?,
+      children:
+          (json['children'] as List<dynamic>?)
+              ?.map((e) => CategoryDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
   }
 
-  Category toDomain() => Category(id: id, name: name);
+  Category toDomain() => Category(
+    id: id,
+    name: name,
+    parentId: parentId,
+    parentName: parentName,
+    children: children.map((e) => e.toDomain()).toList(),
+  );
 }
 
 /// DTO: ProductImageDto.
@@ -225,6 +250,13 @@ class ProductDetailDto extends ProductDto {
 List<Product> productListFromJson(dynamic json) {
   return (json as List<dynamic>)
       .map((e) => ProductDto.fromJson(e as Map<String, dynamic>).toDomain())
+      .toList();
+}
+
+/// Helper to parse category tree from GET /api/products/categories.
+List<Category> categoryListFromJson(dynamic json) {
+  return (json as List<dynamic>)
+      .map((e) => CategoryDto.fromJson(e as Map<String, dynamic>).toDomain())
       .toList();
 }
 

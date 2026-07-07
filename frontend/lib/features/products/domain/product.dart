@@ -4,11 +4,20 @@ import 'package:equatable/equatable.dart';
 class Category extends Equatable {
   final String id;
   final String name;
+  final String? parentId;
+  final String? parentName;
+  final List<Category> children;
 
-  const Category({required this.id, required this.name});
+  const Category({
+    required this.id,
+    required this.name,
+    this.parentId,
+    this.parentName,
+    this.children = const [],
+  });
 
   @override
-  List<Object?> get props => [id, name];
+  List<Object?> get props => [id, name, parentId, parentName, children];
 }
 
 /// Domain entity: ProductImage.
