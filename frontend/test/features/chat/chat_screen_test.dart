@@ -251,7 +251,8 @@ void main() {
         find.byKey(const Key('chatMessageTextField')),
         'Dang nhap tin nhan',
       );
-      await tester.pump(const Duration(seconds: 4));
+      // Fallback poll interval is 15s (realtime handles the fast path).
+      await tester.pump(const Duration(seconds: 16));
       await tester.pump();
 
       expect(calls, greaterThanOrEqualTo(2));
