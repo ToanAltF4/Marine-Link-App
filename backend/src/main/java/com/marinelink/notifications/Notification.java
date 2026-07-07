@@ -52,6 +52,14 @@ public class Notification {
     @Column(name = "related_chat_room_id")
     private Long relatedChatRoomId;
 
+    /** Groups the per-user rows of one admin/staff broadcast (null for events). */
+    @Column(name = "broadcast_id")
+    private UUID broadcastId;
+
+    /** Public id of the admin/staff who created the broadcast (null for events). */
+    @Column(name = "created_by")
+    private UUID createdBy;
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private boolean read = false;

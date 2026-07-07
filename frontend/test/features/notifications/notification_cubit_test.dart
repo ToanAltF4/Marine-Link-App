@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/notifications/domain/notification.dart';
+import 'package:marinelink/features/notifications/domain/notification_broadcast.dart';
 import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 
@@ -34,6 +35,20 @@ class _NotificationRepo implements NotificationRepository {
         .toList();
     return const ApiResponse(success: true, message: 'OK');
   }
+
+  @override
+  Future<ApiResponse<List<NotificationBroadcast>>> getBroadcasts() async =>
+      const ApiResponse(success: true, data: []);
+
+  @override
+  Future<ApiResponse<NotificationBroadcast>> createBroadcast({
+    required String title,
+    required String body,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<ApiResponse<void>> deleteBroadcast(String broadcastId) async =>
+      const ApiResponse(success: true);
 }
 
 final _items = [

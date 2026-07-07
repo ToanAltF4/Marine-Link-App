@@ -2,6 +2,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_response.dart';
 import '../domain/notification.dart';
+import '../domain/notification_broadcast.dart';
 import '../domain/notification_repository.dart';
 import 'notification_dto.dart';
 
@@ -34,5 +35,31 @@ class NotificationRemoteRepository implements NotificationRepository {
       ApiEndpoints.notificationRead(id),
       fromJson: (_) {},
     );
+  }
+
+  @override
+  Future<ApiResponse<List<NotificationBroadcast>>> getBroadcasts() async {
+    return await apiClient.get<List<NotificationBroadcast>>(
+      ApiEndpoints.notificationBroadcasts,
+      fromJson: broadcastsFromJson,
+    );
+  }
+
+  @override
+  Future<ApiResponse<NotificationBroadcast>> createBroadcast({
+    required String title,
+    required String body,
+  }) async {
+    return await apiClient.post<NotificationBroadcast>(
+      ApiEndpoints.notifications,
+      data: {'title': title, 'body': body},
+      fromJson: broadcastFromJson,
+    );
+  }
+
+  @override
+  Future<ApiResponse<void>> deleteBroadcast(String broadcastId) async {
+    await apiClient.delete(ApiEndpoints.notificationBroadcastDetail(broadcastId));
+    return const ApiResponse(success: true);
   }
 }

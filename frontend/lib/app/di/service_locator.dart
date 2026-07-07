@@ -30,6 +30,7 @@ import '../../features/orders/presentation/bloc/order_bloc.dart';
 import '../../features/notifications/domain/notification_repository.dart';
 import '../../features/notifications/data/notification_mock_repository.dart';
 import '../../features/notifications/data/notification_remote_repository.dart';
+import '../../features/notifications/presentation/bloc/broadcast_cubit.dart';
 import '../../features/notifications/presentation/bloc/notification_cubit.dart';
 
 // Warehouses
@@ -177,6 +178,9 @@ Future<void> setupServiceLocator() async {
   sl.registerFactory<NotificationCubit>(
     () =>
         NotificationCubit(notificationRepository: sl<NotificationRepository>()),
+  );
+  sl.registerFactory<BroadcastCubit>(
+    () => BroadcastCubit(notificationRepository: sl<NotificationRepository>()),
   );
 
   // Warehouses

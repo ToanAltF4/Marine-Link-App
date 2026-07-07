@@ -2,8 +2,10 @@ package com.marinelink.notifications;
 
 import com.marinelink.chat.ChatRoomRepository;
 import com.marinelink.common.exception.BusinessException;
+import com.marinelink.notifications.dto.BroadcastSummaryDTO;
 import com.marinelink.notifications.dto.NotificationResponseDTO;
 import com.marinelink.users.User;
+import com.marinelink.users.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.marinelink.common.exception.ResourceNotFoundException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -22,6 +25,50 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Admin/staff broadcast: fan out one notification per active dealer, tagged
+     * with a shared broadcast id + the creator, and return a summary.
+     */
+    @Transactional
+    public BroadcastSummaryDTO createBroadcast(UUID creatorPublicId, CreateBroadcastRequest request) {
+        String title = request.title().trim();
+        String body = request.body().trim();
+        List<User> recipients = userRepository.findActiveByRoleCode("USER");
+        if (recipients.isEmpty()) {
+            throw new BusinessException("Chưa có đại lý nào để gửi thông báo.", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        UUID broadcastId = UUID.randomUUID();
+        Instant now = Instant.now();
+        for (User recipient : recipients) {
+            notificationRepository.save(Notification.builder()
+                    .publicId(UUID.randomUUID())
+                    .user(recipient)
+                    .type(NotificationType.SYSTEM)
+                    .title(title)
+                    .body(body)
+                    .broadcastId(broadcastId)
+                    .createdBy(creatorPublicId)
+                    .read(false)
+                    .build());
+        }
+        return new BroadcastSummaryDTO(broadcastId, title, body, creatorPublicId, now, recipients.size());
+    }
+
+    /** History of admin/staff broadcasts, most recent first. */
+    public List<BroadcastSummaryDTO> listBroadcasts() {
+        return notificationRepository.findBroadcastSummaries();
+    }
+
+    /** Delete a broadcast (all its fanned-out rows). */
+    @Transactional
+    public void deleteBroadcast(UUID broadcastId) {
+        if (notificationRepository.countByBroadcastId(broadcastId) == 0) {
+            throw new ResourceNotFoundException("Không tìm thấy thông báo");
+        }
+        notificationRepository.deleteByBroadcastId(broadcastId);
+    }
 
     public Page<NotificationResponseDTO> getNotifications(User user, Boolean isRead, Pageable pageable) {
         Page<Notification> page;

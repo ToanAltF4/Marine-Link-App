@@ -186,6 +186,9 @@ Orders:
 | POST | `/api/staff/chat/rooms/{roomId}/complaints` | STAFF, ADMIN |
 | GET | `/api/notifications` | Authenticated |
 | PUT | `/api/notifications/{id}/read` | Owner |
+| POST | `/api/notifications` | STAFF, ADMIN |
+| GET | `/api/notifications/broadcasts` | STAFF, ADMIN |
+| DELETE | `/api/notifications/broadcasts/{broadcastId}` | STAFF, ADMIN |
 | GET | `/api/warehouses` | All roles |
 | GET | `/api/admin/dashboard` | ADMIN |
 | GET | `/api/admin/products` | STAFF, ADMIN |
@@ -1331,6 +1334,74 @@ Response `200`:
 ```
 
 Only owner can mark notification read.
+
+### POST `/api/notifications` (STAFF, ADMIN)
+
+Admin/staff broadcast một thông báo đến toàn bộ đại lý (role `USER`). Hệ thống fan-out một notification cho mỗi đại lý, gắn chung `broadcastId` + `createdBy`.
+
+Request body:
+
+```json
+{
+  "title": "Bảo trì hệ thống",
+  "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay."
+}
+```
+
+`title` bắt buộc (tối đa 200 ký tự), `body` bắt buộc.
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "message": "Đã gửi thông báo đến các đại lý",
+  "data": {
+    "broadcastId": "550e8400-e29b-41d4-a716-4466554400aa",
+    "title": "Bảo trì hệ thống",
+    "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay.",
+    "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+    "createdAt": "2026-05-28T08:30:00Z",
+    "recipientCount": 12
+  }
+}
+```
+
+### GET `/api/notifications/broadcasts` (STAFF, ADMIN)
+
+Lịch sử các thông báo do admin/staff tạo, mới nhất trước.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "broadcastId": "550e8400-e29b-41d4-a716-4466554400aa",
+      "title": "Bảo trì hệ thống",
+      "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay.",
+      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+      "createdAt": "2026-05-28T08:30:00Z",
+      "recipientCount": 12
+    }
+  ]
+}
+```
+
+### DELETE `/api/notifications/broadcasts/{broadcastId}` (STAFF, ADMIN)
+
+Xóa một thông báo broadcast (xóa toàn bộ các bản fan-out của nó). Trả `404` nếu không tồn tại.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Đã xóa thông báo"
+}
+```
 
 ## 16. Warehouse API
 

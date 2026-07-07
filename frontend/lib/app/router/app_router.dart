@@ -259,8 +259,9 @@ class AppRouter {
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) =>
-                const StaffRoleGuard(child: NotificationsScreen()),
+            builder: (context, state) => const StaffRoleGuard(
+              child: NotificationsScreen(canManageBroadcasts: true),
+            ),
           ),
           GoRoute(
             path: 'chat',
@@ -338,8 +339,9 @@ class AppRouter {
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) =>
-                const AdminRoleGuard(child: NotificationsScreen()),
+            builder: (context, state) => const AdminRoleGuard(
+              child: NotificationsScreen(canManageBroadcasts: true),
+            ),
           ),
           GoRoute(
             path: 'profile',
