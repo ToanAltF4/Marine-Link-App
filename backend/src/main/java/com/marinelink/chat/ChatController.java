@@ -28,6 +28,21 @@ public class ChatController {
         return ApiResponse.ok(chatService.getOrCreateMyRoom(currentUserId(authentication)));
     }
 
+    @GetMapping("/rooms")
+    public ApiResponse<java.util.List<ChatRoomSummaryResponse>> getMyRooms(
+            Authentication authentication) {
+        return ApiResponse.ok(chatService.listMyRooms(currentUserId(authentication)));
+    }
+
+    @PostMapping("/rooms")
+    public ResponseEntity<ApiResponse<ChatThreadResponse>> createRoom(
+            Authentication authentication) {
+        ChatThreadResponse room = chatService.createMySupportRoom(currentUserId(authentication));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.created(room, "Chat room created"));
+    }
+
     @GetMapping("/orders/{orderId}/room")
     public ApiResponse<ChatThreadResponse> getOrderComplaintRoom(
             Authentication authentication,

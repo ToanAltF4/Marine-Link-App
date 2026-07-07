@@ -35,6 +35,35 @@ class ChatMockRepository implements ChatRepository {
   Future<ApiResponse<ChatThread>> getMyRoom() => getThread(defaultRoomId);
 
   @override
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    const ids = [defaultRoomId, closedRoomId, emptyRoomId];
+    final summaries = ids.where(_threads.containsKey).map((id) {
+      final thread = _threads[id]!;
+      return ChatRoomSummary(
+        roomId: id,
+        title: thread.messages.isNotEmpty
+            ? thread.messages.first.content
+            : 'Cuộc trò chuyện mới',
+        isClosed: thread.isClosed,
+        lastMessageAt: thread.messages.isNotEmpty
+            ? thread.messages.last.createdAt
+            : null,
+      );
+    }).toList();
+    return ApiResponse(success: true, message: 'OK', data: summaries);
+  }
+
+  @override
+  Future<ApiResponse<ChatThread>> createRoom() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final id = 'mock-room-${DateTime.now().millisecondsSinceEpoch}';
+    final thread = ChatThread(roomId: id, isClosed: false, messages: const []);
+    _threads[id] = thread;
+    return ApiResponse(success: true, message: 'OK', data: thread);
+  }
+
+  @override
   Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return getThread(orderComplaintRoomId);

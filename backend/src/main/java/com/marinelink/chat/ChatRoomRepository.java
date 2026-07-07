@@ -22,6 +22,15 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             User user,
             Order relatedOrder);
 
+    // Danh sách phòng chat của 1 buyer (lịch sử chat), mới hoạt động nhất trước.
+    @EntityGraph(attributePaths = {"user"})
+    @Query("""
+            SELECT r FROM ChatRoom r
+            WHERE r.user = :user
+            ORDER BY COALESCE(r.lastMessageAt, r.createdAt) DESC
+            """)
+    List<ChatRoom> findMyRooms(@Param("user") User user);
+
     @EntityGraph(attributePaths = {"user", "assignedStaff", "relatedOrder", "relatedProduct"})
     @Query("""
             SELECT r FROM ChatRoom r

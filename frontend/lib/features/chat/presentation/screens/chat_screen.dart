@@ -10,7 +10,6 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
-import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/chat.dart';
@@ -110,16 +109,23 @@ class _ChatViewState extends State<_ChatView> {
           key: const Key('chatScreen'),
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            leading:
-                widget.staffMode &&
-                    widget.staffBackLocation != AppRoutes.staffDashboard
-                ? IconButton(
-                    key: const Key('staffChatBackButton'),
+            leading: widget.staffMode
+                ? (widget.staffBackLocation != AppRoutes.staffDashboard
+                      ? IconButton(
+                          key: const Key('staffChatBackButton'),
+                          tooltip: 'Quay l\u1ea1i',
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => context.go(widget.staffBackLocation),
+                        )
+                      : null)
+                // Buyer thread is always opened from the chat history list, so
+                // give it a back button that returns to that list (ML-64).
+                : IconButton(
+                    key: const Key('buyerChatBackButton'),
                     tooltip: 'Quay l\u1ea1i',
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.go(widget.staffBackLocation),
-                  )
-                : null,
+                    onPressed: () => context.go(AppRoutes.chat),
+                  ),
             title: Text(
               widget.staffMode
                   ? 'Tin nh\u1eafn kh\u00e1ch h\u00e0ng'
@@ -157,7 +163,11 @@ class _ChatViewState extends State<_ChatView> {
             child: scaffold,
           );
         }
-        return BuyerBackToHomeScope(child: scaffold);
+        // System back from a buyer thread returns to the chat history list.
+        return AppBackExitScope(
+          onFirstBack: (context) => context.go(AppRoutes.chat),
+          child: scaffold,
+        );
       },
     );
   }
