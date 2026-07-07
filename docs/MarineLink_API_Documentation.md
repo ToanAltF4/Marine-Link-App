@@ -177,6 +177,8 @@ Orders:
 | GET | `/api/payments/vnpay/ipn` | Public VNPAY server callback |
 | POST | `/api/chat/send` | All roles |
 | GET | `/api/chat/room` | USER (get-or-create phòng hỗ trợ của chính mình) |
+| GET | `/api/chat/rooms` | USER (danh sách lịch sử chat của chính mình; title = tin nhắn đầu) |
+| POST | `/api/chat/rooms` | USER (tạo cuộc trò chuyện hỗ trợ mới) |
 | GET | `/api/chat/orders/{orderId}/room` | USER owner, order `COMPLETED` |
 | GET | `/api/chat/{roomId}` | Participant, STAFF, ADMIN |
 | GET | `/api/staff/chat/rooms` | STAFF, ADMIN |

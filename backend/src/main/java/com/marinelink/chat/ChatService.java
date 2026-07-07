@@ -74,6 +74,39 @@ public class ChatService {
         return chatRoomRepository.save(room);
     }
 
+    /** Buyer chat history: all of the buyer's rooms, most recently active first. */
+    @Transactional(readOnly = true)
+    public List<ChatRoomSummaryResponse> listMyRooms(UUID currentUserPublicId) {
+        User currentUser = getCurrentUser(currentUserPublicId);
+        requireBuyer(currentUser, "Chỉ đại lý mới có danh sách chat hỗ trợ.");
+        return chatRoomRepository.findMyRooms(currentUser).stream()
+                .map(this::toRoomSummary)
+                .toList();
+    }
+
+    /** Start a brand-new support conversation (the "New chat" action). */
+    @Transactional
+    public ChatThreadResponse createMySupportRoom(UUID currentUserPublicId) {
+        User currentUser = getCurrentUser(currentUserPublicId);
+        requireBuyer(currentUser, "Chỉ đại lý mới có thể tạo cuộc trò chuyện hỗ trợ.");
+        return toThreadResponse(createSupportRoom(currentUser));
+    }
+
+    private ChatRoomSummaryResponse toRoomSummary(ChatRoom room) {
+        String title = chatMessageRepository.findTopByRoomOrderByCreatedAtAsc(room)
+                .map(ChatMessage::getContent)
+                .filter(content -> content != null && !content.isBlank())
+                .orElse("Cuộc trò chuyện mới");
+        return new ChatRoomSummaryResponse(
+                room.getPublicId(), title, room.getLastMessageAt(), room.isClosed());
+    }
+
+    private void requireBuyer(User user, String message) {
+        if (!"USER".equals(user.getRoleCode())) {
+            throw new BusinessException(message, HttpStatus.FORBIDDEN);
+        }
+    }
+
     @Transactional
     public ChatThreadResponse getOrCreateOrderComplaintRoom(UUID currentUserPublicId, UUID orderPublicId) {
         User currentUser = getCurrentUser(currentUserPublicId);
