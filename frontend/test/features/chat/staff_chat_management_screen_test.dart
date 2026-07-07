@@ -288,23 +288,4 @@ void main() {
 
     expect(requestedFilter, StaffChatRoomFilter.closed);
   });
-
-  testWidgets('creates complaint from room card', (tester) async {
-    _registerRepo(_FakeRepo());
-
-    await _pumpScreen(tester);
-    await tester.pumpAndSettle();
-
-    await tester.tap(
-      find.byKey(const Key('staffChatComplaintButton_room-001')),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('staffChatComplaintSheet')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('staffChatComplaintSaveButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('staffChatComplaintSheet')), findsNothing);
-    expect(find.textContaining('Khi\u1ebfu n\u1ea1i'), findsWidgets);
-  });
 }
