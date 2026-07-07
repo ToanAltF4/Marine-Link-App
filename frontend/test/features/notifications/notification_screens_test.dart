@@ -11,6 +11,7 @@ import 'package:marinelink/features/auth/domain/user.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 import 'package:marinelink/features/notifications/domain/notification.dart';
+import 'package:marinelink/features/notifications/domain/notification_broadcast.dart';
 import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 import 'package:marinelink/features/notifications/presentation/screens/notifications_screen.dart';
@@ -59,6 +60,20 @@ class _FakeNotificationRepository implements NotificationRepository {
         .toList();
     return const ApiResponse(success: true, message: 'OK');
   }
+
+  @override
+  Future<ApiResponse<List<NotificationBroadcast>>> getBroadcasts() async =>
+      const ApiResponse(success: true, data: []);
+
+  @override
+  Future<ApiResponse<NotificationBroadcast>> createBroadcast({
+    required String title,
+    required String body,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<ApiResponse<void>> deleteBroadcast(String broadcastId) async =>
+      const ApiResponse(success: true);
 }
 
 class _MockAuthBloc extends Mock implements AuthBloc {

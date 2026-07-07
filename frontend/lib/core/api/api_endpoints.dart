@@ -57,6 +57,9 @@ abstract class ApiEndpoints {
   // ── Notifications ─────────────────────────────────────────────────────────
   static const String notifications = '/api/notifications';
   static String notificationRead(String id) => '/api/notifications/$id/read';
+  static const String notificationBroadcasts = '/api/notifications/broadcasts';
+  static String notificationBroadcastDetail(String broadcastId) =>
+      '/api/notifications/broadcasts/$broadcastId';
 
   // ── Warehouses ────────────────────────────────────────────────────────────
   static const String warehouses = '/api/warehouses';

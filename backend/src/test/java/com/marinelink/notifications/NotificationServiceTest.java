@@ -3,8 +3,11 @@ package com.marinelink.notifications;
 import com.marinelink.chat.ChatRoom;
 import com.marinelink.chat.ChatRoomRepository;
 import com.marinelink.common.exception.BusinessException;
+import com.marinelink.common.exception.ResourceNotFoundException;
+import com.marinelink.notifications.dto.BroadcastSummaryDTO;
 import com.marinelink.notifications.dto.NotificationResponseDTO;
 import com.marinelink.users.User;
+import com.marinelink.users.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +35,9 @@ class NotificationServiceTest {
 
     @Mock
     private ChatRoomRepository chatRoomRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -114,5 +120,67 @@ class NotificationServiceTest {
         );
 
         verify(notificationRepository).save(any(Notification.class));
+    }
+
+    @Test
+    void createBroadcast_ShouldFanOutOneNotificationPerDealer() {
+        User dealerA = new User();
+        dealerA.setId(10L);
+        User dealerB = new User();
+        dealerB.setId(11L);
+        when(userRepository.findActiveByRoleCode("USER")).thenReturn(List.of(dealerA, dealerB));
+        UUID creator = UUID.randomUUID();
+
+        BroadcastSummaryDTO summary = notificationService.createBroadcast(
+                creator, new CreateBroadcastRequest("  Bảo trì  ", "  Hệ thống bảo trì  "));
+
+        verify(notificationRepository, times(2)).save(any(Notification.class));
+        assertThat(summary.title()).isEqualTo("Bảo trì");
+        assertThat(summary.body()).isEqualTo("Hệ thống bảo trì");
+        assertThat(summary.createdBy()).isEqualTo(creator);
+        assertThat(summary.recipientCount()).isEqualTo(2);
+    }
+
+    @Test
+    void createBroadcast_WhenNoDealers_ShouldThrow() {
+        when(userRepository.findActiveByRoleCode("USER")).thenReturn(List.of());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                BusinessException.class,
+                () -> notificationService.createBroadcast(
+                        UUID.randomUUID(), new CreateBroadcastRequest("T", "B"))
+        );
+        verify(notificationRepository, never()).save(any(Notification.class));
+    }
+
+    @Test
+    void listBroadcasts_ShouldDelegateToRepository() {
+        BroadcastSummaryDTO row = new BroadcastSummaryDTO(
+                UUID.randomUUID(), "T", "B", UUID.randomUUID(), null, 3);
+        when(notificationRepository.findBroadcastSummaries()).thenReturn(List.of(row));
+
+        assertThat(notificationService.listBroadcasts()).containsExactly(row);
+    }
+
+    @Test
+    void deleteBroadcast_WhenExists_ShouldDelete() {
+        UUID broadcastId = UUID.randomUUID();
+        when(notificationRepository.countByBroadcastId(broadcastId)).thenReturn(5L);
+
+        notificationService.deleteBroadcast(broadcastId);
+
+        verify(notificationRepository).deleteByBroadcastId(broadcastId);
+    }
+
+    @Test
+    void deleteBroadcast_WhenMissing_ShouldThrowNotFound() {
+        UUID broadcastId = UUID.randomUUID();
+        when(notificationRepository.countByBroadcastId(broadcastId)).thenReturn(0L);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                ResourceNotFoundException.class,
+                () -> notificationService.deleteBroadcast(broadcastId)
+        );
+        verify(notificationRepository, never()).deleteByBroadcastId(any());
     }
 }

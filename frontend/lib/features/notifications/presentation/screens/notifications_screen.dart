@@ -14,22 +14,35 @@ import '../../../auth/domain/user.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/notification.dart';
+import '../../domain/notification_broadcast.dart';
+import '../bloc/broadcast_cubit.dart';
 import '../bloc/notification_cubit.dart';
 
 class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+  /// Admin/staff see the broadcast composer + history; dealers do not.
+  final bool canManageBroadcasts;
+
+  const NotificationsScreen({super.key, this.canManageBroadcasts = false});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => sl<NotificationCubit>()..loadNotifications(),
-      child: const _NotificationsView(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => sl<NotificationCubit>()..loadNotifications(),
+        ),
+        if (canManageBroadcasts)
+          BlocProvider(create: (_) => sl<BroadcastCubit>()..loadBroadcasts()),
+      ],
+      child: _NotificationsView(canManageBroadcasts: canManageBroadcasts),
     );
   }
 }
 
 class _NotificationsView extends StatelessWidget {
-  const _NotificationsView();
+  final bool canManageBroadcasts;
+
+  const _NotificationsView({required this.canManageBroadcasts});
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +62,10 @@ class _NotificationsView extends StatelessWidget {
               children: [
                 _NotificationHeader(user: user),
                 const SizedBox(height: 18),
+                if (canManageBroadcasts) ...[
+                  const _BroadcastManager(),
+                  const SizedBox(height: 20),
+                ],
                 _NotificationSummary(state: state),
                 const SizedBox(height: 16),
                 _NotificationFilters(selected: state.filter),
@@ -543,5 +560,287 @@ class _NotificationMetaChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Admin/staff broadcast composer + sent-history with delete.
+class _BroadcastManager extends StatefulWidget {
+  const _BroadcastManager();
+
+  @override
+  State<_BroadcastManager> createState() => _BroadcastManagerState();
+}
+
+class _BroadcastManagerState extends State<_BroadcastManager> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final created = await context.read<BroadcastCubit>().createBroadcast(
+      title: _titleController.text,
+      body: _bodyController.text,
+    );
+    if (created && mounted) {
+      _titleController.clear();
+      _bodyController.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return BlocConsumer<BroadcastCubit, BroadcastState>(
+      listenWhen: (prev, curr) =>
+          prev.infoMessage != curr.infoMessage ||
+          prev.errorMessage != curr.errorMessage,
+      listener: (context, state) {
+        final messenger = ScaffoldMessenger.of(context);
+        if (state.infoMessage != null) {
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.infoMessage!)));
+        } else if (state.errorMessage != null) {
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+        }
+      },
+      builder: (context, state) {
+        return Container(
+          key: const Key('broadcastComposer'),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.campaign_outlined, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tạo thông báo cho đại lý',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Thông báo sẽ được gửi đến tất cả đại lý.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      key: const Key('broadcastTitleField'),
+                      controller: _titleController,
+                      maxLength: 200,
+                      decoration: const InputDecoration(
+                        labelText: 'Tiêu đề',
+                        counterText: '',
+                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? 'Vui lòng nhập tiêu đề'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('broadcastBodyField'),
+                      controller: _bodyController,
+                      minLines: 2,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Nội dung',
+                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? 'Vui lòng nhập nội dung'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('broadcastSubmitButton'),
+                        onPressed: state.submitting ? null : _submit,
+                        icon: state.submitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.send_rounded),
+                        label: Text(
+                          state.submitting ? 'Đang gửi...' : 'Gửi thông báo',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Lịch sử thông báo đã gửi',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _BroadcastHistory(state: state),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BroadcastHistory extends StatelessWidget {
+  final BroadcastState state;
+
+  const _BroadcastHistory({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.status == BroadcastStatus.loading) {
+      return const Padding(
+        key: Key('broadcastHistoryLoading'),
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (state.broadcasts.isEmpty) {
+      return Text(
+        key: const Key('broadcastHistoryEmpty'),
+        'Chưa có thông báo nào được gửi.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      );
+    }
+    return Column(
+      key: const Key('broadcastHistory'),
+      children: [
+        for (final item in state.broadcasts) ...[
+          _BroadcastHistoryTile(item: item),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _BroadcastHistoryTile extends StatelessWidget {
+  final NotificationBroadcast item;
+
+  const _BroadcastHistoryTile({required this.item});
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xóa thông báo?'),
+        content: Text('“${item.title}” sẽ bị xóa khỏi tất cả đại lý.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            key: const Key('broadcastDeleteConfirmButton'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      context.read<BroadcastCubit>().deleteBroadcast(item.broadcastId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      key: Key('broadcastHistoryItem-${item.broadcastId}'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSky,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.body,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_formatDateTime(item.createdAt)} · ${item.recipientCount} đại lý',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: Key('broadcastDeleteButton-${item.broadcastId}'),
+            tooltip: 'Xóa thông báo',
+            onPressed: () => _confirmDelete(context),
+            icon: const Icon(Icons.delete_outline_rounded),
+            color: AppColors.error,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime date) {
+    final local = date.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year} '
+        '${two(local.hour)}:${two(local.minute)}';
   }
 }

@@ -7,10 +7,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
+
+    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL AND u.role.code = :roleCode")
+    List<User> findActiveByRoleCode(@Param("roleCode") String roleCode);
 
     @Query("SELECT u FROM User u WHERE (lower(u.email) = lower(:emailOrPhone) OR u.phone = :emailOrPhone) AND u.deletedAt IS NULL")
     Optional<User> findActiveByEmailOrPhone(@Param("emailOrPhone") String emailOrPhone);
