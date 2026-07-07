@@ -156,6 +156,26 @@ void main() {
     );
     expect(find.byKey(const Key('adminOrderListScreen')), findsOneWidget);
   });
+
+  testWidgets('staff can open product management (stock + add)', (tester) async {
+    await _pumpApp(tester);
+    await _login(
+      tester,
+      emailOrPhone: 'staff@marinelink.demo',
+      password: 'Staff@123',
+    );
+
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
+
+    final staffContext = tester.element(
+      find.byKey(const Key('staffDashboardScreen')),
+    );
+    GoRouter.of(staffContext).go(AppRoutes.staffProducts);
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('adminProductsScreen')), findsOneWidget);
+  });
 }
 
 Future<void> _pumpApp(WidgetTester tester) async {

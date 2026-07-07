@@ -40,6 +40,7 @@ class StaffDashboardScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   _QuickActionsSection(
                     onOpenOrders: () => context.push(AppRoutes.staffOrders),
+                    onOpenProducts: () => context.push(AppRoutes.staffProducts),
                   ),
                   const SizedBox(height: 20),
                   const _SupportChatSection(),
@@ -237,8 +238,12 @@ class _MetricCard extends StatelessWidget {
 
 class _QuickActionsSection extends StatelessWidget {
   final VoidCallback onOpenOrders;
+  final VoidCallback onOpenProducts;
 
-  const _QuickActionsSection({required this.onOpenOrders});
+  const _QuickActionsSection({
+    required this.onOpenOrders,
+    required this.onOpenProducts,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +268,12 @@ class _QuickActionsSection extends StatelessWidget {
               _QuickActionTile(
                 icon: Icons.edit_square,
                 label: 'Cập nhật tồn',
-                onTap: () {},
+                onTap: onOpenProducts,
+              ),
+              _QuickActionTile(
+                icon: Icons.add_box_outlined,
+                label: 'Thêm sản phẩm',
+                onTap: onOpenProducts,
               ),
               _QuickActionTile(
                 icon: Icons.warning_amber_outlined,

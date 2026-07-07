@@ -61,6 +61,7 @@ abstract class AppRoutes {
   static const staffOrders = '/staff/orders';
   static const staffNotifications = '/staff/notifications';
   static const staffChat = '/staff/chat';
+  static const staffProducts = '/staff/products';
   static const staffProfile = '/staff/profile';
   static const staffWarehouses = '/staff/warehouses';
   static const adminDashboard = '/admin';
@@ -294,6 +295,12 @@ class AppRouter {
                 key: Key('staffWarehousesScreen'),
                 staffMode: true,
               ),
+            ),
+          ),
+          GoRoute(
+            path: 'products',
+            builder: (context, state) => const StaffRoleGuard(
+              child: AdminProductManagementScreen(),
             ),
           ),
         ],
