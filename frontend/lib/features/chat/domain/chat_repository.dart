@@ -7,6 +7,12 @@ abstract class ChatRepository {
   /// Lấy (hoặc tạo) phòng hỗ trợ chung của user hiện tại — dùng cho tab Chat buyer.
   Future<ApiResponse<ChatThread>> getMyRoom();
 
+  /// Danh sách lịch sử chat của buyer (mỗi phòng có tiêu đề = tin nhắn đầu tiên).
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms();
+
+  /// Tạo cuộc trò chuyện hỗ trợ mới cho buyer ("Cuộc trò chuyện mới").
+  Future<ApiResponse<ChatThread>> createRoom();
+
   Future<ApiResponse<ChatThread>> getOrderRoom(String orderId);
 
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({

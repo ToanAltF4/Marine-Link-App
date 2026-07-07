@@ -9,6 +9,7 @@ import '../../features/admin_products/presentation/screens/admin_product_managem
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
 import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
+import '../../features/chat/presentation/screens/chat_rooms_list_screen.dart';
 import '../../features/chat/presentation/screens/staff_chat_management_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -190,7 +191,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.chat,
-                builder: (context, state) => const ChatScreen(),
+                builder: (context, state) => const ChatRoomsListScreen(),
                 routes: [
                   GoRoute(
                     path: 'order/:orderId',

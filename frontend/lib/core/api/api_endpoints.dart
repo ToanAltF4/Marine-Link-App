@@ -44,6 +44,7 @@ abstract class ApiEndpoints {
   // ── Chat ──────────────────────────────────────────────────────────────────
   static const String chatSend = '/api/chat/send';
   static const String chatMyRoom = '/api/chat/room';
+  static const String chatMyRooms = '/api/chat/rooms';
   static String chatOrderRoom(String orderId) =>
       '/api/chat/orders/$orderId/room';
   static String chatRoom(String roomId) => '/api/chat/$roomId';

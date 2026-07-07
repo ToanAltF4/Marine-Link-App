@@ -94,7 +94,19 @@ void main() {
       expect(find.byKey(const Key('homeQuickSearchField')), findsOneWidget);
 
       await tester.tap(find.text('Chat').hitTestable().first);
-      await tester.pump(const Duration(milliseconds: 900));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump(const Duration(milliseconds: 700));
+      // Chat tab now opens the chat history list; tapping a room opens the thread.
+      expect(find.byKey(const Key('chatRoomsList')), findsOneWidget);
+      final roomTile = find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key as ValueKey<String>).value.startsWith('chatRoomTile_'),
+      );
+      await tester.tap(roomTile.first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       expect(find.byKey(const Key('chatScreen')), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 500));
     },
