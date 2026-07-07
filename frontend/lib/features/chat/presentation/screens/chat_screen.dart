@@ -74,7 +74,9 @@ class _ChatView extends StatefulWidget {
 }
 
 class _ChatViewState extends State<_ChatView> {
-  static const _refreshInterval = Duration(seconds: 4);
+  // Realtime (STOMP) delivers messages instantly; polling is only a safety-net
+  // fallback for dropped sockets / mock mode, so it can be slow.
+  static const _refreshInterval = Duration(seconds: 15);
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();

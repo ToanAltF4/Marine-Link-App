@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
+import '../../data/chat_realtime_service.dart';
 import '../../domain/chat.dart';
 import '../../domain/chat_repository.dart';
 
@@ -10,8 +11,46 @@ part 'chat_state.dart';
 
 class ChatCubit extends Cubit<ChatState> {
   final ChatRepository repository;
+  final ChatRealtimeService? realtime;
 
-  ChatCubit({required this.repository}) : super(const ChatState());
+  ChatRealtimeSubscription? _realtimeSub;
+  String? _subscribedRoomId;
+
+  ChatCubit({required this.repository, this.realtime})
+    : super(const ChatState());
+
+  /// Subscribe to live messages for [roomId]; append arrivals immediately.
+  void _subscribeRealtime(String? roomId) {
+    final service = realtime;
+    if (service == null || roomId == null || roomId.isEmpty) return;
+    if (_subscribedRoomId == roomId && _realtimeSub != null) return;
+    _realtimeSub?.cancel();
+    _subscribedRoomId = roomId;
+    _realtimeSub = service.subscribeToRoom(roomId, _onRealtimeMessage);
+  }
+
+  void _onRealtimeMessage(ChatMessage message) {
+    if (isClosed) return;
+    if (message.roomId != state.roomId) return;
+    final thread = state.thread;
+    if (thread == null) return;
+    // Dedupe: our own sent message is appended optimistically and also echoed
+    // back over the socket.
+    if (thread.messages.any((m) => m.id == message.id)) return;
+    emit(
+      state.copyWith(
+        status: ChatStatus.success,
+        thread: thread.copyWith(messages: [...thread.messages, message]),
+        offlineFallback: false,
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _realtimeSub?.cancel();
+    return super.close();
+  }
 
   Future<void> load(String roomId) async {
     final cachedThread = state.thread;
@@ -40,6 +79,7 @@ class ChatCubit extends Cubit<ChatState> {
             clearErrorMessage: true,
           ),
         );
+        _subscribeRealtime(thread.roomId);
       } else {
         _emitLoadFailure(
           roomId: roomId,
@@ -98,6 +138,7 @@ class ChatCubit extends Cubit<ChatState> {
             clearErrorMessage: true,
           ),
         );
+        _subscribeRealtime(thread.roomId);
       } else {
         _emitLoadFailure(
           roomId: state.roomId ?? '',
@@ -152,6 +193,7 @@ class ChatCubit extends Cubit<ChatState> {
             clearErrorMessage: true,
           ),
         );
+        _subscribeRealtime(thread.roomId);
       } else {
         _emitLoadFailure(
           roomId: state.roomId ?? '',
@@ -253,12 +295,19 @@ class ChatCubit extends Cubit<ChatState> {
         sendAsStaff: sendAsStaff,
       );
       if (response.success && response.data != null) {
+        final sent = response.data!;
         final currentThread =
             state.thread ??
             ChatThread(roomId: roomId, isClosed: false, messages: const []);
-        final updatedThread = currentThread.copyWith(
-          messages: [...currentThread.messages, response.data!],
-        );
+        // The realtime echo can arrive before this REST response returns, so the
+        // message may already be in the thread — dedupe by id to avoid a double.
+        final alreadyPresent =
+            currentThread.messages.any((m) => m.id == sent.id);
+        final updatedThread = alreadyPresent
+            ? currentThread
+            : currentThread.copyWith(
+                messages: [...currentThread.messages, sent],
+              );
         emit(
           state.copyWith(
             status: ChatStatus.success,
@@ -333,6 +382,7 @@ class ChatCubit extends Cubit<ChatState> {
         clearErrorMessage: true,
       ),
     );
+    _subscribeRealtime(thread.roomId);
     return thread.roomId;
   }
 }

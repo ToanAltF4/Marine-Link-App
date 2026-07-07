@@ -15,6 +15,7 @@ import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ComplaintRepository complaintRepository;
     private final OrderRepository orderRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatThreadResponse getThread(UUID currentUserPublicId, boolean canAccessStaffRooms, UUID roomPublicId) {
         User currentUser = getCurrentUser(currentUserPublicId);
@@ -219,7 +221,17 @@ public class ChatService {
             room.setAssignedStaff(currentUser);
         }
         chatRoomRepository.save(room);
-        return ChatMessageResponse.from(saved);
+
+        ChatMessageResponse response = ChatMessageResponse.from(saved);
+        // Realtime (ML-63): push the new message to everyone subscribed to this
+        // room's topic so clients render it instantly instead of waiting on poll.
+        messagingTemplate.convertAndSend(roomTopic(room.getPublicId()), response);
+        return response;
+    }
+
+    /** STOMP destination clients subscribe to for a room's live messages. */
+    static String roomTopic(UUID roomPublicId) {
+        return "/topic/chat." + roomPublicId;
     }
 
     public List<StaffChatRoomResponse> listStaffRooms(
