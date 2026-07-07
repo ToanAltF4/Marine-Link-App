@@ -634,7 +634,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       navigator.pop();
       return;
     }
-    BuyerNavigation.popOrGo(context, AppRoutes.cart);
+    // Cart opens checkout with go() and both share the same buyer tab, so there
+    // is no page to pop. Go straight to the cart tab instead of popOrGo — the
+    // latter treats /cart and /checkout as one tab and jumps to the previous
+    // buyer tab (or no-ops), which is why "back" did not return to the cart.
+    GoRouter.of(context).go(AppRoutes.cart);
   }
 
   void _goToProducts(BuildContext context) {

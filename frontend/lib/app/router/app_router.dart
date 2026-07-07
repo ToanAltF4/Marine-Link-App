@@ -199,11 +199,11 @@ class AppRouter {
                   ),
                   GoRoute(
                     path: ':roomId',
-                    builder: (context, state) => ChatScreen(
-                      roomId:
-                          state.pathParameters['roomId'] ??
-                          ChatMockRepository.defaultRoomId,
-                    ),
+                    // Do NOT fall back to a mock room id here — in remote mode a
+                    // mock UUID would hit GET /api/chat/{id} → 404. A null/empty
+                    // id makes ChatScreen resolve the buyer's own room instead.
+                    builder: (context, state) =>
+                        ChatScreen(roomId: state.pathParameters['roomId']),
                   ),
                 ],
               ),

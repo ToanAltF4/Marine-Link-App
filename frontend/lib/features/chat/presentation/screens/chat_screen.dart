@@ -41,7 +41,8 @@ class ChatScreen extends StatelessWidget {
         final complaintOrderId = orderId;
         if (complaintOrderId != null && complaintOrderId.isNotEmpty) {
           cubit.loadOrderRoom(complaintOrderId);
-        } else if (id == null) {
+        } else if (id == null || id.isEmpty) {
+          // Buyer support chat: resolve/create the user's own room (remote-safe).
           cubit.loadMyRoom();
         } else {
           cubit.load(id);

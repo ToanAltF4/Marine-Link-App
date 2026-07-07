@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/cart/domain/cart.dart';
@@ -31,6 +32,44 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const Key('checkoutSubmitButton')), findsNothing);
+    });
+
+    testWidgets('back button returns to the cart', (tester) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+      final router = GoRouter(
+        initialLocation: '/checkout',
+        routes: [
+          GoRoute(
+            path: '/checkout',
+            builder: (_, _) => CheckoutScreen(
+              checkoutRepository: _FakeCheckoutRepository(),
+              shippingAddressRepository: _FakeShippingAddressRepository(),
+            ),
+          ),
+          GoRoute(
+            path: '/cart',
+            builder: (_, _) =>
+                const Scaffold(body: Center(child: Text('CART PAGE'))),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        BlocProvider.value(
+          value: cartCubit,
+          child: MaterialApp.router(
+            theme: AppTheme.light(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Quay lại'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CART PAGE'), findsOneWidget);
     });
 
     testWidgets('validates receiver form before submitting checkout', (
