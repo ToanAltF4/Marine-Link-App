@@ -133,6 +133,7 @@ class _ChatViewState extends State<_ChatView> {
                   state: state,
                   controller: _scrollController,
                   orderId: widget.orderId,
+                  viewerIsStaff: widget.staffMode,
                 ),
               ),
               _ChatComposer(
@@ -201,9 +202,14 @@ class _ChatBody extends StatelessWidget {
   final ScrollController controller;
   final String? orderId;
 
+  /// True when the current account is staff/admin — used to align "my" bubbles
+  /// (staff) to the right and the customer to the left; the reverse for buyers.
+  final bool viewerIsStaff;
+
   const _ChatBody({
     required this.state,
     required this.controller,
+    required this.viewerIsStaff,
     this.orderId,
   });
 
@@ -246,6 +252,7 @@ class _ChatBody extends StatelessWidget {
       ChatStatus.success => _ChatMessageList(
         controller: controller,
         messages: state.messages,
+        viewerIsStaff: viewerIsStaff,
       ),
     };
     if (!state.offlineFallback) {
@@ -351,8 +358,13 @@ class _ChatError extends StatelessWidget {
 class _ChatMessageList extends StatelessWidget {
   final ScrollController controller;
   final List<ChatMessage> messages;
+  final bool viewerIsStaff;
 
-  const _ChatMessageList({required this.controller, required this.messages});
+  const _ChatMessageList({
+    required this.controller,
+    required this.messages,
+    required this.viewerIsStaff,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,23 +373,29 @@ class _ChatMessageList extends StatelessWidget {
       controller: controller,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
       itemCount: messages.length,
-      itemBuilder: (context, index) => _ChatBubble(message: messages[index]),
+      itemBuilder: (context, index) =>
+          _ChatBubble(message: messages[index], viewerIsStaff: viewerIsStaff),
     );
   }
 }
 
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final bool viewerIsStaff;
 
-  const _ChatBubble({required this.message});
+  const _ChatBubble({required this.message, required this.viewerIsStaff});
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.senderType == ChatSenderType.user;
+    // "Mine" = messages sent by the account currently viewing → align right.
+    // Staff/admin view: staff messages are mine; buyer view: user messages are.
+    final isMine = viewerIsStaff
+        ? message.senderType == ChatSenderType.staff
+        : message.senderType == ChatSenderType.user;
     final style = _bubbleStyle(message.senderType);
     return Align(
       key: Key('chatMessageBubble_${message.id}'),
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 310),
         child: DecoratedBox(
@@ -386,8 +404,8 @@ class _ChatBubble extends StatelessWidget {
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(8),
               topRight: const Radius.circular(8),
-              bottomLeft: Radius.circular(isUser ? 8 : 2),
-              bottomRight: Radius.circular(isUser ? 2 : 8),
+              bottomLeft: Radius.circular(isMine ? 8 : 2),
+              bottomRight: Radius.circular(isMine ? 2 : 8),
             ),
             border: Border.all(color: style.borderColor),
           ),
