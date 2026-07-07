@@ -188,11 +188,11 @@ Orders:
 | PUT | `/api/notifications/{id}/read` | Owner |
 | GET | `/api/warehouses` | All roles |
 | GET | `/api/admin/dashboard` | ADMIN |
-| GET | `/api/admin/products` | ADMIN |
-| POST | `/api/admin/products` | ADMIN |
-| GET | `/api/admin/products/{id}` | ADMIN |
-| PUT | `/api/admin/products/{id}` | ADMIN |
-| DELETE | `/api/admin/products/{id}` | ADMIN |
+| GET | `/api/admin/products` | STAFF, ADMIN |
+| POST | `/api/admin/products` | STAFF, ADMIN |
+| GET | `/api/admin/products/{id}` | STAFF, ADMIN |
+| PUT | `/api/admin/products/{id}` | STAFF, ADMIN |
+| DELETE | `/api/admin/products/{id}` | STAFF, ADMIN |
 | GET | `/api/admin/users` | ADMIN |
 | GET | `/api/admin/users/{id}` | ADMIN |
 | PUT | `/api/admin/users/{id}` | ADMIN |

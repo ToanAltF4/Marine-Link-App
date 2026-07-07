@@ -81,6 +81,9 @@ public class SecurityConfig {
                     "/swagger-ui/**", "/swagger-ui.html",
                     "/api-docs/**", "/api-docs",
                     "/actuator/health").permitAll()
+                // Product management: staff can also update stock / add products
+                .requestMatchers("/api/admin/products", "/api/admin/products/**")
+                    .hasAnyRole("STAFF", "ADMIN")
                 // Admin-only
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Staff workspace
