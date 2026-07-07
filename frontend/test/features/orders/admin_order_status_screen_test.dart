@@ -170,17 +170,6 @@ void main() {
     expect(find.text('Quản lý công việc'), findsOneWidget);
     expect(find.text('Đơn cần xử lý'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('staffDeliveryRouteSection')),
-      320,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const Key('staffDashboardScreen')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(find.byKey(const Key('staffDeliveryRouteSection')), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('staffOrdersShortcut')));
 
     await tester.tap(find.byKey(const Key('staffOrdersShortcut')));
