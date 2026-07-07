@@ -37,12 +37,15 @@ class ChatServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final ComplaintRepository complaintRepository = mock(ComplaintRepository.class);
     private final OrderRepository orderRepository = mock(OrderRepository.class);
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate =
+            mock(org.springframework.messaging.simp.SimpMessagingTemplate.class);
     private final ChatService chatService = new ChatService(
             chatRoomRepository,
             chatMessageRepository,
             userRepository,
             complaintRepository,
-            orderRepository);
+            orderRepository,
+            messagingTemplate);
 
     @Test
     void getThreadReturnsMessagesForRoomOwner() {
@@ -112,6 +115,10 @@ class ChatServiceTest {
         assertNotNull(room.getLastMessageAt());
         assertEquals(staff, room.getAssignedStaff());
         verify(chatRoomRepository).save(room);
+        // Realtime broadcast to the room topic (ML-63).
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/chat." + roomPublicId),
+                org.mockito.ArgumentMatchers.<Object>any());
     }
 
     @Test

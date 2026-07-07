@@ -33,6 +33,12 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
 
+    <!-- WebSocket / STOMP — realtime chat (ML-63) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
     <!-- Security -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

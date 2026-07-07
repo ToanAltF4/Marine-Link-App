@@ -69,6 +69,8 @@ public class SecurityConfig {
                     "/api/auth/register",
                     "/api/auth/verify-email",
                     "/api/auth/resend-otp").permitAll()
+                // WebSocket handshake (STOMP auth happens on the CONNECT frame)
+                .requestMatchers("/ws/**", "/ws").permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/auth/email-availability",
                     "/api/auth/phone-availability",
