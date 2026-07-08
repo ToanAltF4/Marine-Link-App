@@ -93,9 +93,40 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse<T>> patch<T>(
+    String path, {
+    dynamic data,
+    required T Function(dynamic json) fromJson,
+  }) async {
+    try {
+      final response = await _dio.patch(path, data: data);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
+      return ApiResponse.fromJson(response.data, fromJson);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   Future<void> delete(String path) async {
     try {
       await _dio.delete(path);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  Future<ApiResponse<T>> deleteFor<T>(
+    String path, {
+    required T Function(dynamic json) fromJson,
+  }) async {
+    try {
+      final response = await _dio.delete(path);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
+      return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);
     }

@@ -246,35 +246,89 @@ void main() {
       ],
     );
 
-    test(
-      'syncs after adding an item when a remote cart repository is provided',
-      () async {
-        final repository = _FakeCartRepository();
-        final cubit = CartCubit(cartRepository: repository);
+    test('adds through remote repository and reconciles server cart', () async {
+      final serverCart = Cart(items: [_cartItem(productId: 'prod-server')]);
+      final repository = _FakeCartRepository(addItemResult: serverCart);
+      final cubit = CartCubit(cartRepository: repository);
 
-        cubit.addItem(product: _product(), quantity: 2);
-        await Future<void>.delayed(Duration.zero);
+      cubit.addItem(product: _product(), quantity: 2);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(repository.syncedCart?.items, hasLength(1));
-        expect(repository.syncedCart?.items.single.productId, 'prod-001');
-        expect(repository.syncedCart?.items.single.quantity, 2);
-      },
-    );
+      expect(repository.addedProductId, 'prod-001');
+      expect(repository.addedQuantity, 2);
+      expect(cubit.state.cart, serverCart);
+    });
+
+    test('rolls back optimistic remote update when API fails', () async {
+      final repository = _FakeCartRepository(throwsOnUpdate: true);
+      final cubit = CartCubit(cartRepository: repository)
+        ..addItem(product: _product(), quantity: 2);
+      await Future<void>.delayed(Duration.zero);
+      final loadedCart = cubit.state.cart;
+
+      cubit.updateQuantity('prod-001', 5);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state.cart, loadedCart);
+    });
   });
 }
 
 class _FakeCartRepository implements CartRepository {
   final Cart loadCartResult;
-  Cart? syncedCart;
+  final Cart? addItemResult;
+  final bool throwsOnUpdate;
+  String? addedProductId;
+  int? addedQuantity;
 
-  _FakeCartRepository({this.loadCartResult = const Cart()});
+  _FakeCartRepository({
+    this.loadCartResult = const Cart(),
+    this.addItemResult,
+    this.throwsOnUpdate = false,
+  });
 
   @override
   Future<Cart> loadCart() async => loadCartResult;
 
   @override
+  Future<Cart> addItem({
+    required String productId,
+    required int quantity,
+    bool selected = true,
+  }) async {
+    addedProductId = productId;
+    addedQuantity = quantity;
+    return addItemResult ??
+        Cart(
+          items: [_cartItem(productId: productId, quantity: quantity)],
+        );
+  }
+
+  @override
+  Future<Cart> updateItem({
+    required String productId,
+    int? quantity,
+    bool? selected,
+  }) async {
+    if (throwsOnUpdate) throw Exception('remote failed');
+    final current =
+        addItemResult ?? Cart(items: [_cartItem(productId: productId)]);
+    final item = current.items.firstWhere(
+      (item) => item.productId == productId,
+    );
+    return current.upsertItem(
+      item.copyWith(quantity: quantity, selected: selected),
+    );
+  }
+
+  @override
+  Future<Cart> removeItem(String productId) async => const Cart();
+
+  @override
+  Future<Cart> clear() async => const Cart();
+
+  @override
   Future<Cart> syncCart(Cart cart) async {
-    syncedCart = cart;
     return cart;
   }
 }
