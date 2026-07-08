@@ -6,6 +6,7 @@ import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/app/router/app_router.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
 import 'package:marinelink/core/api/api_response.dart';
+import 'package:marinelink/core/assets/app_assets.dart';
 import 'package:marinelink/features/auth/domain/user.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_event.dart';
@@ -87,6 +88,9 @@ void main() {
     expect(find.text('test@example.com'), findsOneWidget);
     expect(find.byKey(const Key('profileEditButton')), findsOneWidget);
     expect(find.byKey(const Key('profileOrdersTile')), findsOneWidget);
+    expect(find.byKey(const Key('profileAvatar')), findsOneWidget);
+    expect(find.image(const AssetImage(AppAssets.logoCircle)), findsOneWidget);
+    expect(find.byKey(const Key('profileAvatarUrlField')), findsNothing);
   });
 
   testWidgets('validates phone before updateProfile', (tester) async {
@@ -111,7 +115,7 @@ void main() {
     );
   });
 
-  testWidgets('saves profile with avatarUrl', (tester) async {
+  testWidgets('saves profile without avatarUrl input', (tester) async {
     const updated = Profile(
       id: '1',
       fullName: 'Đại lý Mới',
@@ -120,7 +124,6 @@ void main() {
       status: 'ACTIVE',
       roles: ['USER'],
       businessAddress: 'Sóc Trăng',
-      avatarUrl: 'https://example.com/new-avatar.png',
     );
     when(
       () => mockRepository.updateProfile(
@@ -151,10 +154,7 @@ void main() {
       find.byKey(const Key('profileAddressField')),
       'Sóc Trăng',
     );
-    await tester.enterText(
-      find.byKey(const Key('profileAvatarUrlField')),
-      'https://example.com/new-avatar.png',
-    );
+    expect(find.byKey(const Key('profileAvatarUrlField')), findsNothing);
     await tester.ensureVisible(find.byKey(const Key('profileSaveButton')));
     await tester.tap(find.byKey(const Key('profileSaveButton')));
     await tester.pumpAndSettle();
@@ -165,7 +165,7 @@ void main() {
         fullName: 'Đại lý Mới',
         phone: '0987654321',
         businessAddress: 'Sóc Trăng',
-        avatarUrl: 'https://example.com/new-avatar.png',
+        avatarUrl: null,
       ),
     ).called(1);
   });
