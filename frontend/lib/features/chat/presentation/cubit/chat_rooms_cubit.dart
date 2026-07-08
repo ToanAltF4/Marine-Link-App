@@ -14,8 +14,12 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
 
   ChatRoomsCubit({required this.repository}) : super(const ChatRoomsState());
 
-  Future<void> load() async {
-    emit(state.copyWith(status: ChatRoomsStatus.loading, clearError: true));
+  /// Load the conversation list. Pass [silent] to refresh in place (e.g. when
+  /// returning from a thread) without flashing the loading state.
+  Future<void> load({bool silent = false}) async {
+    if (!silent) {
+      emit(state.copyWith(status: ChatRoomsStatus.loading, clearError: true));
+    }
     try {
       final response = await repository.getMyRooms();
       if (response.success && response.data != null) {

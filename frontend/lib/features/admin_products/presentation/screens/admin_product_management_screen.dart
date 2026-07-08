@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/di/service_locator.dart';
+import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
@@ -11,23 +13,39 @@ import '../../domain/admin_product.dart';
 import '../cubit/admin_product_cubit.dart';
 
 class AdminProductManagementScreen extends StatelessWidget {
-  const AdminProductManagementScreen({super.key});
+  /// When opened from the staff dashboard, use staff chrome (staff bottom nav,
+  /// back to the staff dashboard) instead of the admin-only navigation, which
+  /// would otherwise bounce a staff user into the admin-guarded area.
+  final bool staffMode;
+
+  const AdminProductManagementScreen({super.key, this.staffMode = false});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AdminProductCubit>(
       create: (_) => sl<AdminProductCubit>()..load(),
-      child: const _AdminProductView(),
+      child: _AdminProductView(staffMode: staffMode),
     );
   }
 }
 
 class _AdminProductView extends StatelessWidget {
-  const _AdminProductView();
+  final bool staffMode;
+
+  const _AdminProductView({required this.staffMode});
 
   @override
   Widget build(BuildContext context) {
     return AppBackExitScope(
+      onFirstBack: staffMode
+          ? (ctx) {
+              if (ctx.canPop()) {
+                ctx.pop();
+              } else {
+                ctx.go(AppRoutes.staffDashboard);
+              }
+            }
+          : null,
       child: Scaffold(
         key: const Key('adminProductsScreen'),
         backgroundColor: AppColors.background,
@@ -42,9 +60,9 @@ class _AdminProductView extends StatelessWidget {
             ),
           ],
         ),
-        bottomNavigationBar: const AdminBottomNav(
-          currentTab: AdminBottomNavTab.products,
-        ),
+        bottomNavigationBar: staffMode
+            ? const StaffBottomNav(currentTab: StaffBottomNavTab.work)
+            : const AdminBottomNav(currentTab: AdminBottomNavTab.products),
         body: BlocBuilder<AdminProductCubit, AdminProductState>(
           builder: (context, state) {
             switch (state.status) {

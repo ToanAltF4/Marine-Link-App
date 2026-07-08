@@ -118,13 +118,20 @@ class _ChatViewState extends State<_ChatView> {
                           onPressed: () => context.go(widget.staffBackLocation),
                         )
                       : null)
-                // Buyer thread is always opened from the chat history list, so
-                // give it a back button that returns to that list (ML-64).
+                // Buyer thread is opened from the chat history list via push, so
+                // pop back to it (which refreshes the history). Fall back to a
+                // direct go for deep-links that landed here without a stack.
                 : IconButton(
                     key: const Key('buyerChatBackButton'),
                     tooltip: 'Quay l\u1ea1i',
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.go(AppRoutes.chat),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.chat);
+                      }
+                    },
                   ),
             title: Text(
               widget.staffMode
