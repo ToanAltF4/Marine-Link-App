@@ -115,7 +115,24 @@ class _FakeApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<T>> patch<T>(
+    String path, {
+    dynamic data,
+    required T Function(dynamic json) fromJson,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> delete(String path) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ApiResponse<T>> deleteFor<T>(
+    String path, {
+    required T Function(dynamic json) fromJson,
+  }) {
     throw UnimplementedError();
   }
 

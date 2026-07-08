@@ -30,6 +30,8 @@ abstract class ApiEndpoints {
 
   // ── Cart ──────────────────────────────────────────────────────────────────
   static const String cart = '/api/cart';
+  static const String cartItems = '/api/cart/items';
+  static String cartItem(String productId) => '/api/cart/items/$productId';
   static const String cartSync = '/api/cart/sync';
 
   // ── Orders ────────────────────────────────────────────────────────────────

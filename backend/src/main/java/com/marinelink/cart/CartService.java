@@ -45,13 +45,7 @@ public class CartService {
 
     @Transactional
     public CartResponse syncCart(UUID userPublicId, CartSyncRequest request) {
-        User user = userRepository.findActiveByPublicId(userPublicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nguoi dung"));
-        Cart cart = cartRepository.findActiveByUserPublicId(userPublicId)
-                .orElseGet(() -> Cart.builder()
-                        .publicId(UUID.randomUUID())
-                        .user(user)
-                        .build());
+        Cart cart = getOrCreateCart(userPublicId);
 
         cart.getItems().clear();
         for (CartSyncItemRequest itemRequest : uniqueItems(request.items()).values()) {
@@ -70,6 +64,99 @@ public class CartService {
         }
 
         return toResponse(cartRepository.save(cart));
+    }
+
+    @Transactional
+    public CartResponse addItem(UUID userPublicId, CartItemCreateRequest request) {
+        Cart cart = getOrCreateCart(userPublicId);
+        Product product = getProduct(request.productId());
+        int currentQuantity = findItem(cart, request.productId())
+                .map(CartItem::getQuantity)
+                .orElse(0);
+        int nextQuantity = currentQuantity + request.quantity();
+        validateItem(product, nextQuantity);
+
+        CartItem item = findItem(cart, request.productId())
+                .orElseGet(() -> {
+                    CartItem created = CartItem.builder()
+                            .publicId(UUID.randomUUID())
+                            .cart(cart)
+                            .product(product)
+                            .build();
+                    cart.getItems().add(created);
+                    return created;
+                });
+        item.setQuantity(nextQuantity);
+        item.setSelected(request.selected() == null || request.selected());
+        item.setPriceTier(resolvePriceTier(product, nextQuantity));
+
+        return toResponse(cartRepository.save(cart));
+    }
+
+    @Transactional
+    public CartResponse updateItem(UUID userPublicId, UUID productPublicId, CartItemUpdateRequest request) {
+        if (request.quantity() == null && request.selected() == null) {
+            throw new BusinessException("Can cap nhat so luong hoac trang thai chon", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        Cart cart = getActiveCartOrThrow(userPublicId);
+        CartItem item = findItem(cart, productPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham trong gio hang"));
+        Product product = item.getProduct();
+
+        if (request.quantity() != null) {
+            validateItem(product, request.quantity());
+            item.setQuantity(request.quantity());
+            item.setPriceTier(resolvePriceTier(product, request.quantity()));
+        }
+        if (request.selected() != null) {
+            item.setSelected(request.selected());
+        }
+
+        return toResponse(cartRepository.save(cart));
+    }
+
+    @Transactional
+    public CartResponse removeItem(UUID userPublicId, UUID productPublicId) {
+        Cart cart = getActiveCartOrThrow(userPublicId);
+        CartItem item = findItem(cart, productPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham trong gio hang"));
+        cart.getItems().remove(item);
+        return toResponse(cartRepository.save(cart));
+    }
+
+    @Transactional
+    public CartResponse clearItems(UUID userPublicId) {
+        Cart cart = cartRepository.findActiveByUserPublicId(userPublicId)
+                .orElseGet(() -> getOrCreateCart(userPublicId));
+        cart.getItems().clear();
+        return toResponse(cartRepository.save(cart));
+    }
+
+    private Cart getOrCreateCart(UUID userPublicId) {
+        User user = userRepository.findActiveByPublicId(userPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay nguoi dung"));
+        return cartRepository.findActiveByUserPublicId(userPublicId)
+                .orElseGet(() -> Cart.builder()
+                        .publicId(UUID.randomUUID())
+                        .user(user)
+                        .build());
+    }
+
+    private Cart getActiveCartOrThrow(UUID userPublicId) {
+        return cartRepository.findActiveByUserPublicId(userPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay gio hang"));
+    }
+
+    private Product getProduct(UUID productPublicId) {
+        return productRepository.findDetailByPublicId(productPublicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham"));
+    }
+
+    private java.util.Optional<CartItem> findItem(Cart cart, UUID productPublicId) {
+        return cart.getItems()
+                .stream()
+                .filter(item -> item.getProduct().getPublicId().equals(productPublicId))
+                .findFirst();
     }
 
     private Map<UUID, CartSyncItemRequest> uniqueItems(List<CartSyncItemRequest> items) {
