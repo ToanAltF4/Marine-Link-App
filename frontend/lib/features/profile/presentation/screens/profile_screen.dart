@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/assets/app_assets.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
@@ -42,7 +43,6 @@ class _ProfileViewState extends State<_ProfileView> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
-  late final TextEditingController _avatarController;
   bool _isEditing = false;
 
   @override
@@ -51,7 +51,6 @@ class _ProfileViewState extends State<_ProfileView> {
     _nameController = TextEditingController();
     _phoneController = TextEditingController();
     _addressController = TextEditingController();
-    _avatarController = TextEditingController();
   }
 
   @override
@@ -59,7 +58,6 @@ class _ProfileViewState extends State<_ProfileView> {
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _avatarController.dispose();
     super.dispose();
   }
 
@@ -68,7 +66,6 @@ class _ProfileViewState extends State<_ProfileView> {
     _nameController.text = profile.fullName;
     _phoneController.text = profile.phone;
     _addressController.text = profile.businessAddress ?? '';
-    _avatarController.text = profile.avatarUrl ?? '';
   }
 
   @override
@@ -151,7 +148,7 @@ class _ProfileViewState extends State<_ProfileView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _ProfileHeader(profile: profile, avatarUrl: _avatarText),
+                  _ProfileHeader(profile: profile),
                   const SizedBox(height: 16),
                   _buildInfoPanel(),
                   const SizedBox(height: 16),
@@ -166,11 +163,6 @@ class _ProfileViewState extends State<_ProfileView> {
         },
       ),
     );
-  }
-
-  String? get _avatarText {
-    final text = _avatarController.text.trim();
-    return text.isEmpty ? null : text;
   }
 
   Widget _buildInfoPanel() {
@@ -213,20 +205,8 @@ class _ProfileViewState extends State<_ProfileView> {
               enabled: _isEditing,
               icon: Icons.location_on_outlined,
               maxLines: 2,
-              textInputAction: TextInputAction.next,
-              validator: _validateAddress,
-            ),
-            const SizedBox(height: 14),
-            _buildField(
-              key: const Key('profileAvatarUrlField'),
-              label: 'Avatar URL',
-              controller: _avatarController,
-              enabled: _isEditing,
-              icon: Icons.image_outlined,
-              keyboardType: TextInputType.url,
               textInputAction: TextInputAction.done,
-              validator: _validateAvatarUrl,
-              onChanged: (_) => setState(() {}),
+              validator: _validateAddress,
             ),
           ],
         ),
@@ -244,7 +224,6 @@ class _ProfileViewState extends State<_ProfileView> {
     TextInputType? keyboardType,
     TextInputAction? textInputAction,
     String? Function(String?)? validator,
-    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +238,6 @@ class _ProfileViewState extends State<_ProfileView> {
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           validator: validator,
-          onChanged: onChanged,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: AppColors.primary),
             filled: !enabled,
@@ -452,27 +430,13 @@ class _ProfileViewState extends State<_ProfileView> {
     return null;
   }
 
-  String? _validateAvatarUrl(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return null;
-    if (text.length > 500) return 'Avatar URL không quá 500 ký tự';
-    final uri = Uri.tryParse(text);
-    if (uri == null || uri.host.isEmpty) {
-      return 'Avatar URL không hợp lệ';
-    }
-    if (uri.scheme != 'http' && uri.scheme != 'https') {
-      return 'Avatar URL phải bắt đầu bằng http hoặc https';
-    }
-    return null;
-  }
-
   void _saveProfile() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<ProfileCubit>().updateProfile(
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         businessAddress: _emptyToNull(_addressController.text),
-        avatarUrl: _emptyToNull(_avatarController.text),
+        avatarUrl: null,
       );
     }
   }
@@ -485,9 +449,8 @@ class _ProfileViewState extends State<_ProfileView> {
 
 class _ProfileHeader extends StatelessWidget {
   final Profile profile;
-  final String? avatarUrl;
 
-  const _ProfileHeader({required this.profile, required this.avatarUrl});
+  const _ProfileHeader({required this.profile});
 
   @override
   Widget build(BuildContext context) {
@@ -502,13 +465,7 @@ class _ProfileHeader extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            _AvatarPreview(
-              key: const Key('profileAvatar'),
-              avatarUrl: avatarUrl,
-              fallbackLetter: profile.fullName.trim().isEmpty
-                  ? 'M'
-                  : profile.fullName.trim().characters.first.toUpperCase(),
-            ),
+            _AvatarPreview(key: const Key('profileAvatar')),
             const SizedBox(height: 14),
             Text(
               profile.fullName,
@@ -531,44 +488,20 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _AvatarPreview extends StatelessWidget {
-  final String? avatarUrl;
-  final String fallbackLetter;
-
-  const _AvatarPreview({
-    super.key,
-    required this.avatarUrl,
-    required this.fallbackLetter,
-  });
+  const _AvatarPreview({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final fallback = DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceSky,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          fallbackLetter,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-
-    final url = avatarUrl;
     return SizedBox.square(
       dimension: 96,
       child: ClipOval(
-        child: url == null
-            ? fallback
-            : Image.network(
-                url,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => fallback,
-              ),
+        child: ColoredBox(
+          color: AppColors.surfaceSky,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Image.asset(AppAssets.logoCircle, fit: BoxFit.contain),
+          ),
+        ),
       ),
     );
   }
