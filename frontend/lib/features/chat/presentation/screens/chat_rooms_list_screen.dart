@@ -35,11 +35,21 @@ class _ChatRoomsView extends StatelessWidget {
     final cubit = context.read<ChatRoomsCubit>();
     final roomId = await cubit.createRoom();
     if (roomId != null && roomId.isNotEmpty && context.mounted) {
-      context.go(AppRoutes.chatRoomPath(roomId));
+      await _openRoom(context, roomId);
     } else if (context.mounted && cubit.state.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(cubit.state.errorMessage!)),
       );
+    }
+  }
+
+  /// Open a thread and refresh the history when it is popped, so the list shows
+  /// the latest message/room without needing a re-login.
+  Future<void> _openRoom(BuildContext context, String roomId) async {
+    final cubit = context.read<ChatRoomsCubit>();
+    await context.push(AppRoutes.chatRoomPath(roomId));
+    if (context.mounted) {
+      await cubit.load(silent: true);
     }
   }
 
@@ -102,9 +112,8 @@ class _ChatRoomsView extends StatelessWidget {
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) => _ChatRoomTile(
                     room: state.rooms[index],
-                    onTap: () => context.go(
-                      AppRoutes.chatRoomPath(state.rooms[index].roomId),
-                    ),
+                    onTap: () =>
+                        _openRoom(context, state.rooms[index].roomId),
                   ),
                 );
             }

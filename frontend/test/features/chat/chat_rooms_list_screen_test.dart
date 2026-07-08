@@ -10,14 +10,17 @@ import 'package:marinelink/features/chat/presentation/cubit/chat_rooms_cubit.dar
 import 'package:marinelink/features/chat/presentation/screens/chat_rooms_list_screen.dart';
 
 class _RoomsRepo implements ChatRepository {
-  final List<ChatRoomSummary> rooms;
+  List<ChatRoomSummary> rooms;
   final String? newRoomId;
+  int getMyRoomsCalls = 0;
 
   _RoomsRepo({this.rooms = const [], this.newRoomId});
 
   @override
-  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() async =>
-      ApiResponse(success: true, message: 'OK', data: rooms);
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() async {
+    getMyRoomsCalls++;
+    return ApiResponse(success: true, message: 'OK', data: rooms);
+  }
 
   @override
   Future<ApiResponse<ChatThread>> createRoom() async => newRoomId == null
@@ -96,5 +99,33 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
     expect(find.text('THREAD fresh-room'), findsOneWidget);
+  });
+
+  testWidgets('refreshes chat history when returning from a thread', (
+    tester,
+  ) async {
+    final repo = _RoomsRepo(
+      rooms: const [
+        ChatRoomSummary(roomId: 'r1', title: 'Xin chao shop', isClosed: false),
+      ],
+    );
+    sl.registerFactory<ChatRoomsCubit>(() => ChatRoomsCubit(repository: repo));
+
+    final router = _router();
+    await tester.pumpWidget(_wrap(router));
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    expect(repo.getMyRoomsCalls, 1);
+
+    // Open the thread, then simulate backing out of it.
+    await tester.tap(find.byKey(const Key('chatRoomTile_r1')));
+    await tester.pumpAndSettle();
+    expect(find.text('THREAD r1'), findsOneWidget);
+
+    router.pop();
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+
+    // Back on the list, the history was reloaded (no re-login needed).
+    expect(find.byKey(const Key('chatRoomsList')), findsOneWidget);
+    expect(repo.getMyRoomsCalls, 2);
   });
 }
