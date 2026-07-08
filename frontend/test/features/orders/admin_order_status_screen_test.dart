@@ -40,7 +40,7 @@ void main() {
     });
 
     await sl.reset();
-    await setupServiceLocator();
+    await setupServiceLocator(useRemoteRepositories: false);
     addTearDown(sl.reset);
 
     await tester.pumpWidget(const MarineLinkApp());
@@ -139,7 +139,7 @@ void main() {
     });
 
     await sl.reset();
-    await setupServiceLocator();
+    await setupServiceLocator(useRemoteRepositories: false);
     addTearDown(sl.reset);
 
     await tester.pumpWidget(const MarineLinkApp());
@@ -259,7 +259,7 @@ void main() {
     });
 
     await sl.reset();
-    await setupServiceLocator();
+    await setupServiceLocator(useRemoteRepositories: false);
     addTearDown(sl.reset);
 
     await tester.pumpWidget(const MarineLinkApp());

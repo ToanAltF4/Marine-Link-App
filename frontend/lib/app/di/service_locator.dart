@@ -92,7 +92,7 @@ final GetIt sl = GetIt.instance;
 
 const bool _useRemoteRepositories = bool.fromEnvironment(
   'USE_REMOTE_REPOSITORIES',
-  defaultValue: false,
+  defaultValue: true,
 );
 
 /// Derive the STOMP WebSocket URL from the REST base URL
@@ -109,7 +109,9 @@ String _chatWebSocketUrl() {
 ///
 /// Sprint 5 migration: swap Mock repositories for Remote ones here without
 /// touching any BLoC/Cubit or UI code.
-Future<void> setupServiceLocator() async {
+Future<void> setupServiceLocator({
+  bool useRemoteRepositories = _useRemoteRepositories,
+}) async {
   // ── Core: Storage ────────────────────────────────────────────────────────────
   sl.registerLazySingleton<SecureTokenStorage>(() => SecureTokenStorage());
 
@@ -122,7 +124,7 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<GoogleAuthService>(() => GoogleSignInAuthService());
   // Sprint 5: swap AuthMockRepository → AuthRemoteRepository
   sl.registerLazySingleton<AuthRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? AuthRemoteRepository(
             apiClient: sl<ApiClient>(),
             tokenStorage: sl<SecureTokenStorage>(),
@@ -137,7 +139,7 @@ Future<void> setupServiceLocator() async {
   // ── Products ─────────────────────────────────────────────────────────────────
   // Sprint 5: swap ProductMockRepository → ProductRemoteRepository
   sl.registerLazySingleton<ProductRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? ProductRemoteRepository(apiClient: sl<ApiClient>())
         : ProductMockRepository(),
   );
@@ -147,21 +149,21 @@ Future<void> setupServiceLocator() async {
 
   // ── Cart ──────────────────────────────────────────────────────────────────────
   // CartCubit is a singleton so the cart persists across screens within a session.
-  if (_useRemoteRepositories) {
+  if (useRemoteRepositories) {
     sl.registerLazySingleton<CartRepository>(
       () => CartRemoteRepository(apiClient: sl<ApiClient>()),
     );
   }
   sl.registerLazySingleton<CartCubit>(
     () => CartCubit(
-      cartRepository: _useRemoteRepositories ? sl<CartRepository>() : null,
+      cartRepository: useRemoteRepositories ? sl<CartRepository>() : null,
     ),
   );
 
   // ── Orders ───────────────────────────────────────────────────────────────────
   // Sprint 5: swap OrderMockRepository → OrderRemoteRepository
   sl.registerLazySingleton<OrderRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? OrderRemoteRepository(apiClient: sl<ApiClient>())
         : OrderMockRepository(),
   );
@@ -171,7 +173,7 @@ Future<void> setupServiceLocator() async {
 
   // ── Notifications ────────────────────────────────────────────────────────────
   sl.registerLazySingleton<NotificationRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? NotificationRemoteRepository(apiClient: sl<ApiClient>())
         : NotificationMockRepository(),
   );
@@ -185,7 +187,7 @@ Future<void> setupServiceLocator() async {
 
   // Warehouses
   sl.registerLazySingleton<WarehouseRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? WarehouseRemoteRepository(apiClient: sl<ApiClient>())
         : WarehouseMockRepository(),
   );
@@ -201,12 +203,12 @@ Future<void> setupServiceLocator() async {
 
   // Chat
   sl.registerLazySingleton<ChatRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? ChatRemoteRepository(apiClient: sl<ApiClient>())
         : ChatMockRepository(),
   );
   sl.registerLazySingleton<ChatRealtimeService>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? StompChatRealtimeService(
             wsUrl: _chatWebSocketUrl(),
             tokenStorage: sl<SecureTokenStorage>(),
@@ -228,7 +230,7 @@ Future<void> setupServiceLocator() async {
 
   // Checkout uses OrderRepository as the POST /api/orders adapter.
   sl.registerLazySingleton<ShippingAddressRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? ShippingAddressRemoteRepository(apiClient: sl<ApiClient>())
         : ShippingAddressMockRepository(),
   );
@@ -241,10 +243,10 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<CheckoutRepository>(
     () => OrderCheckoutRepository(
       orderRepository: sl<OrderRepository>(),
-      cartSyncRepository: _useRemoteRepositories
+      cartSyncRepository: useRemoteRepositories
           ? sl<CartSyncRepository>()
           : null,
-      vnpayPaymentRepository: _useRemoteRepositories
+      vnpayPaymentRepository: useRemoteRepositories
           ? sl<VnpayPaymentRepository>()
           : null,
     ),
@@ -255,7 +257,7 @@ Future<void> setupServiceLocator() async {
 
   // ── Profile ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<ProfileRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? ProfileRemoteRepository(apiClient: sl<ApiClient>())
         : ProfileMockRepository(sl<AuthRepository>()),
   );
@@ -266,7 +268,7 @@ Future<void> setupServiceLocator() async {
   // ── Admin ────────────────────────────────────────────────────────────────────
   // Sprint 5: swap AdminDashboardMockRepository → AdminDashboardRemoteRepository
   sl.registerLazySingleton<AdminDashboardRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? AdminDashboardRemoteRepository(apiClient: sl<ApiClient>())
         : AdminDashboardMockRepository(),
   );
@@ -277,7 +279,7 @@ Future<void> setupServiceLocator() async {
   // ── Admin Users ─────────────────────────────────────────────────────────────
   // Sprint 5: swap AdminUserMockRepository → AdminUserRemoteRepository
   sl.registerLazySingleton<AdminProductRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? AdminProductRemoteRepository(apiClient: sl<ApiClient>())
         : AdminProductMockRepository(),
   );
@@ -286,7 +288,7 @@ Future<void> setupServiceLocator() async {
   );
 
   sl.registerLazySingleton<AdminUserRepository>(
-    () => _useRemoteRepositories
+    () => useRemoteRepositories
         ? AdminUserRemoteRepository(apiClient: sl<ApiClient>())
         : AdminUserMockRepository(),
   );
