@@ -22,6 +22,10 @@ void main() {
       );
 
       expect(first.data, same(second.data));
+      expect(
+        first.data?.single.shortDescription,
+        'Muc kho size lon cho don si',
+      );
       expect(apiClient.getCallCount('/api/products'), 1);
     });
 
@@ -52,6 +56,20 @@ void main() {
 
       expect(first.data, same(second.data));
       expect(apiClient.getCallCount('/api/products/prod-001'), 1);
+    });
+
+    test('reuses category tree responses in memory', () async {
+      final apiClient = _FakeApiClient();
+      final repository = ProductRemoteRepository(apiClient: apiClient);
+
+      final first = await repository.getCategories();
+      final second = await repository.getCategories();
+
+      expect(first.data, same(second.data));
+      expect(first.data?.single.name, 'Cá');
+      expect(first.data?.single.children.single.name, 'Cá khô');
+      expect(first.data?.single.children.single.parentId, 'cat-fish');
+      expect(apiClient.getCallCount('/api/products/categories'), 1);
     });
   });
 }
@@ -97,7 +115,24 @@ class _FakeApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<T>> patch<T>(
+    String path, {
+    dynamic data,
+    required T Function(dynamic json) fromJson,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> delete(String path) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ApiResponse<T>> deleteFor<T>(
+    String path, {
+    required T Function(dynamic json) fromJson,
+  }) {
     throw UnimplementedError();
   }
 
@@ -108,6 +143,7 @@ class _FakeApiClient implements ApiClient {
           'id': 'prod-001',
           'name': 'Muc kho loai 1',
           'slug': 'muc-kho-loai-1',
+          'shortDescription': 'Muc kho size lon cho don si',
           'basePrice': 100000,
           'unit': 'kg',
           'minOrderQuantity': 2,
@@ -117,10 +153,28 @@ class _FakeApiClient implements ApiClient {
         },
       ];
     }
+    if (path == '/api/products/categories') {
+      return [
+        {
+          'id': 'cat-fish',
+          'name': 'Cá',
+          'children': [
+            {
+              'id': 'cat-003',
+              'name': 'Cá khô',
+              'parentId': 'cat-fish',
+              'parentName': 'Cá',
+              'children': [],
+            },
+          ],
+        },
+      ];
+    }
     return {
       'id': 'prod-001',
       'name': 'Muc kho loai 1',
       'slug': 'muc-kho-loai-1',
+      'shortDescription': 'Muc kho size lon cho don si',
       'basePrice': 100000,
       'unit': 'kg',
       'minOrderQuantity': 2,

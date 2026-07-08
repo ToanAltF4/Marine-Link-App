@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/profile.dart';
 import '../../domain/profile_repository.dart';
 
@@ -28,7 +29,10 @@ class ProfileCubit extends Cubit<ProfileState> {
         emit(
           state.copyWith(
             status: ProfileStatus.failure,
-            errorMessage: response.message ?? 'Không tải được hồ sơ.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không tải được hồ sơ.',
+            ),
           ),
         );
       }
@@ -36,7 +40,10 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(
         state.copyWith(
           status: ProfileStatus.failure,
-          errorMessage: error.message,
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Không tải được hồ sơ.',
+          ),
         ),
       );
     } catch (_) {
@@ -76,7 +83,10 @@ class ProfileCubit extends Cubit<ProfileState> {
         emit(
           state.copyWith(
             status: ProfileStatus.updateFailure,
-            errorMessage: response.message ?? 'Không cập nhật được hồ sơ.',
+            errorMessage: userFacingResponseMessage(
+              response.message,
+              fallback: 'Không cập nhật được hồ sơ.',
+            ),
           ),
         );
       }
@@ -84,7 +94,10 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(
         state.copyWith(
           status: ProfileStatus.updateFailure,
-          errorMessage: error.message,
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: 'Không cập nhật được hồ sơ.',
+          ),
         ),
       );
     } catch (_) {

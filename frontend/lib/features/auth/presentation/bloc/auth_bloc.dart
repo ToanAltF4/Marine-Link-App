@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/auth_exceptions.dart';
 import '../../domain/auth_repository.dart';
 import 'auth_event.dart';
@@ -52,7 +53,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthAuthenticated(user: result.user, token: result.token));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(
+        AuthFailure(userFacingErrorMessage(e, fallback: 'Đăng nhập thất bại.')),
+      );
     }
   }
 
@@ -68,7 +71,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // User dismissed the picker — return silently, no error message.
       emit(const AuthUnauthenticated());
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(
+        AuthFailure(
+          userFacingErrorMessage(e, fallback: 'Đăng nhập Google thất bại.'),
+        ),
+      );
     }
   }
 
@@ -90,7 +97,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // After successful registration, an OTP has been sent to the user's email.
       emit(AuthOtpSent(email: event.email));
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(
+        AuthFailure(userFacingErrorMessage(e, fallback: 'Đăng ký thất bại.')),
+      );
     }
   }
 
@@ -106,7 +115,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(const AuthEmailVerified());
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(
+        AuthFailure(
+          userFacingErrorMessage(e, fallback: 'Xác thực email thất bại.'),
+        ),
+      );
     }
   }
 
@@ -118,7 +131,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authRepository.resendOtp(email: event.email);
       emit(const AuthOtpResent());
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(
+        AuthFailure(
+          userFacingErrorMessage(e, fallback: 'Không thể gửi lại OTP.'),
+        ),
+      );
     }
   }
 
@@ -149,7 +166,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(currentState);
       }
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(
+        AuthFailure(
+          userFacingErrorMessage(e, fallback: 'Đổi mật khẩu thất bại.'),
+        ),
+      );
       if (currentState is AuthAuthenticated) {
         emit(currentState);
       }

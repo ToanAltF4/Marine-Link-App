@@ -273,6 +273,46 @@ void main() {
     expect(find.byKey(const Key('adminProductsError')), findsNothing);
     expect(find.byKey(const Key('adminProductsList')), findsOneWidget);
   });
+
+  testWidgets('admin mode shows the admin bottom nav', (tester) async {
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_activeProduct]),
+      ),
+    );
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminBottomNavProducts')), findsOneWidget);
+    expect(find.byKey(const Key('staffBottomNavWork')), findsNothing);
+  });
+
+  testWidgets('staff mode shows the staff bottom nav, not the admin one', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_activeProduct]),
+      ),
+    );
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 1600);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(
+      const MaterialApp(home: AdminProductManagementScreen(staffMode: true)),
+    );
+    await tester.pumpAndSettle();
+
+    // Staff must not be handed the admin-only navigation (which would bounce
+    // them into the admin-guarded area on back/tab).
+    expect(find.byKey(const Key('staffBottomNavWork')), findsOneWidget);
+    expect(find.byKey(const Key('adminBottomNavProducts')), findsNothing);
+  });
 }
 
 const _category = AdminProductCategory(id: 'category-001', name: 'Mực khô');

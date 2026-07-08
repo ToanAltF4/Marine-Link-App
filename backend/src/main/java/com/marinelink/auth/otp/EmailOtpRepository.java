@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +27,11 @@ public interface EmailOtpRepository extends JpaRepository<EmailOtp, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM EmailOtp o WHERE o.email = :email")
     void deleteByEmail(@Param("email") String email);
+
+    /**
+     * Deletes expired OTP entries so old verification codes do not accumulate.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM EmailOtp o WHERE o.expiresAt < :cutoff")
+    int deleteExpiredBefore(@Param("cutoff") Instant cutoff);
 }

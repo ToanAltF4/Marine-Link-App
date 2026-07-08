@@ -132,18 +132,75 @@ public class AuthService {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         String phone = request.phone().trim();
 
-        if (userRepository.existsActiveByEmail(email)) {
+        return userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION)
+                .map(user -> refreshPendingRegistration(user, request, email, phone))
+                .orElseGet(() -> createPendingRegistration(request, email, phone));
+    }
+
+    @Transactional(readOnly = true)
+    public EmailAvailabilityResponse emailAvailability(String requestedEmail) {
+        String email = requestedEmail.trim().toLowerCase(Locale.ROOT);
+        boolean available = !userRepository.existsVerifiedByEmail(email);
+        String message = available ? "Email có thể sử dụng" : "Email đã được sử dụng";
+        return new EmailAvailabilityResponse(available, message);
+    }
+
+    @Transactional(readOnly = true)
+    public PhoneAvailabilityResponse phoneAvailability(String requestedPhone, String requestedEmail) {
+        String phone = requestedPhone.trim();
+        String email = trimToNull(requestedEmail);
+
+        boolean available = false;
+        if (email != null) {
+            available = userRepository.findByEmailAndStatus(
+                            email.toLowerCase(Locale.ROOT),
+                            UserStatus.PENDING_VERIFICATION)
+                    .map(user -> !userRepository.existsActiveByPhoneAndPublicIdNot(phone, user.getPublicId()))
+                    .orElse(false);
+        }
+        if (email == null || !available) {
+            available = !userRepository.existsActiveByPhone(phone);
+        }
+
+        String message = available ? "Số điện thoại có thể sử dụng" : "Số điện thoại đã được sử dụng";
+        return new PhoneAvailabilityResponse(available, message);
+    }
+
+    private RegisterResponse refreshPendingRegistration(
+            User user,
+            RegisterRequest request,
+            String email,
+            String phone) {
+        if (userRepository.existsActiveByPhoneAndPublicIdNot(phone, user.getPublicId())) {
+            throw new ConflictException("Số điện thoại đã được sử dụng");
+        }
+
+        user.setRole(findDefaultUserRole());
+        user.setFullName(request.fullName().trim());
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setStatus(UserStatus.PENDING_VERIFICATION);
+        user.setStoreName(trimToNull(request.storeName()));
+        user.setBusinessAddress(trimToNull(request.businessAddress()));
+        user.setTaxCode(trimToNull(request.taxCode()));
+
+        User savedUser = persistPendingRegistrationAndSendOtp(user, email);
+        return RegisterResponse.from(savedUser);
+    }
+
+    private RegisterResponse createPendingRegistration(
+            RegisterRequest request,
+            String email,
+            String phone) {
+        if (userRepository.existsVerifiedByEmail(email)) {
             throw new ConflictException("Email đã được sử dụng");
         }
         if (userRepository.existsActiveByPhone(phone)) {
             throw new ConflictException("Số điện thoại đã được sử dụng");
         }
 
-        Role userRole = roleRepository.findByCode(DEFAULT_ROLE)
-                .orElseThrow(() -> new BusinessException(
-                        "Role USER chưa được cấu hình",
-                        HttpStatus.INTERNAL_SERVER_ERROR));
-
+        Role userRole = findDefaultUserRole();
         User user = User.builder()
                 .publicId(UUID.randomUUID())
                 .role(userRole)
@@ -157,6 +214,11 @@ public class AuthService {
                 .taxCode(trimToNull(request.taxCode()))
                 .build();
 
+        User savedUser = persistPendingRegistrationAndSendOtp(user, email);
+        return RegisterResponse.from(savedUser);
+    }
+
+    private User persistPendingRegistrationAndSendOtp(User user, String email) {
         User savedUser = userRepository.saveAndFlush(user); // flush immediately so the user row
                                                             // is visible to the REQUIRES_NEW OTP transaction
 
@@ -165,7 +227,14 @@ public class AuthService {
         // If email sending fails the user record is already persisted (outer tx commits later).
         emailOtpService.sendOtp(email);
 
-        return RegisterResponse.from(savedUser);
+        return savedUser;
+    }
+
+    private Role findDefaultUserRole() {
+        return roleRepository.findByCode(DEFAULT_ROLE)
+                .orElseThrow(() -> new BusinessException(
+                        "Role USER chưa được cấu hình",
+                        HttpStatus.INTERNAL_SERVER_ERROR));
     }
 
     /**

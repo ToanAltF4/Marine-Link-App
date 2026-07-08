@@ -17,6 +17,9 @@ abstract class ProductRepository {
     String? sort,
   });
 
+  /// Fetch active category tree for product filters.
+  Future<ApiResponse<List<Category>>> getCategories();
+
   /// Fetch full product detail including images and price tiers.
   Future<ApiResponse<ProductDetail>> getProductDetail(String productId);
 }

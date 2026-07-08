@@ -101,6 +101,18 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<bool> isEmailAvailable({required String email}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return !_demoPasswords.containsKey(email.toLowerCase());
+  }
+
+  @override
+  Future<bool> isPhoneAvailable({required String phone, String? email}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return !_demoPasswords.containsKey(phone.trim());
+  }
+
+  @override
   Future<({String token, User user})> loginWithGoogle() async {
     await Future.delayed(const Duration(milliseconds: 500));
     const user = User(

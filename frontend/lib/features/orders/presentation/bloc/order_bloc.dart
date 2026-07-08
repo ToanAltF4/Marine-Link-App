@@ -2,6 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/order.dart';
 import '../../domain/order_repository.dart';
 
@@ -39,7 +40,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(OrderListError(response.message ?? 'Lỗi tải danh sách đơn hàng'));
+        emit(
+          OrderListError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Lỗi tải danh sách đơn hàng.',
+            ),
+          ),
+        );
         return;
       }
 
@@ -60,7 +68,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         );
       }
     } catch (e) {
-      emit(OrderListError(e.toString()));
+      emit(
+        OrderListError(
+          userFacingErrorMessage(e, fallback: 'Lỗi tải danh sách đơn hàng.'),
+        ),
+      );
     }
   }
 
@@ -73,13 +85,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final response = await _orderRepository.getOrderDetail(event.orderId);
 
       if (!response.success || response.data == null) {
-        emit(OrderDetailError(response.message ?? 'Không tìm thấy đơn hàng'));
+        emit(
+          OrderDetailError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Không tìm thấy đơn hàng.',
+            ),
+          ),
+        );
         return;
       }
 
       emit(OrderDetailLoaded(response.data!));
     } catch (e) {
-      emit(OrderDetailError(e.toString()));
+      emit(
+        OrderDetailError(
+          userFacingErrorMessage(e, fallback: 'Không tìm thấy đơn hàng.'),
+        ),
+      );
     }
   }
 
@@ -98,13 +121,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(OrderCreateError(response.message ?? 'Lỗi tạo đơn hàng'));
+        emit(
+          OrderCreateError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Lỗi tạo đơn hàng.',
+            ),
+          ),
+        );
         return;
       }
 
       emit(OrderCreateSuccess(response.data!));
     } catch (e) {
-      emit(OrderCreateError(e.toString()));
+      emit(
+        OrderCreateError(
+          userFacingErrorMessage(e, fallback: 'Lỗi tạo đơn hàng.'),
+        ),
+      );
     }
   }
 
@@ -123,7 +157,10 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       if (!response.success) {
         emit(
           OrderStatusUpdateError(
-            response.message ?? 'Lỗi cập nhật trạng thái đơn hàng',
+            userFacingResponseMessage(
+              response.message,
+              fallback: 'Lỗi cập nhật trạng thái đơn hàng.',
+            ),
           ),
         );
         return;
@@ -136,7 +173,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         ),
       );
     } catch (e) {
-      emit(OrderStatusUpdateError(e.toString()));
+      emit(
+        OrderStatusUpdateError(
+          userFacingErrorMessage(
+            e,
+            fallback: 'Lỗi cập nhật trạng thái đơn hàng.',
+          ),
+        ),
+      );
     }
   }
 }

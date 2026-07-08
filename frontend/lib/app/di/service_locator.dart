@@ -30,6 +30,7 @@ import '../../features/orders/presentation/bloc/order_bloc.dart';
 import '../../features/notifications/domain/notification_repository.dart';
 import '../../features/notifications/data/notification_mock_repository.dart';
 import '../../features/notifications/data/notification_remote_repository.dart';
+import '../../features/notifications/presentation/bloc/broadcast_cubit.dart';
 import '../../features/notifications/presentation/bloc/notification_cubit.dart';
 
 // Warehouses
@@ -42,10 +43,14 @@ import '../../features/warehouse_map/presentation/cubit/warehouse_location_cubit
 import '../../features/warehouse_map/presentation/cubit/warehouse_map_cubit.dart';
 
 // Chat
+import '../../core/api/api_endpoints.dart';
 import '../../features/chat/domain/chat_repository.dart';
 import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/data/chat_remote_repository.dart';
+import '../../features/chat/data/chat_realtime_service.dart';
+import '../../features/chat/data/stomp_chat_realtime_service.dart';
 import '../../features/chat/presentation/cubit/chat_cubit.dart';
+import '../../features/chat/presentation/cubit/chat_rooms_cubit.dart';
 import '../../features/chat/presentation/cubit/staff_chat_cubit.dart';
 
 // Profile
@@ -89,6 +94,15 @@ const bool _useRemoteRepositories = bool.fromEnvironment(
   'USE_REMOTE_REPOSITORIES',
   defaultValue: false,
 );
+
+/// Derive the STOMP WebSocket URL from the REST base URL
+/// (e.g. http://localhost:8080 → ws://localhost:8080/ws).
+String _chatWebSocketUrl() {
+  final base = ApiEndpoints.baseUrl
+      .replaceFirst('https://', 'wss://')
+      .replaceFirst('http://', 'ws://');
+  return '$base/ws';
+}
 
 /// Register all dependencies for dependency injection.
 /// Call this before [runApp] in main.dart.
@@ -165,6 +179,9 @@ Future<void> setupServiceLocator() async {
     () =>
         NotificationCubit(notificationRepository: sl<NotificationRepository>()),
   );
+  sl.registerFactory<BroadcastCubit>(
+    () => BroadcastCubit(notificationRepository: sl<NotificationRepository>()),
+  );
 
   // Warehouses
   sl.registerLazySingleton<WarehouseRepository>(
@@ -188,8 +205,22 @@ Future<void> setupServiceLocator() async {
         ? ChatRemoteRepository(apiClient: sl<ApiClient>())
         : ChatMockRepository(),
   );
+  sl.registerLazySingleton<ChatRealtimeService>(
+    () => _useRemoteRepositories
+        ? StompChatRealtimeService(
+            wsUrl: _chatWebSocketUrl(),
+            tokenStorage: sl<SecureTokenStorage>(),
+          )
+        : const DisabledChatRealtimeService(),
+  );
   sl.registerFactory<ChatCubit>(
-    () => ChatCubit(repository: sl<ChatRepository>()),
+    () => ChatCubit(
+      repository: sl<ChatRepository>(),
+      realtime: sl<ChatRealtimeService>(),
+    ),
+  );
+  sl.registerFactory<ChatRoomsCubit>(
+    () => ChatRoomsCubit(repository: sl<ChatRepository>()),
   );
   sl.registerFactory<StaffChatCubit>(
     () => StaffChatCubit(repository: sl<ChatRepository>()),

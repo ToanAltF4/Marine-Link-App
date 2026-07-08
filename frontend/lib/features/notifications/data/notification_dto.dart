@@ -1,4 +1,5 @@
 import '../domain/notification.dart';
+import '../domain/notification_broadcast.dart';
 
 NotificationEntity notificationFromJson(dynamic json) {
   if (json is! Map<String, dynamic>) {
@@ -29,6 +30,35 @@ List<NotificationEntity> notificationsFromJson(dynamic json) {
     return const [];
   }
   return json.map(notificationFromJson).toList();
+}
+
+NotificationBroadcast broadcastFromJson(dynamic json) {
+  final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
+  return NotificationBroadcast(
+    broadcastId: map['broadcastId']?.toString() ?? '',
+    title: map['title']?.toString() ?? '',
+    body: map['body']?.toString() ?? '',
+    createdBy: _toOptionalString(map['createdBy']),
+    createdAt: _toDateTime(map['createdAt']),
+    recipientCount: _toInt(map['recipientCount']),
+  );
+}
+
+List<NotificationBroadcast> broadcastsFromJson(dynamic json) {
+  if (json is! List) {
+    return const [];
+  }
+  return json.map(broadcastFromJson).toList();
+}
+
+int _toInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse(value?.toString() ?? '') ?? 0;
 }
 
 String? _toOptionalString(dynamic value) {

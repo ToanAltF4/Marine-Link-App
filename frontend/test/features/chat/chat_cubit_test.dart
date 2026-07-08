@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/core/api/api_client.dart';
 import 'package:marinelink/core/api/api_response.dart';
+import 'package:marinelink/features/chat/data/chat_realtime_service.dart';
 import 'package:marinelink/features/chat/domain/chat.dart';
 import 'package:marinelink/features/chat/domain/chat_repository.dart';
 import 'package:marinelink/features/chat/presentation/cubit/chat_cubit.dart';
@@ -47,6 +48,14 @@ class _FakeRepo implements ChatRepository {
       (orderRoomResponder ?? (_) => threadResponder('order-room'))(orderId);
 
   @override
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() async =>
+      const ApiResponse(success: true, message: 'OK', data: []);
+
+  @override
+  Future<ApiResponse<ChatThread>> createRoom() async =>
+      const ApiResponse(success: false, message: 'Unsupported');
+
+  @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,
@@ -73,6 +82,34 @@ class _FakeRepo implements ChatRepository {
     required String description,
     String? messageId,
   }) async => const ApiResponse(success: false, message: 'Unsupported');
+}
+
+class _FakeRealtime implements ChatRealtimeService {
+  String? subscribedRoomId;
+  void Function(ChatMessage message)? _onMessage;
+  int cancelled = 0;
+
+  @override
+  ChatRealtimeSubscription subscribeToRoom(
+    String roomId,
+    void Function(ChatMessage message) onMessage,
+  ) {
+    subscribedRoomId = roomId;
+    _onMessage = onMessage;
+    return _FakeSub(this);
+  }
+
+  @override
+  Future<void> dispose() async {}
+
+  void emit(ChatMessage message) => _onMessage?.call(message);
+}
+
+class _FakeSub implements ChatRealtimeSubscription {
+  final _FakeRealtime owner;
+  _FakeSub(this.owner);
+  @override
+  void cancel() => owner.cancelled++;
 }
 
 final _thread = ChatThread(
@@ -112,6 +149,60 @@ final _sentBuyerMessage = ChatMessage(
 );
 
 void main() {
+  test('subscribes to the loaded room and appends realtime messages', () async {
+    final realtime = _FakeRealtime();
+    final cubit = ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+      ),
+      realtime: realtime,
+    );
+
+    await cubit.load('room-001');
+    expect(realtime.subscribedRoomId, 'room-001');
+    expect(cubit.state.thread!.messages.length, 1);
+
+    // A message pushed over the socket is appended instantly.
+    realtime.emit(_sentMessage);
+    expect(cubit.state.thread!.messages.length, 2);
+    expect(cubit.state.thread!.messages.last.id, 'message-002');
+
+    // The same message echoed again is de-duplicated by id.
+    realtime.emit(_sentMessage);
+    expect(cubit.state.thread!.messages.length, 2);
+
+    await cubit.close();
+    expect(realtime.cancelled, greaterThanOrEqualTo(1));
+  });
+
+  test('send does not duplicate a message already delivered by realtime', () async {
+    final realtime = _FakeRealtime();
+    final cubit = ChatCubit(
+      repository: _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async =>
+                ApiResponse(success: true, message: 'OK', data: _sentMessage),
+      ),
+      realtime: realtime,
+    );
+
+    await cubit.load('room-001');
+    // Realtime echo arrives before the REST send response returns.
+    realtime.emit(_sentMessage);
+    expect(cubit.state.thread!.messages.length, 2);
+
+    // The REST send of the very same message completes → must not duplicate.
+    await cubit.sendMessage('I will check now.', sendAsStaff: true);
+    expect(
+      cubit.state.thread!.messages.where((m) => m.id == 'message-002').length,
+      1,
+    );
+    expect(cubit.state.thread!.messages.length, 2);
+  });
+
   blocTest<ChatCubit, ChatState>(
     'loadMyRoom resolves the user support room (buyer tab)',
     build: () => ChatCubit(

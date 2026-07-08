@@ -15,6 +15,7 @@ import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ComplaintRepository complaintRepository;
     private final OrderRepository orderRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ChatThreadResponse getThread(UUID currentUserPublicId, boolean canAccessStaffRooms, UUID roomPublicId) {
         User currentUser = getCurrentUser(currentUserPublicId);
@@ -70,6 +72,39 @@ public class ChatService {
                 .updatedAt(now)
                 .build();
         return chatRoomRepository.save(room);
+    }
+
+    /** Buyer chat history: all of the buyer's rooms, most recently active first. */
+    @Transactional(readOnly = true)
+    public List<ChatRoomSummaryResponse> listMyRooms(UUID currentUserPublicId) {
+        User currentUser = getCurrentUser(currentUserPublicId);
+        requireBuyer(currentUser, "Chỉ đại lý mới có danh sách chat hỗ trợ.");
+        return chatRoomRepository.findMyRooms(currentUser).stream()
+                .map(this::toRoomSummary)
+                .toList();
+    }
+
+    /** Start a brand-new support conversation (the "New chat" action). */
+    @Transactional
+    public ChatThreadResponse createMySupportRoom(UUID currentUserPublicId) {
+        User currentUser = getCurrentUser(currentUserPublicId);
+        requireBuyer(currentUser, "Chỉ đại lý mới có thể tạo cuộc trò chuyện hỗ trợ.");
+        return toThreadResponse(createSupportRoom(currentUser));
+    }
+
+    private ChatRoomSummaryResponse toRoomSummary(ChatRoom room) {
+        String title = chatMessageRepository.findTopByRoomOrderByCreatedAtAsc(room)
+                .map(ChatMessage::getContent)
+                .filter(content -> content != null && !content.isBlank())
+                .orElse("Cuộc trò chuyện mới");
+        return new ChatRoomSummaryResponse(
+                room.getPublicId(), title, room.getLastMessageAt(), room.isClosed());
+    }
+
+    private void requireBuyer(User user, String message) {
+        if (!"USER".equals(user.getRoleCode())) {
+            throw new BusinessException(message, HttpStatus.FORBIDDEN);
+        }
     }
 
     @Transactional
@@ -219,7 +254,17 @@ public class ChatService {
             room.setAssignedStaff(currentUser);
         }
         chatRoomRepository.save(room);
-        return ChatMessageResponse.from(saved);
+
+        ChatMessageResponse response = ChatMessageResponse.from(saved);
+        // Realtime (ML-63): push the new message to everyone subscribed to this
+        // room's topic so clients render it instantly instead of waiting on poll.
+        messagingTemplate.convertAndSend(roomTopic(room.getPublicId()), response);
+        return response;
+    }
+
+    /** STOMP destination clients subscribe to for a room's live messages. */
+    static String roomTopic(UUID roomPublicId) {
+        return "/topic/chat." + roomPublicId;
     }
 
     public List<StaffChatRoomResponse> listStaffRooms(

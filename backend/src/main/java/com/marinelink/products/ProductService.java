@@ -11,16 +11,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listCategories() {
+        List<Category> categories = categoryRepository.findAllActiveOrdered();
+        Map<Long, List<Category>> childrenByParentId = categories.stream()
+                .filter(category -> category.getParent() != null)
+                .collect(Collectors.groupingBy(category -> category.getParent().getId()));
+
+        return categories.stream()
+                .filter(category -> category.getParent() == null)
+                .sorted(Comparator
+                        .comparingInt(Category::getDisplayOrder)
+                        .thenComparing(Category::getName))
+                .map(category -> CategoryResponse.treeFrom(category, childrenByParentId))
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public Page<ProductListItemResponse> listProducts(
@@ -38,8 +60,11 @@ public class ProductService {
 
         Specification<Product> specification = (root, ignoredQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            Join<Product, Category> category = root.join("category");
+            Join<Category, Category> parentCategory = category.join("parent", JoinType.LEFT);
+
             predicates.add(cb.isNull(root.get("deletedAt")));
-            predicates.add(cb.isTrue(root.get("category").get("active")));
+            predicates.add(cb.isTrue(category.get("active")));
 
             if (query != null && !query.isBlank()) {
                 String keyword = "%" + query.trim().toLowerCase(Locale.ROOT) + "%";
@@ -47,11 +72,14 @@ public class ProductService {
                         cb.like(cb.lower(root.get("name")), keyword),
                         cb.like(cb.lower(root.get("slug")), keyword),
                         cb.like(cb.lower(root.get("origin")), keyword),
+                        cb.like(cb.lower(root.get("shortDescription")), keyword),
                         cb.like(cb.lower(root.get("description")), keyword)));
             }
 
             if (categoryId != null) {
-                predicates.add(cb.equal(root.get("category").get("publicId"), categoryId));
+                predicates.add(cb.or(
+                        cb.equal(category.get("publicId"), categoryId),
+                        cb.equal(parentCategory.get("publicId"), categoryId)));
             }
 
             if (status != null) {

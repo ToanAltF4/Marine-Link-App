@@ -24,6 +24,23 @@ class ChatRemoteRepository implements ChatRepository {
   }
 
   @override
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() {
+    return apiClient.get(
+      ApiEndpoints.chatMyRooms,
+      fromJson: chatRoomSummariesFromJson,
+    );
+  }
+
+  @override
+  Future<ApiResponse<ChatThread>> createRoom() {
+    return apiClient.post(
+      ApiEndpoints.chatMyRooms,
+      data: const <String, dynamic>{},
+      fromJson: chatThreadFromJson,
+    );
+  }
+
+  @override
   Future<ApiResponse<ChatThread>> getOrderRoom(String orderId) {
     return apiClient.get(
       ApiEndpoints.chatOrderRoom(orderId),

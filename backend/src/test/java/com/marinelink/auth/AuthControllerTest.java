@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,5 +112,36 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Register successful. Please check your email for the OTP."))
                 .andExpect(jsonPath("$.data.roles[0]").value("USER"));
+    }
+
+    @Test
+    void emailAvailabilityReturnsApiEnvelope() throws Exception {
+        EmailAvailabilityResponse response = new EmailAvailabilityResponse(
+                true,
+                "Email có thể sử dụng");
+        when(authService.emailAvailability("daily-new@example.com")).thenReturn(response);
+
+        mockMvc.perform(get("/api/auth/email-availability")
+                        .param("email", "daily-new@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andExpect(jsonPath("$.data.message").value("Email có thể sử dụng"));
+    }
+
+    @Test
+    void phoneAvailabilityReturnsApiEnvelope() throws Exception {
+        PhoneAvailabilityResponse response = new PhoneAvailabilityResponse(
+                false,
+                "Số điện thoại đã được sử dụng");
+        when(authService.phoneAvailability("0912345678", "daily-new@example.com")).thenReturn(response);
+
+        mockMvc.perform(get("/api/auth/phone-availability")
+                        .param("phone", "0912345678")
+                        .param("email", "daily-new@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andExpect(jsonPath("$.data.message").value("Số điện thoại đã được sử dụng"));
     }
 }

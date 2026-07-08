@@ -10,7 +10,6 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
-import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/chat.dart';
@@ -41,7 +40,8 @@ class ChatScreen extends StatelessWidget {
         final complaintOrderId = orderId;
         if (complaintOrderId != null && complaintOrderId.isNotEmpty) {
           cubit.loadOrderRoom(complaintOrderId);
-        } else if (id == null) {
+        } else if (id == null || id.isEmpty) {
+          // Buyer support chat: resolve/create the user's own room (remote-safe).
           cubit.loadMyRoom();
         } else {
           cubit.load(id);
@@ -73,7 +73,9 @@ class _ChatView extends StatefulWidget {
 }
 
 class _ChatViewState extends State<_ChatView> {
-  static const _refreshInterval = Duration(seconds: 4);
+  // Realtime (STOMP) delivers messages instantly; polling is only a safety-net
+  // fallback for dropped sockets / mock mode, so it can be slow.
+  static const _refreshInterval = Duration(seconds: 15);
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -107,16 +109,30 @@ class _ChatViewState extends State<_ChatView> {
           key: const Key('chatScreen'),
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            leading:
-                widget.staffMode &&
-                    widget.staffBackLocation != AppRoutes.staffDashboard
-                ? IconButton(
-                    key: const Key('staffChatBackButton'),
+            leading: widget.staffMode
+                ? (widget.staffBackLocation != AppRoutes.staffDashboard
+                      ? IconButton(
+                          key: const Key('staffChatBackButton'),
+                          tooltip: 'Quay l\u1ea1i',
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => context.go(widget.staffBackLocation),
+                        )
+                      : null)
+                // Buyer thread is opened from the chat history list via push, so
+                // pop back to it (which refreshes the history). Fall back to a
+                // direct go for deep-links that landed here without a stack.
+                : IconButton(
+                    key: const Key('buyerChatBackButton'),
                     tooltip: 'Quay l\u1ea1i',
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.go(widget.staffBackLocation),
-                  )
-                : null,
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.chat);
+                      }
+                    },
+                  ),
             title: Text(
               widget.staffMode
                   ? 'Tin nh\u1eafn kh\u00e1ch h\u00e0ng'
@@ -133,6 +149,7 @@ class _ChatViewState extends State<_ChatView> {
                   state: state,
                   controller: _scrollController,
                   orderId: widget.orderId,
+                  viewerIsStaff: widget.staffMode,
                 ),
               ),
               _ChatComposer(
@@ -153,7 +170,11 @@ class _ChatViewState extends State<_ChatView> {
             child: scaffold,
           );
         }
-        return BuyerBackToHomeScope(child: scaffold);
+        // System back from a buyer thread returns to the chat history list.
+        return AppBackExitScope(
+          onFirstBack: (context) => context.go(AppRoutes.chat),
+          child: scaffold,
+        );
       },
     );
   }
@@ -201,9 +222,14 @@ class _ChatBody extends StatelessWidget {
   final ScrollController controller;
   final String? orderId;
 
+  /// True when the current account is staff/admin — used to align "my" bubbles
+  /// (staff) to the right and the customer to the left; the reverse for buyers.
+  final bool viewerIsStaff;
+
   const _ChatBody({
     required this.state,
     required this.controller,
+    required this.viewerIsStaff,
     this.orderId,
   });
 
@@ -246,6 +272,7 @@ class _ChatBody extends StatelessWidget {
       ChatStatus.success => _ChatMessageList(
         controller: controller,
         messages: state.messages,
+        viewerIsStaff: viewerIsStaff,
       ),
     };
     if (!state.offlineFallback) {
@@ -351,8 +378,13 @@ class _ChatError extends StatelessWidget {
 class _ChatMessageList extends StatelessWidget {
   final ScrollController controller;
   final List<ChatMessage> messages;
+  final bool viewerIsStaff;
 
-  const _ChatMessageList({required this.controller, required this.messages});
+  const _ChatMessageList({
+    required this.controller,
+    required this.messages,
+    required this.viewerIsStaff,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,23 +393,29 @@ class _ChatMessageList extends StatelessWidget {
       controller: controller,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
       itemCount: messages.length,
-      itemBuilder: (context, index) => _ChatBubble(message: messages[index]),
+      itemBuilder: (context, index) =>
+          _ChatBubble(message: messages[index], viewerIsStaff: viewerIsStaff),
     );
   }
 }
 
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final bool viewerIsStaff;
 
-  const _ChatBubble({required this.message});
+  const _ChatBubble({required this.message, required this.viewerIsStaff});
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.senderType == ChatSenderType.user;
+    // "Mine" = messages sent by the account currently viewing → align right.
+    // Staff/admin view: staff messages are mine; buyer view: user messages are.
+    final isMine = viewerIsStaff
+        ? message.senderType == ChatSenderType.staff
+        : message.senderType == ChatSenderType.user;
     final style = _bubbleStyle(message.senderType);
     return Align(
       key: Key('chatMessageBubble_${message.id}'),
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 310),
         child: DecoratedBox(
@@ -386,8 +424,8 @@ class _ChatBubble extends StatelessWidget {
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(8),
               topRight: const Radius.circular(8),
-              bottomLeft: Radius.circular(isUser ? 8 : 2),
-              bottomRight: Radius.circular(isUser ? 2 : 8),
+              bottomLeft: Radius.circular(isMine ? 8 : 2),
+              bottomRight: Radius.circular(isMine ? 2 : 8),
             ),
             border: Border.all(color: style.borderColor),
           ),

@@ -1,6 +1,8 @@
 package com.marinelink.notifications;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marinelink.common.exception.GlobalExceptionHandler;
+import com.marinelink.notifications.dto.BroadcastSummaryDTO;
 import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -17,8 +19,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -98,5 +104,68 @@ class NotificationControllerTest {
                         .principal(new TestingAuthenticationToken(UUID.randomUUID().toString(), null)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void createBroadcast_ShouldReturnCreatedSummary() throws java.lang.Exception {
+        UUID userId = UUID.randomUUID();
+        UUID broadcastId = UUID.randomUUID();
+        User mockUser = User.builder().id(1L).publicId(userId).fullName("Staff").build();
+
+        when(userRepository.findActiveByPublicId(userId)).thenReturn(Optional.of(mockUser));
+        when(notificationService.createBroadcast(eq(userId), any(CreateBroadcastRequest.class)))
+                .thenReturn(new BroadcastSummaryDTO(
+                        broadcastId, "Bảo trì", "Nội dung", userId, Instant.parse("2026-05-28T08:30:00Z"), 4));
+
+        mockMvc.perform(post("/api/notifications")
+                        .principal(new TestingAuthenticationToken(userId.toString(), null))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(
+                                new CreateBroadcastRequest("Bảo trì", "Nội dung"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.broadcastId").value(broadcastId.toString()))
+                .andExpect(jsonPath("$.data.recipientCount").value(4));
+    }
+
+    @Test
+    void createBroadcast_WithBlankTitle_ShouldReturnBadRequest() throws java.lang.Exception {
+        UUID userId = UUID.randomUUID();
+        User mockUser = User.builder().id(1L).publicId(userId).build();
+        when(userRepository.findActiveByPublicId(userId)).thenReturn(Optional.of(mockUser));
+
+        mockMvc.perform(post("/api/notifications")
+                        .principal(new TestingAuthenticationToken(userId.toString(), null))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(
+                                new CreateBroadcastRequest("", "Nội dung"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void listBroadcasts_ShouldReturnHistory() throws java.lang.Exception {
+        UUID broadcastId = UUID.randomUUID();
+        when(notificationService.listBroadcasts()).thenReturn(List.of(
+                new BroadcastSummaryDTO(broadcastId, "Bảo trì", "Nội dung",
+                        UUID.randomUUID(), Instant.parse("2026-05-28T08:30:00Z"), 4)));
+
+        mockMvc.perform(get("/api/notifications/broadcasts")
+                        .principal(new TestingAuthenticationToken(UUID.randomUUID().toString(), null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].broadcastId").value(broadcastId.toString()));
+    }
+
+    @Test
+    void deleteBroadcast_ShouldReturnSuccess() throws java.lang.Exception {
+        UUID broadcastId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/notifications/broadcasts/{id}", broadcastId)
+                        .principal(new TestingAuthenticationToken(UUID.randomUUID().toString(), null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        verify(notificationService).deleteBroadcast(broadcastId);
     }
 }

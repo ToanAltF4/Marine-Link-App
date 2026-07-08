@@ -113,6 +113,51 @@ class AuthRemoteRepository implements AuthRepository {
   }
 
   @override
+  Future<bool> isEmailAvailable({required String email}) async {
+    final response = await apiClient.get<bool>(
+      ApiEndpoints.emailAvailability,
+      queryParameters: {'email': email},
+      fromJson: (json) {
+        final map = json as Map<String, dynamic>;
+        return map['available'] as bool? ?? false;
+      },
+    );
+
+    if (!response.success || response.data == null) {
+      throw ApiException(
+        message: response.message ?? 'Không thể kiểm tra email',
+        type: ApiExceptionType.validation,
+      );
+    }
+
+    return response.data!;
+  }
+
+  @override
+  Future<bool> isPhoneAvailable({required String phone, String? email}) async {
+    final response = await apiClient.get<bool>(
+      ApiEndpoints.phoneAvailability,
+      queryParameters: {
+        'phone': phone,
+        if (email != null && email.trim().isNotEmpty) 'email': email,
+      },
+      fromJson: (json) {
+        final map = json as Map<String, dynamic>;
+        return map['available'] as bool? ?? false;
+      },
+    );
+
+    if (!response.success || response.data == null) {
+      throw ApiException(
+        message: response.message ?? 'Không thể kiểm tra số điện thoại',
+        type: ApiExceptionType.validation,
+      );
+    }
+
+    return response.data!;
+  }
+
+  @override
   Future<void> logout() => tokenStorage.clearAll();
 
   @override

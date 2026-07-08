@@ -1,5 +1,6 @@
 import '../../../core/api/api_response.dart';
 import '../domain/notification.dart';
+import '../domain/notification_broadcast.dart';
 import '../domain/notification_repository.dart';
 
 class NotificationMockRepository implements NotificationRepository {
@@ -66,5 +67,53 @@ class NotificationMockRepository implements NotificationRepository {
       _items[index] = _items[index].copyWith(isRead: true);
     }
     return const ApiResponse(success: true, message: 'Marked as read');
+  }
+
+  static final List<NotificationBroadcast> _broadcasts = [
+    NotificationBroadcast(
+      broadcastId: 'bcast-001',
+      title: 'Lịch nghỉ lễ kho Cà Mau',
+      body: 'Kho Cà Mau nghỉ ngày 30/4 và 1/5, đơn hàng sẽ giao lại từ 2/5.',
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+      recipientCount: 12,
+    ),
+  ];
+
+  @override
+  Future<ApiResponse<List<NotificationBroadcast>>> getBroadcasts() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return ApiResponse(
+      success: true,
+      message: 'OK',
+      data: List.unmodifiable(_broadcasts),
+    );
+  }
+
+  @override
+  Future<ApiResponse<NotificationBroadcast>> createBroadcast({
+    required String title,
+    required String body,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final broadcast = NotificationBroadcast(
+      broadcastId: 'bcast-${DateTime.now().microsecondsSinceEpoch}',
+      title: title.trim(),
+      body: body.trim(),
+      createdAt: DateTime.now(),
+      recipientCount: 12,
+    );
+    _broadcasts.insert(0, broadcast);
+    return ApiResponse(
+      success: true,
+      message: 'Đã gửi thông báo đến các đại lý',
+      data: broadcast,
+    );
+  }
+
+  @override
+  Future<ApiResponse<void>> deleteBroadcast(String broadcastId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    _broadcasts.removeWhere((b) => b.broadcastId == broadcastId);
+    return const ApiResponse(success: true, message: 'Đã xóa thông báo');
   }
 }

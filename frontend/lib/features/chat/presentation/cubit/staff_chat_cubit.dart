@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/chat.dart';
 import '../../domain/chat_repository.dart';
 
@@ -45,20 +46,25 @@ class StaffChatCubit extends Cubit<StaffChatState> {
           emit(
             state.copyWith(
               status: StaffChatStatus.failure,
-              errorMessage:
-                  response.message ??
-                  'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch chat.',
+              errorMessage: userFacingResponseMessage(
+                response.message,
+                fallback:
+                    'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch chat.',
+              ),
             ),
           );
         }
       }
-    } catch (_) {
+    } catch (error) {
       if (showLoading) {
         emit(
           state.copyWith(
             status: StaffChatStatus.failure,
-            errorMessage:
-                '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i danh s\u00e1ch chat.',
+            errorMessage: userFacingErrorMessage(
+              error,
+              fallback:
+                  '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i danh s\u00e1ch chat.',
+            ),
           ),
         );
       }
@@ -104,18 +110,23 @@ class StaffChatCubit extends Cubit<StaffChatState> {
         emit(
           state.copyWith(
             clearUpdatingRoomId: true,
-            actionErrorMessage:
-                response.message ??
-                'Kh\u00f4ng c\u1eadp nh\u1eadt \u0111\u01b0\u1ee3c tr\u1ea1ng th\u00e1i chat.',
+            actionErrorMessage: userFacingResponseMessage(
+              response.message,
+              fallback:
+                  'Kh\u00f4ng c\u1eadp nh\u1eadt \u0111\u01b0\u1ee3c tr\u1ea1ng th\u00e1i chat.',
+            ),
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           clearUpdatingRoomId: true,
-          actionErrorMessage:
-              '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi c\u1eadp nh\u1eadt chat.',
+          actionErrorMessage: userFacingErrorMessage(
+            error,
+            fallback:
+                '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi c\u1eadp nh\u1eadt chat.',
+          ),
         ),
       );
     }
@@ -158,18 +169,23 @@ class StaffChatCubit extends Cubit<StaffChatState> {
         emit(
           state.copyWith(
             clearUpdatingRoomId: true,
-            actionErrorMessage:
-                response.message ??
-                'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c khi\u1ebfu n\u1ea1i.',
+            actionErrorMessage: userFacingResponseMessage(
+              response.message,
+              fallback:
+                  'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c khi\u1ebfu n\u1ea1i.',
+            ),
           ),
         );
       }
-    } catch (_) {
+    } catch (error) {
       emit(
         state.copyWith(
           clearUpdatingRoomId: true,
-          actionErrorMessage:
-              '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea1o khi\u1ebfu n\u1ea1i.',
+          actionErrorMessage: userFacingErrorMessage(
+            error,
+            fallback:
+                '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea1o khi\u1ebfu n\u1ea1i.',
+          ),
         ),
       );
     }

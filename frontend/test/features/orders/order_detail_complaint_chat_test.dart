@@ -84,6 +84,14 @@ class _FakeChatRepository implements ChatRepository {
       const ApiResponse(success: false, message: 'Unsupported');
 
   @override
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() async =>
+      const ApiResponse(success: true, message: 'OK', data: []);
+
+  @override
+  Future<ApiResponse<ChatThread>> createRoom() async =>
+      const ApiResponse(success: false, message: 'Unsupported');
+
+  @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,

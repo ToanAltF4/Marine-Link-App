@@ -23,6 +23,10 @@ abstract class AuthRepository {
     String? taxCode,
   });
 
+  Future<bool> isEmailAvailable({required String email});
+
+  Future<bool> isPhoneAvailable({required String phone, String? email});
+
   Future<void> verifyEmail({required String email, required String otpCode});
 
   Future<void> resendOtp({required String email});

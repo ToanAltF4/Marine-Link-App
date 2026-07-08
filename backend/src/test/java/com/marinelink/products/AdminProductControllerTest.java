@@ -37,6 +37,7 @@ class AdminProductControllerTest {
                 UUID.fromString("550e8400-e29b-41d4-a716-446655440031"),
                 "Muc kho loai 1",
                 "muc-kho-loai-1",
+                "Muc kho size lon cho don si",
                 "Ca Mau",
                 "https://example.com/muc-kho.png",
                 new BigDecimal("450000"),
@@ -62,6 +63,7 @@ class AdminProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].slug").value("muc-kho-loai-1"))
+                .andExpect(jsonPath("$.data[0].shortDescription").value("Muc kho size lon cho don si"))
                 .andExpect(jsonPath("$.data[0].stockQuantity").value(120))
                 .andExpect(jsonPath("$.pagination.page").value(0));
     }
@@ -139,6 +141,7 @@ class AdminProductControllerTest {
                 productId,
                 "Muc kho loai 1",
                 "muc-kho-loai-1",
+                "Muc kho size lon cho don si",
                 "Muc kho phuc vu don si",
                 "Ca Mau",
                 "https://example.com/muc-kho.png",
@@ -167,6 +170,7 @@ class AdminProductControllerTest {
                   "categoryId": "550e8400-e29b-41d4-a716-446655440021",
                   "name": "Muc kho loai 1",
                   "slug": "muc-kho-loai-1",
+                  "shortDescription": "Muc kho size lon cho don si",
                   "description": "Muc kho phuc vu don si",
                   "origin": "Ca Mau",
                   "basePrice": 450000,

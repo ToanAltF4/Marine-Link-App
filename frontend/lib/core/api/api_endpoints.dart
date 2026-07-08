@@ -10,6 +10,8 @@ abstract class ApiEndpoints {
   static const String login = '/api/auth/login';
   static const String googleLogin = '/api/auth/google';
   static const String register = '/api/auth/register';
+  static const String emailAvailability = '/api/auth/email-availability';
+  static const String phoneAvailability = '/api/auth/phone-availability';
   static const String logout = '/api/auth/logout';
   static const String changePassword = '/api/auth/change-password';
   static const String verifyEmail = '/api/auth/verify-email';
@@ -23,10 +25,13 @@ abstract class ApiEndpoints {
 
   // ── Products ──────────────────────────────────────────────────────────────
   static const String products = '/api/products';
+  static const String productCategories = '/api/products/categories';
   static String productDetail(String id) => '/api/products/$id';
 
   // ── Cart ──────────────────────────────────────────────────────────────────
   static const String cart = '/api/cart';
+  static const String cartItems = '/api/cart/items';
+  static String cartItem(String productId) => '/api/cart/items/$productId';
   static const String cartSync = '/api/cart/sync';
 
   // ── Orders ────────────────────────────────────────────────────────────────
@@ -41,6 +46,7 @@ abstract class ApiEndpoints {
   // ── Chat ──────────────────────────────────────────────────────────────────
   static const String chatSend = '/api/chat/send';
   static const String chatMyRoom = '/api/chat/room';
+  static const String chatMyRooms = '/api/chat/rooms';
   static String chatOrderRoom(String orderId) =>
       '/api/chat/orders/$orderId/room';
   static String chatRoom(String roomId) => '/api/chat/$roomId';
@@ -53,6 +59,9 @@ abstract class ApiEndpoints {
   // ── Notifications ─────────────────────────────────────────────────────────
   static const String notifications = '/api/notifications';
   static String notificationRead(String id) => '/api/notifications/$id/read';
+  static const String notificationBroadcasts = '/api/notifications/broadcasts';
+  static String notificationBroadcastDetail(String broadcastId) =>
+      '/api/notifications/broadcasts/$broadcastId';
 
   // ── Warehouses ────────────────────────────────────────────────────────────
   static const String warehouses = '/api/warehouses';

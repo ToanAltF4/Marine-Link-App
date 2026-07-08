@@ -94,7 +94,19 @@ void main() {
       expect(find.byKey(const Key('homeQuickSearchField')), findsOneWidget);
 
       await tester.tap(find.text('Chat').hitTestable().first);
-      await tester.pump(const Duration(milliseconds: 900));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump(const Duration(milliseconds: 700));
+      // Chat tab now opens the chat history list; tapping a room opens the thread.
+      expect(find.byKey(const Key('chatRoomsList')), findsOneWidget);
+      final roomTile = find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key as ValueKey<String>).value.startsWith('chatRoomTile_'),
+      );
+      await tester.tap(roomTile.first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       expect(find.byKey(const Key('chatScreen')), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 500));
     },
@@ -143,6 +155,26 @@ void main() {
       const Duration(seconds: 3),
     );
     expect(find.byKey(const Key('adminOrderListScreen')), findsOneWidget);
+  });
+
+  testWidgets('staff can open product management (stock + add)', (tester) async {
+    await _pumpApp(tester);
+    await _login(
+      tester,
+      emailOrPhone: 'staff@marinelink.demo',
+      password: 'Staff@123',
+    );
+
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.byKey(const Key('staffDashboardScreen')), findsOneWidget);
+
+    final staffContext = tester.element(
+      find.byKey(const Key('staffDashboardScreen')),
+    );
+    GoRouter.of(staffContext).go(AppRoutes.staffProducts);
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    expect(find.byKey(const Key('adminProductsScreen')), findsOneWidget);
   });
 }
 

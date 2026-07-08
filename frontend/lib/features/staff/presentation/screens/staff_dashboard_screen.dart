@@ -39,12 +39,10 @@ class StaffDashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _QuickActionsSection(
-                    onOpenOrders: () => context.push(AppRoutes.staffOrders),
+                    onOpenProducts: () => context.push(AppRoutes.staffProducts),
                   ),
                   const SizedBox(height: 20),
                   const _SupportChatSection(),
-                  const SizedBox(height: 20),
-                  const _DeliveryRouteSection(),
                 ],
               ),
             ),
@@ -238,9 +236,9 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _QuickActionsSection extends StatelessWidget {
-  final VoidCallback onOpenOrders;
+  final VoidCallback onOpenProducts;
 
-  const _QuickActionsSection({required this.onOpenOrders});
+  const _QuickActionsSection({required this.onOpenProducts});
 
   @override
   Widget build(BuildContext context) {
@@ -258,26 +256,14 @@ class _QuickActionsSection extends StatelessWidget {
           child: Row(
             children: [
               _QuickActionTile(
-                icon: Icons.qr_code_scanner_outlined,
-                label: 'Quét mã kho',
-                onTap: () {},
-              ),
-              _QuickActionTile(
                 icon: Icons.edit_square,
                 label: 'Cập nhật tồn',
-                onTap: () {},
+                onTap: onOpenProducts,
               ),
               _QuickActionTile(
-                icon: Icons.warning_amber_outlined,
-                label: 'Báo cáo sự cố',
-                background: const Color(0xFFFFEFEF),
-                iconColor: AppColors.error,
-                onTap: () {},
-              ),
-              _QuickActionTile(
-                icon: Icons.local_shipping_outlined,
-                label: 'Xử lý đơn',
-                onTap: onOpenOrders,
+                icon: Icons.add_box_outlined,
+                label: 'Thêm sản phẩm',
+                onTap: onOpenProducts,
               ),
             ],
           ),
@@ -290,15 +276,11 @@ class _QuickActionsSection extends StatelessWidget {
 class _QuickActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color background;
-  final Color iconColor;
   final VoidCallback onTap;
 
   const _QuickActionTile({
     required this.icon,
     required this.label,
-    this.background = AppColors.surfaceSky,
-    this.iconColor = AppColors.primary,
     required this.onTap,
   });
 
@@ -318,11 +300,11 @@ class _QuickActionTile extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: background,
+                  color: AppColors.surfaceSky,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Icon(icon, color: iconColor, size: 26),
+                child: Icon(icon, color: AppColors.primary, size: 26),
               ),
               const SizedBox(height: 8),
               Text(
@@ -477,166 +459,6 @@ class _ChatPreviewCard extends StatelessWidget {
   }
 }
 
-class _DeliveryRouteSection extends StatelessWidget {
-  const _DeliveryRouteSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      key: const Key('staffDeliveryRouteSection'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(
-          title: 'Lộ trình giao hàng',
-          subtitle: 'Trạng thái vận chuyển nổi bật cần theo dõi.',
-        ),
-        const SizedBox(height: 12),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: AppColors.oceanGradient,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x140B3760),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Đơn vận chuyển #ML9923',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.78),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Đang trên đường giao',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.local_shipping_outlined,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                const _RouteProgress(),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Kho Trung Tâm',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelLarge?.copyWith(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'Cảng Vũng Tàu',
-                        textAlign: TextAlign.right,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelLarge?.copyWith(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RouteProgress extends StatelessWidget {
-  const _RouteProgress();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 20,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          return Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              Container(
-                height: 4,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.24),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              Container(
-                height: 4,
-                width: width * 0.62,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCFE8FF),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              const Positioned(left: 0, child: _RouteDot(filled: true)),
-              const Positioned(right: 0, child: _RouteDot(filled: false)),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _RouteDot extends StatelessWidget {
-  final bool filled;
-
-  const _RouteDot({required this.filled});
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: filled ? const Color(0xFFCFE8FF) : Colors.transparent,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFCFE8FF), width: 2),
-      ),
-      child: const SizedBox(width: 14, height: 14),
-    );
-  }
-}
 
 class _SectionHeader extends StatelessWidget {
   final String title;

@@ -69,7 +69,11 @@ public class SecurityConfig {
                     "/api/auth/register",
                     "/api/auth/verify-email",
                     "/api/auth/resend-otp").permitAll()
+                // WebSocket handshake (STOMP auth happens on the CONNECT frame)
+                .requestMatchers("/ws/**", "/ws").permitAll()
                 .requestMatchers(HttpMethod.GET,
+                    "/api/auth/email-availability",
+                    "/api/auth/phone-availability",
                     "/api/products", "/api/products/**",
                     "/api/payments/vnpay/return",
                     "/api/payments/vnpay/ipn",
@@ -77,6 +81,9 @@ public class SecurityConfig {
                     "/swagger-ui/**", "/swagger-ui.html",
                     "/api-docs/**", "/api-docs",
                     "/actuator/health").permitAll()
+                // Product management: staff can also update stock / add products
+                .requestMatchers("/api/admin/products", "/api/admin/products/**")
+                    .hasAnyRole("STAFF", "ADMIN")
                 // Admin-only
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Staff workspace

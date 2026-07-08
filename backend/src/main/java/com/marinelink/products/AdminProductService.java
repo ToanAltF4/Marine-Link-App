@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,6 +44,9 @@ public class AdminProductService {
 
         Specification<Product> specification = (root, ignoredQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            Join<Product, Category> category = root.join("category");
+            Join<Category, Category> parentCategory = category.join("parent", JoinType.LEFT);
+
             predicates.add(cb.isNull(root.get("deletedAt")));
 
             if (query != null && !query.isBlank()) {
@@ -50,10 +55,13 @@ public class AdminProductService {
                         cb.like(cb.lower(root.get("name")), keyword),
                         cb.like(cb.lower(root.get("slug")), keyword),
                         cb.like(cb.lower(root.get("origin")), keyword),
+                        cb.like(cb.lower(root.get("shortDescription")), keyword),
                         cb.like(cb.lower(root.get("description")), keyword)));
             }
             if (categoryId != null) {
-                predicates.add(cb.equal(root.get("category").get("publicId"), categoryId));
+                predicates.add(cb.or(
+                        cb.equal(category.get("publicId"), categoryId),
+                        cb.equal(parentCategory.get("publicId"), categoryId)));
             }
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
@@ -113,6 +121,7 @@ public class AdminProductService {
         product.setCategory(findCategory(request.categoryId()));
         product.setName(request.name().trim());
         product.setSlug(request.slug().trim());
+        product.setShortDescription(trimToNull(request.shortDescription()));
         product.setDescription(trimToNull(request.description()));
         product.setOrigin(trimToNull(request.origin()));
         product.setBasePrice(request.basePrice());

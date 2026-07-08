@@ -63,6 +63,7 @@ class AdminProductServiceTest {
         ProductDetailResponse result = adminProductService.createProduct(request);
 
         assertEquals("Muc kho loai 1", result.name());
+        assertEquals("Muc kho size lon cho don si", result.shortDescription());
         assertEquals(ProductStatus.ACTIVE, result.status());
         assertEquals(2, result.priceTiers().size());
         assertNotNull(result.id());
@@ -110,6 +111,7 @@ class AdminProductServiceTest {
                 category.getPublicId(),
                 "Muc kho loai 1",
                 "muc-kho-loai-1",
+                "Muc kho size lon cho don si",
                 "Muc kho phuc vu don si",
                 "Ca Mau",
                 new BigDecimal("450000"),
@@ -163,6 +165,7 @@ class AdminProductServiceTest {
                 categoryId,
                 "Muc kho loai 1",
                 slug,
+                "Muc kho size lon cho don si",
                 "Muc kho phuc vu don si",
                 "Ca Mau",
                 new BigDecimal("450000"),
@@ -194,6 +197,7 @@ class AdminProductServiceTest {
                 .category(category)
                 .name("Muc kho loai 1")
                 .slug("muc-kho-loai-1")
+                .shortDescription("Muc kho size lon cho don si")
                 .description("Muc kho phuc vu don si")
                 .origin("Ca Mau")
                 .basePrice(new BigDecimal("450000"))

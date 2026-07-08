@@ -25,7 +25,47 @@ import static org.mockito.Mockito.when;
 class ProductServiceTest {
 
     private final ProductRepository productRepository = mock(ProductRepository.class);
-    private final ProductService productService = new ProductService(productRepository);
+    private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
+    private final ProductService productService = new ProductService(productRepository, categoryRepository);
+
+    @Test
+    void listCategoriesReturnsActiveHierarchy() {
+        Category fish = Category.builder()
+                .id(1L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655460101"))
+                .name("Cá")
+                .slug("ca")
+                .displayOrder(1)
+                .active(true)
+                .build();
+        Category driedFish = Category.builder()
+                .id(2L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655450103"))
+                .name("Cá khô")
+                .slug("ca-kho")
+                .displayOrder(1)
+                .active(true)
+                .parent(fish)
+                .build();
+        Category frozenFish = Category.builder()
+                .id(3L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440103"))
+                .name("Cá đông lạnh")
+                .slug("ca-dong-lanh")
+                .displayOrder(2)
+                .active(true)
+                .parent(fish)
+                .build();
+        when(categoryRepository.findAllActiveOrdered()).thenReturn(List.of(fish, frozenFish, driedFish));
+
+        List<CategoryResponse> categories = productService.listCategories();
+
+        assertEquals(1, categories.size());
+        assertEquals("Cá", categories.getFirst().name());
+        assertEquals(2, categories.getFirst().children().size());
+        assertEquals("Cá khô", categories.getFirst().children().getFirst().name());
+        assertEquals(fish.getPublicId(), categories.getFirst().children().getFirst().parentId());
+    }
 
     @Test
     void listProductsMapsPageAndUsesRequestedSort() {
@@ -44,6 +84,7 @@ class ProductServiceTest {
 
         assertEquals(1, result.getTotalElements());
         assertEquals("Muc kho loai 1", result.getContent().getFirst().name());
+        assertEquals("Muc kho size lon cho don si", result.getContent().getFirst().shortDescription());
         assertEquals("Muc kho", result.getContent().getFirst().category().name());
         verify(productRepository).findAll(
                 any(Specification.class),
@@ -60,6 +101,7 @@ class ProductServiceTest {
         ProductDetailResponse result = productService.getProductDetail(product.getPublicId());
 
         assertEquals("Muc kho loai 1", result.name());
+        assertEquals("Muc kho size lon cho don si", result.shortDescription());
         assertEquals(1, result.images().size());
         assertEquals(2, result.priceTiers().size());
     }
@@ -86,6 +128,7 @@ class ProductServiceTest {
                 .category(category)
                 .name("Muc kho loai 1")
                 .slug("muc-kho-loai-1")
+                .shortDescription("Muc kho size lon cho don si")
                 .description("Muc kho phuc vu don si")
                 .origin("Ca Mau")
                 .basePrice(new BigDecimal("450000"))

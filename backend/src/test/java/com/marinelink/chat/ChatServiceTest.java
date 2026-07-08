@@ -37,12 +37,15 @@ class ChatServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final ComplaintRepository complaintRepository = mock(ComplaintRepository.class);
     private final OrderRepository orderRepository = mock(OrderRepository.class);
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate =
+            mock(org.springframework.messaging.simp.SimpMessagingTemplate.class);
     private final ChatService chatService = new ChatService(
             chatRoomRepository,
             chatMessageRepository,
             userRepository,
             complaintRepository,
-            orderRepository);
+            orderRepository,
+            messagingTemplate);
 
     @Test
     void getThreadReturnsMessagesForRoomOwner() {
@@ -112,6 +115,59 @@ class ChatServiceTest {
         assertNotNull(room.getLastMessageAt());
         assertEquals(staff, room.getAssignedStaff());
         verify(chatRoomRepository).save(room);
+        // Realtime broadcast to the room topic (ML-63).
+        verify(messagingTemplate).convertAndSend(
+                org.mockito.ArgumentMatchers.eq("/topic/chat." + roomPublicId),
+                org.mockito.ArgumentMatchers.<Object>any());
+    }
+
+    @Test
+    void listMyRoomsReturnsRoomsTitledByFirstMessage() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        User owner = user(21L, userPublicId, "USER");
+        ChatRoom room = room(UUID.fromString("550e8400-e29b-41d4-a716-44665544000a"), owner, null);
+        ChatMessage first = message(room, owner, ChatSenderType.USER, "Xin chao shop");
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(owner));
+        when(chatRoomRepository.findMyRooms(owner)).thenReturn(List.of(room));
+        when(chatMessageRepository.findTopByRoomOrderByCreatedAtAsc(room))
+                .thenReturn(Optional.of(first));
+
+        List<ChatRoomSummaryResponse> rooms = chatService.listMyRooms(userPublicId);
+
+        assertEquals(1, rooms.size());
+        assertEquals("Xin chao shop", rooms.get(0).title());
+        assertEquals(room.getPublicId(), rooms.get(0).roomId());
+    }
+
+    @Test
+    void listMyRoomsFallsBackToNewConversationTitleWhenEmpty() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        User owner = user(21L, userPublicId, "USER");
+        ChatRoom room = room(UUID.fromString("550e8400-e29b-41d4-a716-44665544000a"), owner, null);
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(owner));
+        when(chatRoomRepository.findMyRooms(owner)).thenReturn(List.of(room));
+        when(chatMessageRepository.findTopByRoomOrderByCreatedAtAsc(room))
+                .thenReturn(Optional.empty());
+
+        assertEquals("Cuộc trò chuyện mới",
+                chatService.listMyRooms(userPublicId).get(0).title());
+    }
+
+    @Test
+    void createMySupportRoomCreatesEmptyRoom() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        User owner = user(21L, userPublicId, "USER");
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(owner));
+        when(chatRoomRepository.save(any(ChatRoom.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(chatMessageRepository.findByRoomOrderByCreatedAtAsc(any(ChatRoom.class)))
+                .thenReturn(List.of());
+
+        ChatThreadResponse thread = chatService.createMySupportRoom(userPublicId);
+
+        assertEquals(0, thread.messages().size());
+        assertEquals(false, thread.isClosed());
+        verify(chatRoomRepository).save(any(ChatRoom.class));
     }
 
     @Test

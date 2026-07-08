@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
@@ -444,11 +445,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
         _selectAddress(defaultAddress);
       }
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       setState(() => _isLoadingAddresses = false);
       _showMessage(
-        'Kh\u00f4ng th\u1ec3 t\u1ea3i \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+        userFacingErrorMessage(
+          error,
+          fallback:
+              'Kh\u00f4ng th\u1ec3 t\u1ea3i \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+        ),
       );
     }
   }
@@ -486,8 +491,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!mounted) return;
       if (!response.success || response.data == null) {
         _showMessage(
-          response.message ??
-              'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+          userFacingResponseMessage(
+            response.message,
+            fallback:
+                'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+          ),
         );
         return;
       }
@@ -496,10 +504,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _showMessage(
         '\u0110\u00e3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
       );
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         _showMessage(
-          'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+          userFacingErrorMessage(
+            error,
+            fallback:
+                'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+          ),
         );
       }
     } finally {
@@ -518,8 +530,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!mounted) return null;
       if (!response.success || response.data == null) {
         _showMessage(
-          response.message ??
-              'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+          userFacingResponseMessage(
+            response.message,
+            fallback:
+                'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+          ),
         );
         return null;
       }
@@ -528,10 +543,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
       _selectAddress(response.data!);
       return response.data!;
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         _showMessage(
-          'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+          userFacingErrorMessage(
+            error,
+            fallback:
+                'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+          ),
         );
       }
       return null;
@@ -552,8 +571,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!mounted) return;
       if (!response.success) {
         _showMessage(
-          response.message ??
-              'Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9',
+          userFacingResponseMessage(
+            response.message,
+            fallback: 'Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9',
+          ),
         );
         return;
       }
@@ -569,9 +590,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _showMessage(
         '\u0110\u00e3 x\u00f3a \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
       );
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        _showMessage('Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9');
+        _showMessage(
+          userFacingErrorMessage(
+            error,
+            fallback: 'Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9',
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSavingAddress = false);
@@ -608,7 +634,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       navigator.pop();
       return;
     }
-    BuyerNavigation.popOrGo(context, AppRoutes.cart);
+    // Cart opens checkout with go() and both share the same buyer tab, so there
+    // is no page to pop. Go straight to the cart tab instead of popOrGo — the
+    // latter treats /cart and /checkout as one tab and jumps to the previous
+    // buyer tab (or no-ops), which is why "back" did not return to the cart.
+    GoRouter.of(context).go(AppRoutes.cart);
   }
 
   void _goToProducts(BuildContext context) {

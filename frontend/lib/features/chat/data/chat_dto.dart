@@ -14,6 +14,24 @@ ChatThread chatThreadFromJson(dynamic json) {
   );
 }
 
+ChatRoomSummary chatRoomSummaryFromJson(dynamic json) {
+  final map = json as Map<String, dynamic>? ?? const <String, dynamic>{};
+  return ChatRoomSummary(
+    roomId: _stringOrEmpty(map['roomId'] ?? map['id'] ?? map['publicId']),
+    title: _stringOrEmpty(map['title']),
+    isClosed: _toBool(map['isClosed'] ?? map['closed']),
+    lastMessageAt: _dateTimeFromJson(
+      map['lastMessageAt'] ?? map['last_message_at'],
+    ),
+  );
+}
+
+List<ChatRoomSummary> chatRoomSummariesFromJson(dynamic json) {
+  return (json as List<dynamic>? ?? const [])
+      .map(chatRoomSummaryFromJson)
+      .toList();
+}
+
 ChatMessage chatMessageFromJson(dynamic json) {
   final map = json as Map<String, dynamic>? ?? const <String, dynamic>{};
   return ChatMessage(

@@ -18,6 +18,8 @@ import '../widgets/product_visuals.dart';
 
 enum _ProductStockFilter { all, available, low }
 
+enum _ProductPriceFilter { all, under300, from300To500, over500 }
+
 class ProductListScreen extends StatefulWidget {
   static const productListScrollKey = PageStorageKey<String>(
     'productListScrollView',
@@ -41,15 +43,15 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  static const _allFilterValue = '__all__';
-
   late final TextEditingController _searchController;
   late final ProductRepository _productRepository;
   late final ProductBloc _productBloc;
   List<Category> _categories = const [];
+  List<String> _allOriginOptions = const [];
   String? _selectedCategoryId;
-  String _selectedVariant = _allFilterValue;
   _ProductStockFilter _stockFilter = _ProductStockFilter.all;
+  _ProductPriceFilter _priceFilter = _ProductPriceFilter.all;
+  String? _originFilter;
   bool _sortAscending = true;
   bool _hasCustomSort = false;
 
@@ -61,6 +63,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _productBloc = ProductBloc(productRepository: _productRepository);
     _selectedCategoryId = widget.initialCategoryId;
     _loadCategories();
+    _loadAllOrigins();
     _requestProducts();
   }
 
@@ -84,8 +87,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _searchController.text = widget.initialQuery ?? '';
     setState(() {
       _selectedCategoryId = widget.initialCategoryId;
-      _selectedVariant = _allFilterValue;
       _stockFilter = _ProductStockFilter.all;
+      _priceFilter = _ProductPriceFilter.all;
+      _originFilter = null;
       _sortAscending = true;
       _hasCustomSort = false;
     });
@@ -111,9 +115,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 final baseProducts = state is ProductListLoaded
                     ? state.products
                     : const <Product>[];
-                final variantOptions = _selectedCategoryId == null
-                    ? const <String>[]
-                    : _buildVariantOptions(baseProducts);
                 final visibleProducts = state is ProductListLoaded
                     ? _applyLocalFilters(baseProducts)
                     : const <Product>[];
@@ -208,8 +209,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 fillColor: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            _buildTopFilters(variantOptions),
+                            const SizedBox(height: 8),
+                            _ActiveFilterBar(
+                              labels: _activeFilterLabels(),
+                              activeCount: _activeFilterCount(),
+                              onFilterTap: () => _openAdvancedFilters(_allOriginOptions),
+                            ),
                           ],
                         ),
                       ),
@@ -226,6 +231,43 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _loadCategories() async {
+    final response = await _productRepository.getCategories();
+    var categories = response.data ?? const <Category>[];
+
+    if (categories.isEmpty) {
+      categories = await _loadCategoriesFromProducts();
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _categories = categories;
+    });
+  }
+
+  Future<void> _loadAllOrigins() async {
+    final response = await _productRepository.getProducts(
+      page: 0,
+      size: 200,
+      status: 'ACTIVE',
+    );
+    final origins = <String>{};
+    for (final product in response.data ?? const <Product>[]) {
+      final origin = product.origin?.trim();
+      if (origin != null && origin.isNotEmpty) {
+        origins.add(origin);
+      }
+    }
+    final sorted = origins.toList()
+      ..sort((a, b) => displayOrigin(a).compareTo(displayOrigin(b)));
+    if (!mounted) return;
+    setState(() {
+      _allOriginOptions = sorted;
+    });
+  }
+
+  Future<List<Category>> _loadCategoriesFromProducts() async {
     final response = await _productRepository.getProducts(
       page: 0,
       size: 100,
@@ -238,17 +280,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
         uniqueCategories.putIfAbsent(category.id, () => category);
       }
     }
-    final categories = uniqueCategories.values.toList()
-      ..sort(
-        (a, b) => displayCategoryName(a).compareTo(displayCategoryName(b)),
-      );
-
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _categories = categories;
-    });
+    return uniqueCategories.values.toList()..sort(
+      (a, b) => displayCategoryName(a).compareTo(displayCategoryName(b)),
+    );
   }
 
   Widget _buildBody(
@@ -346,157 +380,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  Widget _buildTopFilters(List<String> variantOptions) {
-    final scrollingFilters = _buildScrollableTopFilters(variantOptions);
-
-    return KeyedSubtree(
-      key: const Key('productTopFilterBar'),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChipButton(
-              key: const Key('productFilterAllChip'),
-              label: 'T\u1ea5t c\u1ea3',
-              selected:
-                  _selectedCategoryId == null &&
-                  _selectedVariant == _allFilterValue &&
-                  _stockFilter == _ProductStockFilter.all,
-              onTap: _resetProductFilters,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _AdvancedFilterButton(
-              activeCount: _activeFilterCount(),
-              onTap: _openAdvancedFilters,
-            ),
-          ),
-          Expanded(
-            child: ClipRect(
-              // The chips use Ink, which paints its background onto the NEAREST
-              // Material ancestor — without a local Material that would be the
-              // full-width header Material, so the ink bled OVER the fixed
-              // "Tất cả"/"Lọc" buttons when scrolled (ClipRect only clips normal
-              // widgets, not ink). A transparent Material INSIDE the ClipRect
-              // makes the chip ink paint here and get clipped to this block.
-              child: Material(
-                type: MaterialType.transparency,
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(
-                    context,
-                  ).copyWith(overscroll: false, scrollbars: false),
-                  child: SingleChildScrollView(
-                    key: const Key('productScrollableFilters'),
-                    clipBehavior: Clip.hardEdge,
-                    physics: const ClampingScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    child: Row(children: scrollingFilters),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildScrollableTopFilters(List<String> variantOptions) {
-    final widgets = <Widget>[];
-
-    if (_selectedCategoryId == null) {
-      for (final category in _categories) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChipButton(
-              label: displayCategoryName(category),
-              selected: _selectedCategoryId == category.id,
-              onTap: () => _selectCategory(category.id),
-            ),
-          ),
-        );
-      }
-    } else {
-      for (final option in variantOptions) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChipButton(
-              label: option,
-              selected: _selectedVariant == option,
-              onTap: () {
-                setState(() {
-                  _selectedVariant = option;
-                });
-              },
-            ),
-          ),
-        );
-      }
-    }
-
-    widgets.addAll([
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _FilterChipButton(
-          label: 'Còn hàng',
-          selected: _stockFilter == _ProductStockFilter.available,
-          onTap: () => _selectStockFilter(_ProductStockFilter.available),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _FilterChipButton(
-          label: 'Sắp hết',
-          selected: _stockFilter == _ProductStockFilter.low,
-          onTap: () => _selectStockFilter(_ProductStockFilter.low),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: _SortChipButton(
-          label: _sortLabel(),
-          ascending: _sortAscending,
-          active: _hasCustomSort,
-          onTap: () {
-            setState(() {
-              _sortAscending = !_sortAscending;
-              _hasCustomSort = true;
-            });
-            _requestProducts();
-          },
-        ),
-      ),
-    ]);
-
-    return widgets;
-  }
-
-  List<String> _buildVariantOptions(List<Product> products) {
-    final seen = <String>{};
-    final ordered = <String>[];
-    for (final product in products) {
-      final label = _variantLabel(product);
-      if (label != null && seen.add(label)) {
-        ordered.add(label);
-      }
-    }
-    return ordered;
-  }
-
   List<Product> _applyLocalFilters(List<Product> products) {
     final filtered = products.where((product) {
-      if (_selectedVariant != _allFilterValue &&
-          _variantLabel(product) != _selectedVariant) {
+      if (!_matchesStockFilter(product)) {
         return false;
       }
-      return switch (_stockFilter) {
-        _ProductStockFilter.all => true,
-        _ProductStockFilter.available => product.isAvailable,
-        _ProductStockFilter.low => _isLowStock(product),
-      };
+      if (!_matchesPriceFilter(product)) {
+        return false;
+      }
+      if (_originFilter != null && product.origin != _originFilter) {
+        return false;
+      }
+      return true;
     }).toList();
 
     if (_hasCustomSort) {
@@ -506,6 +401,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
       });
     }
     return filtered;
+  }
+
+  bool _matchesStockFilter(Product product) {
+    return switch (_stockFilter) {
+      _ProductStockFilter.all => true,
+      _ProductStockFilter.available => product.isAvailable,
+      _ProductStockFilter.low => _isLowStock(product),
+    };
+  }
+
+  bool _matchesPriceFilter(Product product) {
+    return switch (_priceFilter) {
+      _ProductPriceFilter.all => true,
+      _ProductPriceFilter.under300 => product.basePrice < 300000,
+      _ProductPriceFilter.from300To500 =>
+        product.basePrice >= 300000 && product.basePrice <= 500000,
+      _ProductPriceFilter.over500 => product.basePrice > 500000,
+    };
   }
 
   bool _isLowStock(Product product) {
@@ -525,10 +438,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (_selectedCategoryId != null) {
       count++;
     }
-    if (_selectedVariant != _allFilterValue) {
+    if (_stockFilter != _ProductStockFilter.all) {
       count++;
     }
-    if (_stockFilter != _ProductStockFilter.all) {
+    if (_priceFilter != _ProductPriceFilter.all) {
+      count++;
+    }
+    if (_originFilter != null) {
       count++;
     }
     if (_hasCustomSort) {
@@ -537,23 +453,56 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return count;
   }
 
+  List<String> _activeFilterLabels() {
+    final labels = <String>[];
+    if (_selectedCategoryId != null) {
+      final cat = _findCategoryById(_selectedCategoryId);
+      if (cat != null) {
+        labels.add(displayCategoryName(cat));
+      }
+    }
+    if (_stockFilter != _ProductStockFilter.all) {
+      labels.add(
+        switch (_stockFilter) {
+          _ProductStockFilter.all => '',
+          _ProductStockFilter.available => 'Còn hàng',
+          _ProductStockFilter.low => 'Sắp hết',
+        },
+      );
+    }
+    if (_priceFilter != _ProductPriceFilter.all) {
+      labels.add(
+        switch (_priceFilter) {
+          _ProductPriceFilter.all => '',
+          _ProductPriceFilter.under300 => 'Dưới 300k',
+          _ProductPriceFilter.from300To500 => '300k–500k',
+          _ProductPriceFilter.over500 => 'Trên 500k',
+        },
+      );
+    }
+    if (_originFilter != null) {
+      labels.add(displayOrigin(_originFilter!));
+    }
+    if (_hasCustomSort) {
+      labels.add(_sortAscending ? 'Giá tăng dần' : 'Giá giảm dần');
+    }
+    return labels;
+  }
+
   String? _sortParam() {
     if (!_hasCustomSort) {
       return null;
     }
-    return _sortAscending ? 'price' : '-price';
+    return _sortAscending ? 'price_asc' : 'price_desc';
   }
 
-  void _selectStockFilter(_ProductStockFilter filter) {
-    setState(() {
-      _stockFilter = _stockFilter == filter ? _ProductStockFilter.all : filter;
-    });
-  }
-
-  void _openAdvancedFilters() {
+  void _openAdvancedFilters(List<String> originOptions) {
     var draftStockFilter = _stockFilter;
+    var draftPriceFilter = _priceFilter;
+    var draftOriginFilter = _originFilter;
     var draftSortAscending = _sortAscending;
     var draftHasCustomSort = _hasCustomSort;
+    var draftCategoryId = _selectedCategoryId;
 
     showModalBottomSheet<void>(
       context: context,
@@ -567,10 +516,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
           builder: (context, setDraftState) {
             return _ProductFilterSheet(
               stockFilter: draftStockFilter,
+              priceFilter: draftPriceFilter,
+              originFilter: draftOriginFilter,
+              originOptions: originOptions,
               hasCustomSort: draftHasCustomSort,
               sortAscending: draftSortAscending,
+              categories: _categories,
+              selectedCategoryId: draftCategoryId,
               onStockFilterChanged: (filter) {
                 setDraftState(() => draftStockFilter = filter);
+              },
+              onPriceFilterChanged: (filter) {
+                setDraftState(() => draftPriceFilter = filter);
+              },
+              onOriginFilterChanged: (origin) {
+                setDraftState(() => draftOriginFilter = origin);
+              },
+              onCategoryChanged: (categoryId) {
+                setDraftState(() => draftCategoryId = categoryId);
               },
               onSortChanged: (ascending) {
                 setDraftState(() {
@@ -578,16 +541,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   draftSortAscending = ascending;
                 });
               },
+              onSortReset: () {
+                setDraftState(() {
+                  draftHasCustomSort = false;
+                  draftSortAscending = true;
+                });
+              },
               onReset: () {
                 Navigator.of(sheetContext).pop();
-                _resetProductFilters();
+                setState(() {
+                  _stockFilter = _ProductStockFilter.all;
+                  _priceFilter = _ProductPriceFilter.all;
+                  _originFilter = null;
+                  _hasCustomSort = false;
+                  _sortAscending = true;
+                  _selectedCategoryId = null;
+                });
+                _requestProducts();
               },
               onApply: () {
                 Navigator.of(sheetContext).pop();
                 setState(() {
                   _stockFilter = draftStockFilter;
+                  _priceFilter = draftPriceFilter;
+                  _originFilter = draftOriginFilter;
                   _hasCustomSort = draftHasCustomSort;
                   _sortAscending = draftSortAscending;
+                  _selectedCategoryId = draftCategoryId;
                 });
                 _requestProducts();
               },
@@ -602,29 +582,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _searchController.clear();
     setState(() {
       _selectedCategoryId = null;
-      _selectedVariant = _allFilterValue;
       _stockFilter = _ProductStockFilter.all;
+      _priceFilter = _ProductPriceFilter.all;
+      _originFilter = null;
       _hasCustomSort = false;
       _sortAscending = true;
     });
     _requestProducts();
-  }
-
-  String? _variantLabel(Product product) {
-    final lowerName = product.name.toLowerCase();
-    if (lowerName.contains('loai 1')) {
-      return 'Loại 1';
-    }
-    if (lowerName.contains('loai 2')) {
-      return 'Loại 2';
-    }
-    if (lowerName.contains('xe soi')) {
-      return 'Xé sợi';
-    }
-    if (lowerName.contains('dac biet')) {
-      return 'Đặc biệt';
-    }
-    return null;
   }
 
   String _screenTitle() {
@@ -633,20 +597,40 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
 
     for (final category in _categories) {
-      if (category.id == _selectedCategoryId) {
-        return displayCategoryName(category);
-      }
+      final matched = _findCategoryById(_selectedCategoryId, category);
+      if (matched != null) return displayCategoryName(matched);
     }
     return 'Sản phẩm';
   }
 
-  void _selectCategory(String categoryId) {
-    setState(() {
-      _selectedCategoryId = categoryId;
-      _selectedVariant = _allFilterValue;
-    });
-    _requestProducts();
+
+
+
+  Category? _findCategoryById(String? categoryId, [Category? root]) {
+    if (categoryId == null) {
+      return null;
+    }
+
+    final candidates = root == null ? _categories : [root];
+    for (final category in candidates) {
+      final matched = _findCategoryInTree(categoryId, category);
+      if (matched != null) return matched;
+    }
+    return null;
   }
+
+  Category? _findCategoryInTree(String categoryId, Category category) {
+    if (category.id == categoryId) {
+      return category;
+    }
+    for (final child in category.children) {
+      final matched = _findCategoryInTree(categoryId, child);
+      if (matched != null) return matched;
+    }
+    return null;
+  }
+
+
 
   void _requestProducts() {
     _productBloc.add(
@@ -700,93 +684,80 @@ class _ScrollableState extends StatelessWidget {
   }
 }
 
-class _FilterChipButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
 
-  const _FilterChipButton({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
+class _ActiveFilterBar extends StatelessWidget {
+  final List<String> labels;
+  final int activeCount;
+  final VoidCallback onFilterTap;
+
+  const _ActiveFilterBar({
+    required this.labels,
+    required this.activeCount,
+    required this.onFilterTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? AppColors.primary : const Color(0xFFD9E4EF),
+    final filterBtn = _AdvancedFilterButton(
+      activeCount: activeCount,
+      onTap: onFilterTap,
+    );
+
+    if (labels.isEmpty) {
+      return Align(alignment: Alignment.centerRight, child: filterBtn);
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(overscroll: false, scrollbars: false),
+            child: SingleChildScrollView(
+              key: const Key('productScrollableFilters'),
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              child: Row(
+                children: [
+                  for (int i = 0; i < labels.length; i++) ...[
+                    _ActiveFilterChip(label: labels[i]),
+                    if (i < labels.length - 1) const SizedBox(width: 6),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: selected ? Colors.white : AppColors.textPrimary,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ),
+        const SizedBox(width: 8),
+        filterBtn,
+      ],
     );
   }
 }
 
-class _SortChipButton extends StatelessWidget {
+class _ActiveFilterChip extends StatelessWidget {
   final String label;
-  final bool ascending;
-  final bool active;
-  final VoidCallback onTap;
 
-  const _SortChipButton({
-    required this.label,
-    required this.ascending,
-    required this.active,
-    required this.onTap,
-  });
+  const _ActiveFilterChip({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F5FF),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: active ? const Color(0xFF006A7C) : const Color(0xFFD1E7F7),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              ascending
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded,
-              size: 16,
-              color: const Color(0xFF006A7C),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: const Color(0xFF006A7C),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD8F0FF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF8ACDE8)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: const Color(0xFF00607A),
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -821,7 +792,7 @@ class _AdvancedFilterButton extends StatelessWidget {
             const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF006A7C)),
             const SizedBox(width: 6),
             Text(
-              isActive ? 'Lọc ($activeCount)' : 'Lọc',
+              'Lọc ($activeCount)',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: isActive
                     ? const Color(0xFF006A7C)
@@ -838,135 +809,298 @@ class _AdvancedFilterButton extends StatelessWidget {
 
 class _ProductFilterSheet extends StatelessWidget {
   final _ProductStockFilter stockFilter;
+  final _ProductPriceFilter priceFilter;
+  final String? originFilter;
+  final List<String> originOptions;
   final bool hasCustomSort;
   final bool sortAscending;
+  final List<Category> categories;
+  final String? selectedCategoryId;
   final ValueChanged<_ProductStockFilter> onStockFilterChanged;
+  final ValueChanged<_ProductPriceFilter> onPriceFilterChanged;
+  final ValueChanged<String?> onOriginFilterChanged;
+  final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<bool> onSortChanged;
+  final VoidCallback onSortReset;
   final VoidCallback onReset;
   final VoidCallback onApply;
 
   const _ProductFilterSheet({
     required this.stockFilter,
+    required this.priceFilter,
+    required this.originFilter,
+    required this.originOptions,
     required this.hasCustomSort,
     required this.sortAscending,
+    required this.categories,
+    required this.selectedCategoryId,
     required this.onStockFilterChanged,
+    required this.onPriceFilterChanged,
+    required this.onOriginFilterChanged,
+    required this.onCategoryChanged,
     required this.onSortChanged,
+    required this.onSortReset,
     required this.onReset,
     required this.onApply,
   });
 
+  /// Find the parent category for a given categoryId in the category tree.
+  Category? _findParentCategory() {
+    if (selectedCategoryId == null) return null;
+    for (final cat in categories) {
+      if (cat.id == selectedCategoryId) return cat;
+      for (final child in cat.children) {
+        if (child.id == selectedCategoryId) return cat;
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedParent = _findParentCategory();
+    final childCategories = selectedParent?.children ?? const <Category>[];
+
     return SafeArea(
       top: false,
-      child: Padding(
-        key: const Key('productFilterSheet'),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD8E3EA),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Lọc sản phẩm',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tồn kho',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _SheetChoiceButton(
-                  key: const Key('productFilterStockAll'),
-                  label: 'Tất cả',
-                  selected: stockFilter == _ProductStockFilter.all,
-                  onTap: () => onStockFilterChanged(_ProductStockFilter.all),
-                ),
-                _SheetChoiceButton(
-                  key: const Key('productFilterStockAvailable'),
-                  label: 'Còn hàng',
-                  selected: stockFilter == _ProductStockFilter.available,
-                  onTap: () =>
-                      onStockFilterChanged(_ProductStockFilter.available),
-                ),
-                _SheetChoiceButton(
-                  key: const Key('productFilterStockLow'),
-                  label: 'Sắp hết',
-                  selected: stockFilter == _ProductStockFilter.low,
-                  onTap: () => onStockFilterChanged(_ProductStockFilter.low),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Sắp xếp',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _SheetChoiceButton(
-                  key: const Key('productFilterSortPriceAsc'),
-                  label: 'Giá tăng dần',
-                  selected: hasCustomSort && sortAscending,
-                  onTap: () => onSortChanged(true),
-                ),
-                _SheetChoiceButton(
-                  key: const Key('productFilterSortPriceDesc'),
-                  label: 'Giá giảm dần',
-                  selected: hasCustomSort && !sortAscending,
-                  onTap: () => onSortChanged(false),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    key: const Key('productFilterResetButton'),
-                    onPressed: onReset,
-                    child: const Text('Đặt lại'),
+      child: SingleChildScrollView(
+        child: Padding(
+          key: const Key('productFilterSheet'),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD8E3EA),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    key: const Key('productFilterApplyButton'),
-                    onPressed: onApply,
-                    child: const Text('Áp dụng'),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Lọc sản phẩm',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (categories.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Danh mục',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _SheetChoiceButton(
+                      key: const Key('productFilterCategoryAll'),
+                      label: 'Tất cả',
+                      selected: selectedCategoryId == null,
+                      onTap: () => onCategoryChanged(null),
+                    ),
+                    for (final cat in categories)
+                      _SheetChoiceButton(
+                        key: Key('productFilterCategory-${cat.id}'),
+                        label: displayCategoryName(cat),
+                        selected: selectedParent?.id == cat.id,
+                        onTap: () => onCategoryChanged(cat.id),
+                      ),
+                  ],
+                ),
+                if (selectedParent != null && childCategories.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _SheetChoiceButton(
+                        key: Key('productFilterCategoryAllParent-${selectedParent.id}'),
+                        label: 'Tất cả ${displayCategoryName(selectedParent).toLowerCase()}',
+                        selected: selectedCategoryId == selectedParent.id,
+                        onTap: () => onCategoryChanged(selectedParent.id),
+                      ),
+                      for (final child in childCategories)
+                        _SheetChoiceButton(
+                          key: Key('productFilterCategoryChild-${child.id}'),
+                          label: displayCategoryName(child),
+                          selected: selectedCategoryId == child.id,
+                          onTap: () => onCategoryChanged(child.id),
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Tồn kho',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _SheetChoiceButton(
+                    key: const Key('productFilterStockAll'),
+                    label: 'Tất cả',
+                    selected: stockFilter == _ProductStockFilter.all,
+                    onTap: () => onStockFilterChanged(_ProductStockFilter.all),
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterStockAvailable'),
+                    label: 'Còn hàng',
+                    selected: stockFilter == _ProductStockFilter.available,
+                    onTap: () =>
+                        onStockFilterChanged(_ProductStockFilter.available),
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterStockLow'),
+                    label: 'Sắp hết',
+                    selected: stockFilter == _ProductStockFilter.low,
+                    onTap: () => onStockFilterChanged(_ProductStockFilter.low),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Giá',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _SheetChoiceButton(
+                    key: const Key('productFilterPriceAll'),
+                    label: 'Tất cả',
+                    selected: priceFilter == _ProductPriceFilter.all,
+                    onTap: () => onPriceFilterChanged(_ProductPriceFilter.all),
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterPriceUnder300'),
+                    label: 'Dưới 300k',
+                    selected: priceFilter == _ProductPriceFilter.under300,
+                    onTap: () =>
+                        onPriceFilterChanged(_ProductPriceFilter.under300),
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterPrice300To500'),
+                    label: '300k - 500k',
+                    selected: priceFilter == _ProductPriceFilter.from300To500,
+                    onTap: () =>
+                        onPriceFilterChanged(_ProductPriceFilter.from300To500),
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterPriceOver500'),
+                    label: 'Trên 500k',
+                    selected: priceFilter == _ProductPriceFilter.over500,
+                    onTap: () =>
+                        onPriceFilterChanged(_ProductPriceFilter.over500),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Xuất xứ',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _SheetChoiceButton(
+                    key: const Key('productFilterOriginAll'),
+                    label: 'Tất cả',
+                    selected: originFilter == null,
+                    onTap: () => onOriginFilterChanged(null),
+                  ),
+                  for (final origin in originOptions)
+                    _SheetChoiceButton(
+                      key: Key('productFilterOrigin-$origin'),
+                      label: displayOrigin(origin),
+                      selected: originFilter == origin,
+                      onTap: () => onOriginFilterChanged(origin),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Sắp xếp',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _SheetChoiceButton(
+                    key: const Key('productFilterSortDefault'),
+                    label: 'Mặc định',
+                    selected: !hasCustomSort,
+                    onTap: onSortReset,
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterSortPriceAsc'),
+                    label: 'Giá tăng dần',
+                    selected: hasCustomSort && sortAscending,
+                    onTap: () => onSortChanged(true),
+                  ),
+                  _SheetChoiceButton(
+                    key: const Key('productFilterSortPriceDesc'),
+                    label: 'Giá giảm dần',
+                    selected: hasCustomSort && !sortAscending,
+                    onTap: () => onSortChanged(false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const Key('productFilterResetButton'),
+                      onPressed: onReset,
+                      child: const Text('Đặt lại'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      key: const Key('productFilterApplyButton'),
+                      onPressed: onApply,
+                      child: const Text('Áp dụng'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1244,6 +1378,19 @@ class _ProductListCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  if (product.shortDescription?.trim().isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        product.shortDescription!.trim(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Row(
                     children: [

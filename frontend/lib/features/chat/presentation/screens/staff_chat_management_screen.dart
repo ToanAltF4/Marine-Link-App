@@ -402,14 +402,6 @@ class _StaffChatRoomCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  key: Key('staffChatComplaintButton_${room.roomId}'),
-                  tooltip: 'T\u1ea1o khi\u1ebfu n\u1ea1i',
-                  onPressed: updating
-                      ? null
-                      : () => _showComplaintSheet(context, room),
-                  icon: const Icon(Icons.report_problem_outlined),
-                ),
-                IconButton(
                   key: Key('staffChatToggleButton_${room.roomId}'),
                   tooltip: room.isClosed
                       ? 'M\u1edf l\u1ea1i'
@@ -541,113 +533,6 @@ class _StaffChatEmpty extends StatelessWidget {
   }
 }
 
-class _ComplaintSheet extends StatefulWidget {
-  final StaffChatRoom room;
-
-  const _ComplaintSheet({required this.room});
-
-  @override
-  State<_ComplaintSheet> createState() => _ComplaintSheetState();
-}
-
-class _ComplaintSheetState extends State<_ComplaintSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController.text =
-        'Khi\u1ebfu n\u1ea1i t\u1eeb ${widget.room.customer.fullName}';
-    _descriptionController.text = widget.room.summary;
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-        ),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            key: const Key('staffChatComplaintSheet'),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'T\u1ea1o khi\u1ebfu n\u1ea1i',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  key: const Key('staffChatComplaintTitleField'),
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Ti\u00eau \u0111\u1ec1',
-                  ),
-                  validator: _required,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  key: const Key('staffChatComplaintDescriptionField'),
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'M\u00f4 t\u1ea3',
-                  ),
-                  minLines: 3,
-                  maxLines: 5,
-                  validator: _required,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    key: const Key('staffChatComplaintSaveButton'),
-                    onPressed: _submit,
-                    icon: const Icon(Icons.save_outlined),
-                    label: const Text('L\u01b0u khi\u1ebfu n\u1ea1i'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    await context.read<StaffChatCubit>().createComplaint(
-      roomId: widget.room.roomId,
-      title: _titleController.text,
-      description: _descriptionController.text,
-      messageId: widget.room.lastMessage?.id,
-    );
-    if (!mounted) return;
-    if (context.read<StaffChatCubit>().state.actionErrorMessage == null) {
-      Navigator.of(context).pop();
-    }
-  }
-}
-
 class _IconTile extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -742,29 +627,10 @@ class _SmallBadge extends StatelessWidget {
   }
 }
 
-void _showComplaintSheet(BuildContext context, StaffChatRoom room) {
-  final cubit = context.read<StaffChatCubit>();
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => BlocProvider.value(
-      value: cubit,
-      child: _ComplaintSheet(room: room),
-    ),
-  );
-}
 
 String _formatTime(DateTime? value) {
   if (value == null) return 'Ch\u01b0a c\u00f3 tin';
   return DateFormat('HH:mm dd/MM').format(value.toLocal());
-}
-
-String? _required(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'Kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng';
-  }
-  return null;
 }
 
 String _orderStatusLabel(String status) {

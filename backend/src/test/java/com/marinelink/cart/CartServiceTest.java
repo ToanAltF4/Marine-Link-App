@@ -5,6 +5,8 @@ import com.marinelink.products.PriceTier;
 import com.marinelink.products.Product;
 import com.marinelink.products.ProductRepository;
 import com.marinelink.products.ProductStatus;
+import com.marinelink.common.exception.BusinessException;
+import com.marinelink.common.exception.ResourceNotFoundException;
 import com.marinelink.users.Role;
 import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
@@ -17,6 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -105,6 +108,90 @@ class CartServiceTest {
         assertEquals(new BigDecimal("2250000"), response.subtotalAmount());
     }
 
+    @Test
+    void addItemIncrementsExistingProductAndRecomputesTier() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
+        User user = user(userPublicId);
+        Product product = product(productPublicId);
+        PriceTier tier = PriceTier.builder()
+                .id(51L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440051"))
+                .product(product)
+                .minQuantity(5)
+                .unitPrice(new BigDecimal("400000"))
+                .build();
+        product.setPriceTiers(Set.of(tier));
+        Cart cart = cart(user, product, 2);
+
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(user));
+        when(cartRepository.findActiveByUserPublicId(userPublicId)).thenReturn(Optional.of(cart));
+        when(productRepository.findDetailByPublicId(productPublicId)).thenReturn(Optional.of(product));
+        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CartResponse response = cartService.addItem(
+                userPublicId,
+                new CartItemCreateRequest(productPublicId, 3, true));
+
+        assertEquals(1, response.items().size());
+        assertEquals(5, response.items().getFirst().quantity());
+        assertEquals(new BigDecimal("2000000"), response.subtotalAmount());
+        assertEquals(tier.getPublicId(), response.items().getFirst().selectedPriceTierId());
+    }
+
+    @Test
+    void updateItemRejectsQuantityBelowMinimum() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
+        User user = user(userPublicId);
+        Product product = product(productPublicId);
+        Cart cart = cart(user, product, 2);
+
+        when(cartRepository.findActiveByUserPublicId(userPublicId)).thenReturn(Optional.of(cart));
+
+        assertThrows(
+                BusinessException.class,
+                () -> cartService.updateItem(
+                        userPublicId,
+                        productPublicId,
+                        new CartItemUpdateRequest(1, null)));
+    }
+
+    @Test
+    void removeItemReturnsNotFoundWhenItemMissing() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
+        Cart cart = Cart.builder()
+                .id(31L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440031"))
+                .user(user(userPublicId))
+                .build();
+
+        when(cartRepository.findActiveByUserPublicId(userPublicId)).thenReturn(Optional.of(cart));
+
+        assertThrows(
+                ResourceNotFoundException.class,
+                () -> cartService.removeItem(userPublicId, productPublicId));
+    }
+
+    @Test
+    void clearItemsRemovesAllRowsAndReturnsEmptyCart() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
+        User user = user(userPublicId);
+        Product product = product(productPublicId);
+        Cart cart = cart(user, product, 2);
+
+        when(cartRepository.findActiveByUserPublicId(userPublicId)).thenReturn(Optional.of(cart));
+        when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CartResponse response = cartService.clearItems(userPublicId);
+
+        assertEquals(true, response.isEmpty());
+        assertEquals(0, response.items().size());
+        assertEquals(0, response.totalItemCount());
+    }
+
     private User user(UUID publicId) {
         return User.builder()
                 .id(21L)
@@ -137,5 +224,22 @@ class CartServiceTest {
                 .stockQuantity(20)
                 .status(ProductStatus.ACTIVE)
                 .build();
+    }
+
+    private Cart cart(User user, Product product, int quantity) {
+        Cart cart = Cart.builder()
+                .id(31L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440031"))
+                .user(user)
+                .build();
+        cart.getItems().add(CartItem.builder()
+                .id(41L)
+                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440041"))
+                .cart(cart)
+                .product(product)
+                .quantity(quantity)
+                .selected(true)
+                .build());
+        return cart;
     }
 }

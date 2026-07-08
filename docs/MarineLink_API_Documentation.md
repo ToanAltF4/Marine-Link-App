@@ -127,7 +127,7 @@ Product list:
 | Param | Type | Note |
 |---|---|---|
 | `q` | string | Search theo name/origin/description |
-| `categoryId` | uuid | Lọc theo category |
+| `categoryId` | uuid | Lọc theo category; nếu là category cha thì backend trả cả sản phẩm thuộc các category con trực tiếp |
 | `status` | `ACTIVE`, `OUT_OF_STOCK`, `DISABLED` | Public MVP mặc định gửi `ACTIVE`; chỉ expose `OUT_OF_STOCK` nếu business cho phép |
 | `featured` | boolean | Home featured products |
 | `sort` | string | Whitelist: `newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc` |
@@ -147,6 +147,8 @@ Orders:
 | Method | Endpoint | Role |
 |---|---|---|
 | POST | `/api/auth/login` | Public |
+| GET | `/api/auth/email-availability` | Public |
+| GET | `/api/auth/phone-availability` | Public |
 | POST | `/api/auth/register` | Public |
 | POST | `/api/auth/logout` | Authenticated |
 | GET | `/api/users/me` | Authenticated |
@@ -156,6 +158,7 @@ Orders:
 | PUT | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | DELETE | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | GET | `/api/products` | All roles |
+| GET | `/api/products/categories` | All roles |
 | GET | `/api/products/{id}` | All roles |
 | GET | `/api/cart` | USER |
 | POST | `/api/cart/items` | USER |
@@ -174,6 +177,8 @@ Orders:
 | GET | `/api/payments/vnpay/ipn` | Public VNPAY server callback |
 | POST | `/api/chat/send` | All roles |
 | GET | `/api/chat/room` | USER (get-or-create phòng hỗ trợ của chính mình) |
+| GET | `/api/chat/rooms` | USER (danh sách lịch sử chat của chính mình; title = tin nhắn đầu) |
+| POST | `/api/chat/rooms` | USER (tạo cuộc trò chuyện hỗ trợ mới) |
 | GET | `/api/chat/orders/{orderId}/room` | USER owner, order `COMPLETED` |
 | GET | `/api/chat/{roomId}` | Participant, STAFF, ADMIN |
 | GET | `/api/staff/chat/rooms` | STAFF, ADMIN |
@@ -181,13 +186,16 @@ Orders:
 | POST | `/api/staff/chat/rooms/{roomId}/complaints` | STAFF, ADMIN |
 | GET | `/api/notifications` | Authenticated |
 | PUT | `/api/notifications/{id}/read` | Owner |
+| POST | `/api/notifications` | STAFF, ADMIN |
+| GET | `/api/notifications/broadcasts` | STAFF, ADMIN |
+| DELETE | `/api/notifications/broadcasts/{broadcastId}` | STAFF, ADMIN |
 | GET | `/api/warehouses` | All roles |
 | GET | `/api/admin/dashboard` | ADMIN |
-| GET | `/api/admin/products` | ADMIN |
-| POST | `/api/admin/products` | ADMIN |
-| GET | `/api/admin/products/{id}` | ADMIN |
-| PUT | `/api/admin/products/{id}` | ADMIN |
-| DELETE | `/api/admin/products/{id}` | ADMIN |
+| GET | `/api/admin/products` | STAFF, ADMIN |
+| POST | `/api/admin/products` | STAFF, ADMIN |
+| GET | `/api/admin/products/{id}` | STAFF, ADMIN |
+| PUT | `/api/admin/products/{id}` | STAFF, ADMIN |
+| DELETE | `/api/admin/products/{id}` | STAFF, ADMIN |
 | GET | `/api/admin/users` | ADMIN |
 | GET | `/api/admin/users/{id}` | ADMIN |
 | PUT | `/api/admin/users/{id}` | ADMIN |
@@ -236,6 +244,65 @@ Validation/business rules:
 - User `DISABLED` không được đăng nhập.
 - User `PENDING_APPROVAL` có thể bị chặn hoặc chỉ vào màn hình chờ duyệt tùy rule triển khai.
 - Login/register nên có rate limit.
+
+### GET `/api/auth/email-availability`
+
+Kiểm tra nhanh email đã thuộc tài khoản đã xác thực hay chưa để frontend hiển thị inline validation. Endpoint này chỉ dùng cho UX; `POST /api/auth/register` vẫn phải validate lại và là nguồn quyết định cuối cùng.
+
+Query:
+
+| Param | Type | Required | Note |
+|---|---|---|---|
+| `email` | string/email | Yes | Email đã trim/lowercase ở backend |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "available": true,
+    "message": "Email có thể sử dụng"
+  }
+}
+```
+
+Validation/business rules:
+
+- Email sai format trả `400` qua validation envelope.
+- Email đang `PENDING_VERIFICATION` vẫn được xem là available vì đăng ký lại sẽ refresh pending account và gửi OTP mới.
+- Email đã xác thực hoặc đang chờ duyệt sau xác thực trả `available: false`.
+
+### GET `/api/auth/phone-availability`
+
+Kiểm tra số điện thoại đã thuộc tài khoản chưa soft delete hay chưa để frontend hiển thị inline validation. Endpoint này chỉ dùng cho UX; `POST /api/auth/register` vẫn validate lại.
+
+Query:
+
+| Param | Type | Required | Note |
+|---|---|---|---|
+| `phone` | string | Yes | Format `0xxxxxxxxx` hoặc `+84xxxxxxxxx` |
+| `email` | string/email | No | Nếu email đang `PENDING_VERIFICATION`, backend loại trừ chính pending user đó khi check phone |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "available": false,
+    "message": "Số điện thoại đã được sử dụng"
+  }
+}
+```
+
+Validation/business rules:
+
+- Phone sai format trả `400` qua validation envelope.
+- Phone của chính pending account theo email hiện tại vẫn được xem là available để người dùng đăng ký lại và nhận OTP mới.
+- Phone thuộc account khác chưa soft delete trả `available: false`.
 
 ### POST `/api/auth/register`
 
@@ -390,6 +457,8 @@ backend promotes another active address when one exists.
 
 Query params: `page`, `size`, `q`, `categoryId`, `status`, `featured`, `sort`.
 
+`categoryId` nhận cả danh mục cha và danh mục con. Ví dụ gửi ID của `Cá` sẽ trả sản phẩm trong `Cá khô`, `Cá đông lạnh`; gửi ID của `Cá khô` chỉ trả sản phẩm thuộc chính nhánh đó.
+
 Frontend Product List gửi `status=ACTIVE` cho catalog đại lý trong MVP. `sort=price_asc` là giá tăng dần, `sort=price_desc` là giá giảm dần; backend cũng hỗ trợ `newest`, `name_asc`, `name_desc`. Backend phải validate `sort` theo whitelist để tránh truyền trực tiếp field tùy ý vào query.
 
 Demo data hiện tại được seed bởi `V010__seed_dried_seafood_catalog.sql`: 21 sản phẩm đồ khô, mỗi sản phẩm có ảnh public trong Supabase Storage bucket `product-images`.
@@ -415,7 +484,10 @@ Response `200`:
       "isFeatured": true,
       "category": {
         "id": "550e8400-e29b-41d4-a716-446655440004",
-        "name": "Muc kho"
+        "name": "Muc kho",
+        "parentId": "550e8400-e29b-41d4-a716-446655460103",
+        "parentName": "Mực",
+        "children": []
       }
     }
   ],
@@ -448,7 +520,10 @@ Response `200`:
     "status": "ACTIVE",
     "category": {
       "id": "550e8400-e29b-41d4-a716-446655440004",
-      "name": "Muc kho"
+      "name": "Muc kho",
+      "parentId": "550e8400-e29b-41d4-a716-446655460103",
+      "parentName": "Mực",
+      "children": []
     },
     "images": [
       {
@@ -473,6 +548,43 @@ Response `200`:
       }
     ]
   }
+}
+```
+
+### GET `/api/products/categories`
+
+Trả cây danh mục active cho product filters. Root categories hiện gồm `Cá`, `Tôm`, `Mực`, `Hải sản`, `Gia vị`; các sản phẩm vẫn gắn vào category con như `Cá khô`, `Cá đông lạnh`, `Tôm khô`, `Mực khô`.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655460101",
+      "name": "Cá",
+      "parentId": null,
+      "parentName": null,
+      "children": [
+        {
+          "id": "550e8400-e29b-41d4-a716-446655450103",
+          "name": "Cá khô",
+          "parentId": "550e8400-e29b-41d4-a716-446655460101",
+          "parentName": "Cá",
+          "children": []
+        },
+        {
+          "id": "550e8400-e29b-41d4-a716-446655440103",
+          "name": "Cá đông lạnh",
+          "parentId": "550e8400-e29b-41d4-a716-446655460101",
+          "parentName": "Cá",
+          "children": []
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -1222,6 +1334,74 @@ Response `200`:
 ```
 
 Only owner can mark notification read.
+
+### POST `/api/notifications` (STAFF, ADMIN)
+
+Admin/staff broadcast một thông báo đến toàn bộ đại lý (role `USER`). Hệ thống fan-out một notification cho mỗi đại lý, gắn chung `broadcastId` + `createdBy`.
+
+Request body:
+
+```json
+{
+  "title": "Bảo trì hệ thống",
+  "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay."
+}
+```
+
+`title` bắt buộc (tối đa 200 ký tự), `body` bắt buộc.
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "message": "Đã gửi thông báo đến các đại lý",
+  "data": {
+    "broadcastId": "550e8400-e29b-41d4-a716-4466554400aa",
+    "title": "Bảo trì hệ thống",
+    "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay.",
+    "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+    "createdAt": "2026-05-28T08:30:00Z",
+    "recipientCount": 12
+  }
+}
+```
+
+### GET `/api/notifications/broadcasts` (STAFF, ADMIN)
+
+Lịch sử các thông báo do admin/staff tạo, mới nhất trước.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "broadcastId": "550e8400-e29b-41d4-a716-4466554400aa",
+      "title": "Bảo trì hệ thống",
+      "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay.",
+      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+      "createdAt": "2026-05-28T08:30:00Z",
+      "recipientCount": 12
+    }
+  ]
+}
+```
+
+### DELETE `/api/notifications/broadcasts/{broadcastId}` (STAFF, ADMIN)
+
+Xóa một thông báo broadcast (xóa toàn bộ các bản fan-out của nó). Trả `404` nếu không tồn tại.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Đã xóa thông báo"
+}
+```
 
 ## 16. Warehouse API
 

@@ -13,6 +13,7 @@ import com.marinelink.users.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -89,7 +90,7 @@ class AuthServiceTest {
     @Test
     void registerCreatesPendingUserWithDefaultUserRoleAndHashedPassword() {
         Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
-        when(userRepository.existsActiveByEmail("daily-new@example.com")).thenReturn(false);
+        when(userRepository.existsVerifiedByEmail("daily-new@example.com")).thenReturn(false);
         when(userRepository.existsActiveByPhone("0912345678")).thenReturn(false);
         when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
         when(passwordEncoder.encode("StrongPassword123")).thenReturn("bcrypt-hash");
@@ -108,6 +109,127 @@ class AuthServiceTest {
         assertThat(response.status()).isEqualTo(UserStatus.PENDING_VERIFICATION.name());
         assertThat(response.roles()).containsExactly("USER");
         verify(userRepository).saveAndFlush(any(User.class));
+    }
+
+    @Test
+    void registerRefreshesExistingPendingVerificationAccountAndSendsNewOtp() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        UUID publicId = UUID.randomUUID();
+        User pendingUser = User.builder()
+                .id(42L)
+                .publicId(publicId)
+                .role(userRole)
+                .fullName("Old Name")
+                .email("daily-new@example.com")
+                .phone("0900000000")
+                .passwordHash("old-hash")
+                .status(UserStatus.PENDING_VERIFICATION)
+                .storeName("Old Store")
+                .businessAddress("Old Address")
+                .taxCode("000")
+                .build();
+
+        when(userRepository.findByEmailAndStatus("daily-new@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(pendingUser));
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0912345678", publicId)).thenReturn(false);
+        when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+        when(passwordEncoder.encode("StrongPassword123")).thenReturn("new-bcrypt-hash");
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RegisterResponse response = authService.register(
+                new RegisterRequest(
+                        "Nguyen Van A",
+                        "DAILY-NEW@example.com",
+                        "0912345678",
+                        "StrongPassword123",
+                        "Hai San A",
+                        "Can Tho",
+                        "0312345678"));
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).saveAndFlush(userCaptor.capture());
+        User refreshedUser = userCaptor.getValue();
+        assertThat(refreshedUser).isSameAs(pendingUser);
+        assertThat(refreshedUser.getPublicId()).isEqualTo(publicId);
+        assertThat(refreshedUser.getFullName()).isEqualTo("Nguyen Van A");
+        assertThat(refreshedUser.getEmail()).isEqualTo("daily-new@example.com");
+        assertThat(refreshedUser.getPhone()).isEqualTo("0912345678");
+        assertThat(refreshedUser.getPasswordHash()).isEqualTo("new-bcrypt-hash");
+        assertThat(refreshedUser.getStoreName()).isEqualTo("Hai San A");
+        assertThat(refreshedUser.getBusinessAddress()).isEqualTo("Can Tho");
+        assertThat(refreshedUser.getTaxCode()).isEqualTo("0312345678");
+        assertThat(response.status()).isEqualTo(UserStatus.PENDING_VERIFICATION.name());
+        verify(emailOtpService).sendOtp("daily-new@example.com");
+    }
+
+    @Test
+    void registerRejectsEmailThatHasAlreadyBeenVerified() {
+        when(userRepository.findByEmailAndStatus("used@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.empty());
+        when(userRepository.existsVerifiedByEmail("used@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(
+                new RegisterRequest(
+                        "Nguyen Van A",
+                        "used@example.com",
+                        "0912345678",
+                        "StrongPassword123",
+                        "Hai San A",
+                        "Can Tho",
+                        "0312345678")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Email đã được sử dụng");
+
+        verify(roleRepository, never()).findByCode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(emailOtpService, never()).sendOtp(anyString());
+    }
+
+    @Test
+    void emailAvailabilityOnlyBlocksVerifiedEmails() {
+        when(userRepository.existsVerifiedByEmail("used@example.com")).thenReturn(true);
+        when(userRepository.existsVerifiedByEmail("pending@example.com")).thenReturn(false);
+
+        EmailAvailabilityResponse used = authService.emailAvailability(" Used@Example.com ");
+        EmailAvailabilityResponse pending = authService.emailAvailability("pending@example.com");
+
+        assertThat(used.available()).isFalse();
+        assertThat(used.message()).isEqualTo("Email đã được sử dụng");
+        assertThat(pending.available()).isTrue();
+        assertThat(pending.message()).isEqualTo("Email có thể sử dụng");
+    }
+
+    @Test
+    void phoneAvailabilityAllowsSamePendingRegistrationPhoneButBlocksOtherActivePhone() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        UUID publicId = UUID.randomUUID();
+        User pendingUser = User.builder()
+                .id(42L)
+                .publicId(publicId)
+                .role(userRole)
+                .fullName("Pending User")
+                .email("pending@example.com")
+                .phone("0912345678")
+                .passwordHash("hash")
+                .status(UserStatus.PENDING_VERIFICATION)
+                .build();
+        when(userRepository.findByEmailAndStatus("pending@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(pendingUser));
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0912345678", publicId)).thenReturn(false);
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0900000000", publicId)).thenReturn(true);
+        when(userRepository.existsActiveByPhone("0900000000")).thenReturn(true);
+
+        PhoneAvailabilityResponse samePendingPhone = authService.phoneAvailability(
+                "0912345678",
+                "pending@example.com");
+        PhoneAvailabilityResponse otherActivePhone = authService.phoneAvailability(
+                "0900000000",
+                "pending@example.com");
+
+        assertThat(samePendingPhone.available()).isTrue();
+        assertThat(samePendingPhone.message()).isEqualTo("Số điện thoại có thể sử dụng");
+        assertThat(otherActivePhone.available()).isFalse();
+        assertThat(otherActivePhone.message()).isEqualTo("Số điện thoại đã được sử dụng");
     }
 
     @Test

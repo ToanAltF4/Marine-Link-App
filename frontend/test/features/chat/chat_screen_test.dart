@@ -49,6 +49,14 @@ class _FakeRepo implements ChatRepository {
       (orderRoomResponder ?? (_) => threadResponder('order-room'))(orderId);
 
   @override
+  Future<ApiResponse<List<ChatRoomSummary>>> getMyRooms() async =>
+      const ApiResponse(success: true, message: 'OK', data: []);
+
+  @override
+  Future<ApiResponse<ChatThread>> createRoom() async =>
+      const ApiResponse(success: false, message: 'Unsupported');
+
+  @override
   Future<ApiResponse<List<StaffChatRoom>>> getStaffRooms({
     StaffChatRoomFilter filter = StaffChatRoomFilter.open,
     String? query,
@@ -102,6 +110,13 @@ void _registerRepo(ChatRepository repo) {
   sl.registerFactory<ChatCubit>(() => ChatCubit(repository: repo));
 }
 
+Alignment _bubbleAlignment(WidgetTester tester, String messageId) {
+  final align = tester.widget<Align>(
+    find.byKey(Key('chatMessageBubble_$messageId')),
+  );
+  return align.alignment as Alignment;
+}
+
 Future<void> _pumpScreen(
   WidgetTester tester, {
   bool staffMode = false,
@@ -141,6 +156,40 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('chatLoading')), findsNothing);
+  });
+
+  testWidgets('buyer account: own (user) messages align right, staff left', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+      ),
+    );
+
+    await _pumpScreen(tester, staffMode: false);
+    await tester.pumpAndSettle();
+
+    expect(_bubbleAlignment(tester, 'message-001'), Alignment.centerRight);
+    expect(_bubbleAlignment(tester, 'message-002'), Alignment.centerLeft);
+  });
+
+  testWidgets('staff account: own (staff) messages align right, user left', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+      ),
+    );
+
+    await _pumpScreen(tester, staffMode: true);
+    await tester.pumpAndSettle();
+
+    expect(_bubbleAlignment(tester, 'message-002'), Alignment.centerRight);
+    expect(_bubbleAlignment(tester, 'message-001'), Alignment.centerLeft);
   });
 
   testWidgets('renders chat messages with sender labels and composer', (
@@ -210,7 +259,8 @@ void main() {
         find.byKey(const Key('chatMessageTextField')),
         'Dang nhap tin nhan',
       );
-      await tester.pump(const Duration(seconds: 4));
+      // Fallback poll interval is 15s (realtime handles the fast path).
+      await tester.pump(const Duration(seconds: 16));
       await tester.pump();
 
       expect(calls, greaterThanOrEqualTo(2));

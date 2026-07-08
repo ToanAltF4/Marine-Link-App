@@ -9,6 +9,7 @@ import '../../features/admin_products/presentation/screens/admin_product_managem
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
 import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
+import '../../features/chat/presentation/screens/chat_rooms_list_screen.dart';
 import '../../features/chat/presentation/screens/staff_chat_management_screen.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -60,6 +61,7 @@ abstract class AppRoutes {
   static const staffOrders = '/staff/orders';
   static const staffNotifications = '/staff/notifications';
   static const staffChat = '/staff/chat';
+  static const staffProducts = '/staff/products';
   static const staffProfile = '/staff/profile';
   static const staffWarehouses = '/staff/warehouses';
   static const adminDashboard = '/admin';
@@ -190,7 +192,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.chat,
-                builder: (context, state) => const ChatScreen(),
+                builder: (context, state) => const ChatRoomsListScreen(),
                 routes: [
                   GoRoute(
                     path: 'order/:orderId',
@@ -199,11 +201,11 @@ class AppRouter {
                   ),
                   GoRoute(
                     path: ':roomId',
-                    builder: (context, state) => ChatScreen(
-                      roomId:
-                          state.pathParameters['roomId'] ??
-                          ChatMockRepository.defaultRoomId,
-                    ),
+                    // Do NOT fall back to a mock room id here — in remote mode a
+                    // mock UUID would hit GET /api/chat/{id} → 404. A null/empty
+                    // id makes ChatScreen resolve the buyer's own room instead.
+                    builder: (context, state) =>
+                        ChatScreen(roomId: state.pathParameters['roomId']),
                   ),
                 ],
               ),
@@ -257,8 +259,9 @@ class AppRouter {
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) =>
-                const StaffRoleGuard(child: NotificationsScreen()),
+            builder: (context, state) => const StaffRoleGuard(
+              child: NotificationsScreen(canManageBroadcasts: true),
+            ),
           ),
           GoRoute(
             path: 'chat',
@@ -293,6 +296,12 @@ class AppRouter {
                 key: Key('staffWarehousesScreen'),
                 staffMode: true,
               ),
+            ),
+          ),
+          GoRoute(
+            path: 'products',
+            builder: (context, state) => const StaffRoleGuard(
+              child: AdminProductManagementScreen(staffMode: true),
             ),
           ),
         ],
@@ -330,8 +339,9 @@ class AppRouter {
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) =>
-                const AdminRoleGuard(child: NotificationsScreen()),
+            builder: (context, state) => const AdminRoleGuard(
+              child: NotificationsScreen(canManageBroadcasts: true),
+            ),
           ),
           GoRoute(
             path: 'profile',
