@@ -19,7 +19,7 @@ Future<void> _pumpStaffOrders(WidgetTester tester) async {
 void main() {
   setUp(() async {
     await sl.reset();
-    await setupServiceLocator();
+    await setupServiceLocator(useRemoteRepositories: false);
   });
   tearDown(() => sl.reset());
 

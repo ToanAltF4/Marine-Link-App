@@ -34,9 +34,6 @@ dependencies:
   # Formatting
   intl: ^0.20.1
 
-  # Shared preferences (for non-sensitive local data)
-  shared_preferences: ^2.3.3
-
   # Realtime chat over STOMP/WebSocket (ML-63)
   stomp_dart_client: ^2.0.0
 

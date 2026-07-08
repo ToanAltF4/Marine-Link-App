@@ -29,7 +29,7 @@ void main() {
     });
 
     await sl.reset();
-    await setupServiceLocator();
+    await setupServiceLocator(useRemoteRepositories: false);
     final productRepository = _CountingProductRepository();
     await sl.unregister<ProductRepository>();
     sl.registerLazySingleton<ProductRepository>(() => productRepository);
