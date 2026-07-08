@@ -301,7 +301,7 @@ class AppRouter {
           GoRoute(
             path: 'products',
             builder: (context, state) => const StaffRoleGuard(
-              child: AdminProductManagementScreen(),
+              child: AdminProductManagementScreen(staffMode: true),
             ),
           ),
         ],

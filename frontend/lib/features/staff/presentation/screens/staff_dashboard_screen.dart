@@ -39,7 +39,6 @@ class StaffDashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _QuickActionsSection(
-                    onOpenOrders: () => context.push(AppRoutes.staffOrders),
                     onOpenProducts: () => context.push(AppRoutes.staffProducts),
                   ),
                   const SizedBox(height: 20),
@@ -237,13 +236,9 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _QuickActionsSection extends StatelessWidget {
-  final VoidCallback onOpenOrders;
   final VoidCallback onOpenProducts;
 
-  const _QuickActionsSection({
-    required this.onOpenOrders,
-    required this.onOpenProducts,
-  });
+  const _QuickActionsSection({required this.onOpenProducts});
 
   @override
   Widget build(BuildContext context) {
@@ -261,11 +256,6 @@ class _QuickActionsSection extends StatelessWidget {
           child: Row(
             children: [
               _QuickActionTile(
-                icon: Icons.qr_code_scanner_outlined,
-                label: 'Quét mã kho',
-                onTap: () {},
-              ),
-              _QuickActionTile(
                 icon: Icons.edit_square,
                 label: 'Cập nhật tồn',
                 onTap: onOpenProducts,
@@ -274,18 +264,6 @@ class _QuickActionsSection extends StatelessWidget {
                 icon: Icons.add_box_outlined,
                 label: 'Thêm sản phẩm',
                 onTap: onOpenProducts,
-              ),
-              _QuickActionTile(
-                icon: Icons.warning_amber_outlined,
-                label: 'Báo cáo sự cố',
-                background: const Color(0xFFFFEFEF),
-                iconColor: AppColors.error,
-                onTap: () {},
-              ),
-              _QuickActionTile(
-                icon: Icons.local_shipping_outlined,
-                label: 'Xử lý đơn',
-                onTap: onOpenOrders,
               ),
             ],
           ),
@@ -298,15 +276,11 @@ class _QuickActionsSection extends StatelessWidget {
 class _QuickActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color background;
-  final Color iconColor;
   final VoidCallback onTap;
 
   const _QuickActionTile({
     required this.icon,
     required this.label,
-    this.background = AppColors.surfaceSky,
-    this.iconColor = AppColors.primary,
     required this.onTap,
   });
 
@@ -326,11 +300,11 @@ class _QuickActionTile extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: background,
+                  color: AppColors.surfaceSky,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Icon(icon, color: iconColor, size: 26),
+                child: Icon(icon, color: AppColors.primary, size: 26),
               ),
               const SizedBox(height: 8),
               Text(
