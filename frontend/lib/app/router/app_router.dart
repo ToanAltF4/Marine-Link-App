@@ -7,7 +7,6 @@ import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/admin_products/presentation/screens/admin_product_management_screen.dart';
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
-import '../../features/chat/data/chat_mock_repository.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/chat_rooms_list_screen.dart';
 import '../../features/chat/presentation/screens/staff_chat_management_screen.dart';
@@ -274,9 +273,7 @@ class AppRouter {
                 builder: (context, state) => StaffRoleGuard(
                   child: ChatScreen(
                     key: const Key('staffChatThreadScreen'),
-                    roomId:
-                        state.pathParameters['roomId'] ??
-                        ChatMockRepository.defaultRoomId,
+                    roomId: state.pathParameters['roomId']!,
                     staffMode: true,
                     staffBackLocation: AppRoutes.staffChat,
                   ),

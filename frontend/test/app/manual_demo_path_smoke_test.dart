@@ -13,7 +13,7 @@ void main() {
   setUp(() async {
     BuyerNavigation.resetForTesting();
     await sl.reset();
-    await setupServiceLocator();
+    await setupServiceLocator(useRemoteRepositories: false);
     AppRouter.router.go(AppRoutes.login);
   });
 
@@ -157,7 +157,9 @@ void main() {
     expect(find.byKey(const Key('adminOrderListScreen')), findsOneWidget);
   });
 
-  testWidgets('staff can open product management (stock + add)', (tester) async {
+  testWidgets('staff can open product management (stock + add)', (
+    tester,
+  ) async {
     await _pumpApp(tester);
     await _login(
       tester,
