@@ -5,12 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
-import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/admin_product.dart';
 import '../cubit/admin_product_cubit.dart';
+import '../widgets/admin_product_card.dart';
+import '../widgets/admin_product_filters.dart';
+import '../widgets/admin_product_search.dart';
+import '../widgets/admin_products_header.dart';
+import '../widgets/admin_products_states.dart';
 
 class AdminProductManagementScreen extends StatelessWidget {
   /// When opened from the staff dashboard, use staff chrome (staff bottom nav,
@@ -73,73 +76,19 @@ class _AdminProductView extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 );
               case AdminProductStatusView.failure:
-                return _AdminProductsError(
+                return AdminProductsError(
                   message:
                       state.errorMessage ??
                       'Không tải được danh sách sản phẩm.',
                   onRetry: () => context.read<AdminProductCubit>().load(),
                 );
               case AdminProductStatusView.empty:
-                return const _AdminProductsEmpty();
+                return const AdminProductsEmpty();
               case AdminProductStatusView.success:
                 return _AdminProductsContent(state: state);
             }
           },
         ),
-      ),
-    );
-  }
-}
-
-class _AdminProductsError extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _AdminProductsError({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      key: const Key('adminProductsError'),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              color: AppColors.error,
-              size: 42,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const Key('adminProductsRetryButton'),
-              onPressed: onRetry,
-              child: const Text('Thử lại'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AdminProductsEmpty extends StatelessWidget {
-  const _AdminProductsEmpty();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      key: Key('adminProductsEmpty'),
-      child: AppEmptyState(
-        icon: Icons.inventory_2_outlined,
-        message: 'Chưa có sản phẩm. Sản phẩm mới sẽ hiển thị sau khi được tạo.',
       ),
     );
   }
@@ -157,437 +106,27 @@ class _AdminProductsContent extends StatelessWidget {
       key: const Key('adminProductsList'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        _AdminProductsHeader(products: state.products),
+        AdminProductsHeader(products: state.products),
         const SizedBox(height: 14),
-        _AdminProductSearch(initialQuery: state.query),
+        AdminProductSearch(initialQuery: state.query),
         const SizedBox(height: 12),
-        _AdminProductFilters(state: state),
+        AdminProductFilters(state: state),
         const SizedBox(height: 14),
         if (visibleProducts.isEmpty)
-          const _FilteredEmptyState()
+          const FilteredEmptyState()
         else
           ...visibleProducts.map(
             (product) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _AdminProductCard(
+              child: AdminProductCard(
                 product: product,
                 editing: state.editingProductId == product.id,
                 deleting: state.deletingProductId == product.id,
+                onEdit: () => _showProductForm(context, product: product),
               ),
             ),
           ),
       ],
-    );
-  }
-}
-
-class _AdminProductsHeader extends StatelessWidget {
-  final List<AdminProduct> products;
-
-  const _AdminProductsHeader({required this.products});
-
-  @override
-  Widget build(BuildContext context) {
-    final activeCount = products
-        .where((product) => product.status == AdminProductStatus.active)
-        .length;
-    final lowStockCount = products
-        .where((product) => product.stockQuantity <= product.minOrderQuantity)
-        .length;
-    return DecoratedBox(
-      key: const Key('adminProductsSummaryCard'),
-      decoration: _cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const _IconTile(
-              icon: Icons.inventory_2_outlined,
-              color: AppColors.primary,
-              backgroundColor: AppColors.surfaceSky,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Kho sản phẩm',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${products.length} sản phẩm - $activeCount đang bán - $lowStockCount cần kiểm kho',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AdminProductSearch extends StatefulWidget {
-  final String initialQuery;
-
-  const _AdminProductSearch({required this.initialQuery});
-
-  @override
-  State<_AdminProductSearch> createState() => _AdminProductSearchState();
-}
-
-class _AdminProductSearchState extends State<_AdminProductSearch> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialQuery);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      key: const Key('adminProductSearchField'),
-      controller: _controller,
-      textInputAction: TextInputAction.search,
-      decoration: const InputDecoration(
-        prefixIcon: Icon(Icons.search),
-        hintText: 'Tìm theo tên, slug, xuất xứ',
-      ),
-      onChanged: context.read<AdminProductCubit>().setQuery,
-    );
-  }
-}
-
-class _AdminProductFilters extends StatelessWidget {
-  final AdminProductState state;
-
-  const _AdminProductFilters({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      key: const Key('adminProductsFilters'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _FilterRow(
-          children: [
-            _StatusFilterChip(
-              key: const Key('adminProductStatusFilterAll'),
-              label: 'Tất cả',
-              selected: state.selectedStatus == null,
-              status: null,
-            ),
-            _StatusFilterChip(
-              key: const Key('adminProductStatusFilterActive'),
-              label: 'Đang bán',
-              selected: state.selectedStatus == AdminProductStatus.active,
-              status: AdminProductStatus.active,
-            ),
-            _StatusFilterChip(
-              key: const Key('adminProductStatusFilterOutOfStock'),
-              label: 'Hết hàng',
-              selected: state.selectedStatus == AdminProductStatus.outOfStock,
-              status: AdminProductStatus.outOfStock,
-            ),
-            _StatusFilterChip(
-              key: const Key('adminProductStatusFilterDisabled'),
-              label: 'Tạm ẩn',
-              selected: state.selectedStatus == AdminProductStatus.disabled,
-              status: AdminProductStatus.disabled,
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        _FilterRow(
-          children: [
-            _FeaturedFilterChip(
-              key: const Key('adminProductFeaturedFilterAll'),
-              label: 'Tất cả nổi bật',
-              selected: state.selectedFeatured == null,
-              featured: null,
-            ),
-            _FeaturedFilterChip(
-              key: const Key('adminProductFeaturedFilterYes'),
-              label: 'Nổi bật',
-              selected: state.selectedFeatured == true,
-              featured: true,
-            ),
-            _FeaturedFilterChip(
-              key: const Key('adminProductFeaturedFilterNo'),
-              label: 'Không nổi bật',
-              selected: state.selectedFeatured == false,
-              featured: false,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _FilterRow extends StatelessWidget {
-  final List<Widget> children;
-
-  const _FilterRow({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final child in children)
-            Padding(padding: const EdgeInsets.only(right: 8), child: child),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusFilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final AdminProductStatus? status;
-
-  const _StatusFilterChip({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) =>
-          context.read<AdminProductCubit>().setStatusFilter(status),
-    );
-  }
-}
-
-class _FeaturedFilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final bool? featured;
-
-  const _FeaturedFilterChip({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.featured,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) =>
-          context.read<AdminProductCubit>().setFeaturedFilter(featured),
-    );
-  }
-}
-
-class _FilteredEmptyState extends StatelessWidget {
-  const _FilteredEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      key: const Key('adminProductsFilteredEmpty'),
-      decoration: _cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Text(
-          'Không có sản phẩm phù hợp với bộ lọc.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ),
-    );
-  }
-}
-
-class _AdminProductCard extends StatelessWidget {
-  final AdminProduct product;
-  final bool editing;
-  final bool deleting;
-
-  const _AdminProductCard({
-    required this.product,
-    required this.editing,
-    required this.deleting,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final statusStyle = _statusStyle(product.status);
-    return DecoratedBox(
-      key: Key('adminProductCard_${product.id}'),
-      decoration: _cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ProductThumb(product: product),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w900,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        product.category?.name ?? product.slug,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                _StatusPill(
-                  label: statusStyle.label,
-                  textColor: statusStyle.textColor,
-                  backgroundColor: statusStyle.backgroundColor,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetaLine(
-                    icon: Icons.sell_outlined,
-                    text:
-                        '${MoneyFormatter.format(product.basePrice)}/${product.unit}',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _MetaLine(
-                    icon: Icons.inventory_outlined,
-                    text:
-                        '${product.stockQuantity} ${product.unit} - tối thiểu ${product.minOrderQuantity}',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (product.isFeatured)
-                  const _SmallBadge(
-                    key: Key('adminProductFeaturedBadge'),
-                    label: 'Nổi bật',
-                    icon: Icons.star_outline,
-                  ),
-                const Spacer(),
-                IconButton(
-                  key: Key('adminProductEditButton_${product.id}'),
-                  tooltip: 'Sửa sản phẩm',
-                  onPressed: editing
-                      ? null
-                      : () => _showProductForm(context, product: product),
-                  icon: editing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.edit_outlined),
-                ),
-                IconButton(
-                  key: Key('adminProductDeleteButton_${product.id}'),
-                  tooltip: 'Xoá sản phẩm',
-                  color: AppColors.error,
-                  onPressed: deleting
-                      ? null
-                      : () => context.read<AdminProductCubit>().deleteProduct(
-                          product.id,
-                        ),
-                  icon: deleting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.delete_outline),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProductThumb extends StatelessWidget {
-  final AdminProduct product;
-
-  const _ProductThumb({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    final imageUrl = product.imageUrl;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 58,
-        height: 58,
-        child: imageUrl == null || imageUrl.isEmpty
-            ? const ColoredBox(
-                color: AppColors.surfaceSky,
-                child: Icon(Icons.image_outlined, color: AppColors.primary),
-              )
-            : imageUrl.startsWith('http')
-            ? Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: AppColors.surfaceSky,
-                  child: Icon(Icons.image_outlined, color: AppColors.primary),
-                ),
-              )
-            : Image.asset(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: AppColors.surfaceSky,
-                  child: Icon(Icons.image_outlined, color: AppColors.primary),
-                ),
-              ),
-      ),
     );
   }
 }
@@ -952,125 +491,6 @@ class _TextField extends StatelessWidget {
   }
 }
 
-class _MetaLine extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _MetaLine({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SmallBadge extends StatelessWidget {
-  final String label;
-  final IconData icon;
-
-  const _SmallBadge({super.key, required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSky,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: AppColors.primary),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IconTile extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color backgroundColor;
-
-  const _IconTile({
-    required this.icon,
-    required this.color,
-    required this.backgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: color, size: 22),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  final String label;
-  final Color textColor;
-  final Color backgroundColor;
-
-  const _StatusPill({
-    required this.label,
-    required this.textColor,
-    required this.backgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: textColor,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 void _showProductForm(BuildContext context, {AdminProduct? product}) {
   final cubit = context.read<AdminProductCubit>();
   showModalBottomSheet<void>(
@@ -1130,34 +550,3 @@ String _statusLabel(AdminProductStatus status) {
     AdminProductStatus.disabled => 'Tạm ẩn',
   };
 }
-
-({String label, Color textColor, Color backgroundColor}) _statusStyle(
-  AdminProductStatus status,
-) {
-  return switch (status) {
-    AdminProductStatus.active => (
-      label: 'Đang bán',
-      textColor: AppColors.success,
-      backgroundColor: const Color(0xFFE8F8EF),
-    ),
-    AdminProductStatus.outOfStock => (
-      label: 'Hết hàng',
-      textColor: AppColors.warning,
-      backgroundColor: const Color(0xFFFFF7E6),
-    ),
-    AdminProductStatus.disabled => (
-      label: 'Tạm ẩn',
-      textColor: AppColors.error,
-      backgroundColor: const Color(0xFFFFEFEF),
-    ),
-  };
-}
-
-final _cardDecoration = BoxDecoration(
-  color: Colors.white,
-  borderRadius: BorderRadius.circular(8),
-  border: Border.all(color: AppColors.border),
-  boxShadow: const [
-    BoxShadow(color: Color(0x110B3760), blurRadius: 12, offset: Offset(0, 4)),
-  ],
-);
