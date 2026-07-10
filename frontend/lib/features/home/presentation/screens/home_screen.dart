@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
@@ -19,12 +18,12 @@ import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/widgets/product_visuals.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../widgets/category_thumbnail_card.dart';
+import '../widgets/hot_product_card.dart';
+import '../widgets/promo_banner.dart';
 
 const _compactFeaturedGridMaxWidth = 348.0;
 const _compactFeaturedCardAspectRatio = 0.80;
-const _bulkPromotionTitle = 'Ưu đãi mua nhiều';
-const _bulkPromotionBannerText =
-    'Giảm đến 8% cho đơn hàng từ ${CartBulkDiscountPolicy.eightPercentMinQuantity}kg';
 const _bulkPromotionPolicyText =
     '${CartBulkDiscountPolicy.twoPercentMinQuantity}-99kg giảm 2% • ${CartBulkDiscountPolicy.fourPercentMinQuantity}-199kg giảm 4% • ${CartBulkDiscountPolicy.sixPercentMinQuantity}-499kg giảm 6% • ≥ ${CartBulkDiscountPolicy.eightPercentMinQuantity}kg giảm 8%';
 
@@ -50,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   late final ProductRepository _productRepository;
   late final ProductBloc _productBloc;
-  late final Future<List<_HomeCategorySummary>> _categoriesFuture;
+  late final Future<List<HomeCategorySummary>> _categoriesFuture;
 
   @override
   void initState() {
@@ -151,18 +150,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 22),
-                    _PromoBanner(onTap: _submitQuickSearch),
+                    PromoBanner(onTap: _submitQuickSearch),
                     const SizedBox(height: 22),
                     Text(
                       'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
                       style: _sectionTitleStyle(theme),
                     ),
                     const SizedBox(height: 12),
-                    FutureBuilder<List<_HomeCategorySummary>>(
+                    FutureBuilder<List<HomeCategorySummary>>(
                       future: _categoriesFuture,
                       builder: (context, snapshot) {
                         final categories =
-                            snapshot.data ?? const <_HomeCategorySummary>[];
+                            snapshot.data ?? const <HomeCategorySummary>[];
                         if (snapshot.connectionState ==
                                 ConnectionState.waiting &&
                             categories.isEmpty) {
@@ -188,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 12),
                             itemBuilder: (context, index) {
                               final item = categories[index];
-                              return _CategoryThumbnailCard(
+                              return CategoryThumbnailCard(
                                 key: Key(
                                   'homeCategoryChip-${item.category.id}',
                                 ),
@@ -332,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                           itemBuilder: (context, index) {
                             final product = loaded.products[index];
-                            return _HotProductCard(
+                            return HotProductCard(
                               product: product,
                               onTap: () => _openProductDetail(product.id),
                             );
@@ -364,14 +363,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<List<_HomeCategorySummary>> _loadCategories() async {
+  Future<List<HomeCategorySummary>> _loadCategories() async {
     final response = await _productRepository.getProducts(
       page: 0,
       size: 100,
       status: 'ACTIVE',
     );
 
-    final countsByCategory = <String, _HomeCategorySummary>{};
+    final countsByCategory = <String, HomeCategorySummary>{};
     for (final product in response.data ?? const <Product>[]) {
       final category = product.category;
       if (category == null) {
@@ -379,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final existing = countsByCategory[category.id];
-      countsByCategory[category.id] = _HomeCategorySummary(
+      countsByCategory[category.id] = HomeCategorySummary(
         category: category,
         previewPath:
             existing?.previewPath ??
@@ -395,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'cat-005',
       'cat-004',
     ];
-    final ordered = <_HomeCategorySummary>[];
+    final ordered = <HomeCategorySummary>[];
     for (final id in orderedCategoryIds) {
       final item = countsByCategory[id];
       if (item != null) {
@@ -491,404 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _HomeCategorySummary {
-  final Category category;
-  final String? previewPath;
-
-  const _HomeCategorySummary({
-    required this.category,
-    required this.previewPath,
-  });
-}
-
-class _PromoBanner extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _PromoBanner({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final compact = MediaQuery.sizeOf(context).width < 560;
-
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0D4C97), Color(0xFF087B87)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x220B4F8F),
-                blurRadius: 22,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: SizedBox(height: compact ? 136 : 160),
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(painter: _DotPatternPainter()),
-          ),
-        ),
-        Positioned.fill(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFA726),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '\u01afu \u0111\u00e3i',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                SizedBox(height: compact ? 6 : 10),
-                Text(
-                  _bulkPromotionTitle,
-                  style:
-                      (compact
-                              ? theme.textTheme.titleMedium
-                              : theme.textTheme.titleLarge)
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                ),
-                SizedBox(height: compact ? 4 : 6),
-                Text(
-                  _bulkPromotionBannerText,
-                  style:
-                      (compact
-                              ? theme.textTheme.bodyMedium
-                              : theme.textTheme.bodyLarge)
-                          ?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            fontWeight: FontWeight.w500,
-                          ),
-                ),
-                const Spacer(),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: FilledButton(
-                    key: const Key('homeQuickSearchButton'),
-                    onPressed: onTap,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFE8F4FF),
-                      foregroundColor: AppColors.primaryDark,
-                      minimumSize: Size(0, compact ? 32 : 40),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: compact
-                          ? theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            )
-                          : null,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 12 : 18,
-                        vertical: compact ? 6 : 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: const Text('Xem ngay'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryThumbnailCard extends StatelessWidget {
-  final _HomeCategorySummary summary;
-  final VoidCallback onTap;
-
-  const _CategoryThumbnailCard({
-    super.key,
-    required this.summary,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final previewProvider = _imageProvider(summary.previewPath);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        width: 82,
-        child: Column(
-          children: [
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F6FF),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x12052449),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-                image: previewProvider != null
-                    ? DecorationImage(image: previewProvider, fit: BoxFit.cover)
-                    : null,
-              ),
-              child: previewProvider == null
-                  ? Icon(
-                      categorySymbolIcon(summary.category.id),
-                      color: const Color(0xFF006A7C),
-                      size: 28,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              displayCategoryName(summary.category),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  ImageProvider<Object>? _imageProvider(String? path) {
-    if (path == null || path.isEmpty) {
-      return null;
-    }
-    if (path.startsWith('assets/')) {
-      return AssetImage(path);
-    }
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return NetworkImage(path);
-    }
-    return null;
-  }
-}
-
-class _HotProductCard extends StatelessWidget {
-  final Product product;
-  final VoidCallback onTap;
-
-  const _HotProductCard({required this.product, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final imageProvider = productImageProvider(product);
-    final compact = MediaQuery.sizeOf(context).width < 560;
-    final imageHeight = compact ? 108.0 : 160.0;
-    final contentPadding = compact ? 9.0 : 14.0;
-
-    return InkWell(
-      key: Key('featuredProductCard-${product.id}'),
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x12052449),
-              blurRadius: 20,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(18),
-              ),
-              child: Container(
-                height: imageHeight,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6E7FF),
-                  image: imageProvider != null
-                      ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-                      : null,
-                ),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    margin: const EdgeInsets.all(10),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: productStockBgColor(product),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      productStockLabel(product),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: productStockTextColor(product),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  contentPadding,
-                  contentPadding,
-                  contentPadding,
-                  contentPadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayProductName(product),
-                      maxLines: compact ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          (compact
-                                  ? theme.textTheme.titleMedium?.copyWith(
-                                      fontSize: 14,
-                                      height: 1.1,
-                                    )
-                                  : theme.textTheme.titleLarge)
-                              ?.copyWith(
-                                color: AppColors.primaryDark,
-                                fontWeight: FontWeight.w800,
-                              ),
-                    ),
-                    SizedBox(height: compact ? 3 : 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: compact ? 14 : 18,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: compact ? 3 : 4),
-                        Expanded(
-                          child: Text(
-                            displayOrigin(product.origin),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                (compact
-                                        ? theme.textTheme.bodySmall?.copyWith(
-                                            fontSize: 11,
-                                            height: 1.1,
-                                          )
-                                        : theme.textTheme.bodyLarge)
-                                    ?.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    RichText(
-                      text: TextSpan(
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: MoneyFormatter.format(product.basePrice),
-                            style:
-                                (compact
-                                        ? theme.textTheme.titleMedium?.copyWith(
-                                            fontSize: 14,
-                                            height: 1.1,
-                                          )
-                                        : theme.textTheme.titleLarge)
-                                    ?.copyWith(
-                                      color: const Color(0xFF006A7C),
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                          ),
-                          TextSpan(
-                            text: '/${product.unit}',
-                            style:
-                                (compact
-                                        ? theme.textTheme.bodyMedium?.copyWith(
-                                            fontSize: 11,
-                                            height: 1.1,
-                                          )
-                                        : theme.textTheme.bodyLarge)
-                                    ?.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: compact ? 3 : 6),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 9 : 10,
-                        vertical: compact ? 3 : 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F1FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        'MOQ: ${product.minOrderQuantity}${product.unit}',
-                        style:
-                            (compact
-                                    ? theme.textTheme.bodySmall?.copyWith(
-                                        fontSize: 11,
-                                        height: 1.1,
-                                      )
-                                    : theme.textTheme.bodyMedium)
-                                ?.copyWith(color: AppColors.primaryDark),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 TextStyle? _sectionTitleStyle(ThemeData theme) {
   return theme.textTheme.titleLarge?.copyWith(
     color: AppColors.primaryDark,
@@ -896,22 +497,4 @@ TextStyle? _sectionTitleStyle(ThemeData theme) {
     height: 26 / 20,
     fontWeight: FontWeight.w600,
   );
-}
-
-class _DotPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.16);
-    const step = 20.0;
-    const radius = 1.2;
-
-    for (double x = 8; x < size.width; x += step) {
-      for (double y = 8; y < size.height; y += step) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
