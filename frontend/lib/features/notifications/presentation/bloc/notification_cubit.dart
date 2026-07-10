@@ -4,15 +4,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/notification.dart';
+import '../../domain/notification_display_service.dart';
 import '../../domain/notification_repository.dart';
 
 part 'notification_state.dart';
 
 class NotificationCubit extends Cubit<NotificationState> {
   final NotificationRepository notificationRepository;
+  final NotificationDisplayService notificationDisplayService;
 
-  NotificationCubit({required this.notificationRepository})
-    : super(const NotificationState());
+  NotificationCubit({
+    required this.notificationRepository,
+    this.notificationDisplayService = const NoopNotificationDisplayService(),
+  }) : super(const NotificationState());
 
   Future<void> loadNotifications({
     NotificationReadFilter? filter,
@@ -46,6 +50,7 @@ class NotificationCubit extends Cubit<NotificationState> {
             clearError: true,
           ),
         );
+        await notificationDisplayService.syncNewNotifications(items);
         return;
       }
 
