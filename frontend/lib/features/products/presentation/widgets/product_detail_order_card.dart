@@ -36,7 +36,8 @@ class OrderQuantityCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     final authState = context.watch<AuthBloc>().state;
-    final isPending = authState is AuthAuthenticated &&
+    final isPending =
+        authState is AuthAuthenticated &&
         authState.user.status == 'PENDING_APPROVAL';
 
     return ProductDetailCard(
@@ -52,38 +53,46 @@ class OrderQuantityCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _QuantityButton(icon: Icons.remove_rounded, onTap: onDecrease),
+              _QuantityButton(
+                key: const Key('productDetailDecreaseButton'),
+                icon: Icons.remove_rounded,
+                onTap: onDecrease,
+              ),
               Expanded(
-                child: Column(
-                  children: [
-                    _QuantityInput(
-                      key: const Key('productDetailQuantityInput'),
-                      quantity: quantity,
-                      unit: detail.unit,
-                      minQuantity: detail.minOrderQuantity,
-                      maxQuantity: detail.stockQuantity,
-                      onQuantityChanged: onQuantityChanged,
-                    ),
-                    const SizedBox(height: 2),
-                    if (!isPending)
-                      Text(
-                        productDetailUnitPrice(effectivePrice, detail.unit),
-                        style: theme.textTheme.bodyMedium,
-                      )
-                    else
-                      Text(
-                        'Giá: Đang xét duyệt',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.orange.shade800,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                  ],
+                child: Center(
+                  child: _QuantityInput(
+                    key: const Key('productDetailQuantityInput'),
+                    quantity: quantity,
+                    unit: detail.unit,
+                    minQuantity: detail.minOrderQuantity,
+                    maxQuantity: detail.stockQuantity,
+                    onQuantityChanged: onQuantityChanged,
+                  ),
                 ),
               ),
-              _QuantityButton(icon: Icons.add_rounded, onTap: onIncrease),
+              _QuantityButton(
+                key: const Key('productDetailIncreaseButton'),
+                icon: Icons.add_rounded,
+                onTap: onIncrease,
+              ),
             ],
+          ),
+          const SizedBox(height: 2),
+          Center(
+            child: !isPending
+                ? Text(
+                    productDetailUnitPrice(effectivePrice, detail.unit),
+                    style: theme.textTheme.bodyMedium,
+                  )
+                : Text(
+                    'Giá: Đang xét duyệt',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.orange.shade800,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -97,7 +106,9 @@ class OrderQuantityCard extends StatelessWidget {
             label: Text(
               isPending
                   ? 'Tài khoản chờ duyệt'
-                  : (outOfStock ? 'T\u1ea1m h\u1ebft h\u00e0ng' : 'Th\u00eam v\u00e0o gi\u1ecf'),
+                  : (outOfStock
+                        ? 'T\u1ea1m h\u1ebft h\u00e0ng'
+                        : 'Th\u00eam v\u00e0o gi\u1ecf'),
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
@@ -146,7 +157,11 @@ class _QuantityInputState extends State<_QuantityInput> {
   @override
   void didUpdateWidget(covariant _QuantityInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.quantity != oldWidget.quantity && !_focusNode.hasFocus) {
+    final visibleQuantity = int.tryParse(_controller.text);
+    final shouldSyncFocusedValue =
+        _focusNode.hasFocus && visibleQuantity != widget.quantity;
+    if (widget.quantity != oldWidget.quantity &&
+        (!_focusNode.hasFocus || shouldSyncFocusedValue)) {
       _controller.text = '${widget.quantity}';
     }
   }
@@ -202,6 +217,7 @@ class _QuantityInputState extends State<_QuantityInput> {
                   filled: false,
                   contentPadding: EdgeInsets.zero,
                 ),
+                onChanged: _handleChanged,
                 onSubmitted: _commit,
                 onEditingComplete: () => _commit(_controller.text),
               ),
@@ -233,20 +249,43 @@ class _QuantityInputState extends State<_QuantityInput> {
     widget.onQuantityChanged(next);
     _focusNode.unfocus();
   }
+
+  void _handleChanged(String value) {
+    if (value.isEmpty) return;
+
+    final parsed = int.tryParse(value);
+    if (parsed == null) return;
+
+    final next = parsed.clamp(widget.minQuantity, widget.maxQuantity);
+    if (next != parsed) {
+      _controller.text = '$next';
+      _controller.selection = TextSelection.collapsed(
+        offset: _controller.text.length,
+      );
+    }
+    widget.onQuantityChanged(next);
+  }
 }
 
 class _QuantityButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _QuantityButton({required this.icon, required this.onTap});
+  const _QuantityButton({super.key, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filledTonal(
+    return IconButton(
       onPressed: onTap,
       style: IconButton.styleFrom(
-        minimumSize: const Size(44, 44),
+        fixedSize: const Size.square(40),
+        minimumSize: const Size.square(40),
+        padding: EdgeInsets.zero,
+        backgroundColor: const Color(0xFFF1F6FC),
+        foregroundColor: AppColors.primaryDark,
+        disabledBackgroundColor: const Color(0xFFF8FAFC),
+        disabledForegroundColor: const Color(0xFFD5E0EA),
+        side: const BorderSide(color: Color(0xFFD6E6F2)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       icon: Icon(icon),

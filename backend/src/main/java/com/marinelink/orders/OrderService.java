@@ -316,6 +316,9 @@ public class OrderService {
                 body,
                 savedOrder
         );
+        if (targetStatus == OrderStatus.CONFIRMED) {
+            orderPaymentNotificationService.sendOrderApprovedEmail(savedOrder);
+        }
 
         return OrderStatusUpdateResponse.from(savedOrder);
     }

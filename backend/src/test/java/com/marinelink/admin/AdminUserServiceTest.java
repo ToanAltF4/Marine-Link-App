@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,7 +29,9 @@ class AdminUserServiceTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
     private final RoleRepository roleRepository = mock(RoleRepository.class);
-    private final AdminUserService adminUserService = new AdminUserService(userRepository, roleRepository);
+    private final AdminUserNotificationService notificationService = mock(AdminUserNotificationService.class);
+    private final AdminUserService adminUserService =
+            new AdminUserService(userRepository, roleRepository, notificationService);
 
     @Test
     void listUsersMapsPublicFieldsWithoutPasswordHash() {
@@ -67,6 +70,7 @@ class AdminUserServiceTest {
         assertEquals("ACTIVE", response.status());
         assertEquals("Đại lý A", response.fullName());
         verify(userRepository).save(pendingDealer);
+        verify(notificationService).sendAccountApprovedEmail(pendingDealer);
     }
 
     @Test
@@ -89,6 +93,7 @@ class AdminUserServiceTest {
         assertEquals("Đại lý B", response.fullName());
         assertEquals("0987654321", response.phone());
         assertEquals("Cần Thơ", response.businessAddress());
+        verify(notificationService, never()).sendAccountApprovedEmail(any(User.class));
     }
 
     @Test

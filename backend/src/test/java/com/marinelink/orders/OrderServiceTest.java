@@ -318,6 +318,7 @@ class OrderServiceTest {
                 anyString(),
                 any()
         );
+        verify(orderPaymentNotificationService).sendOrderApprovedEmail(order);
     }
 
     @Test

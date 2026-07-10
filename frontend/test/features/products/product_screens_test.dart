@@ -424,9 +424,7 @@ void main() {
       await tester.tap(find.byKey(const Key('productAdvancedFilterButton')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('productFilterSheet')), findsOneWidget);
-      await tester.tap(
-        find.byKey(const Key('productFilterCategory-cat-fish')),
-      );
+      await tester.tap(find.byKey(const Key('productFilterCategory-cat-fish')));
       await tester.pump();
 
       // Child row appears inside sheet
@@ -831,15 +829,80 @@ void main() {
         find.byKey(const Key('productDetailQuantityInputFrame')),
       );
       final frameDecoration = quantityFrame.decoration as BoxDecoration;
+      final quantityFrameRect = tester.getRect(
+        find.byKey(const Key('productDetailQuantityInputFrame')),
+      );
+      final decreaseButtonRect = tester.getRect(
+        find.byKey(const Key('productDetailDecreaseButton')),
+      );
+      final increaseButtonRect = tester.getRect(
+        find.byKey(const Key('productDetailIncreaseButton')),
+      );
       expect(frameDecoration.border, isA<Border>());
       expect(quantityTextField.decoration?.border, InputBorder.none);
       expect(quantityTextField.decoration?.focusedBorder, InputBorder.none);
+      expect(
+        decreaseButtonRect.center.dy,
+        closeTo(quantityFrameRect.center.dy, 1),
+      );
+      expect(
+        increaseButtonRect.center.dy,
+        closeTo(quantityFrameRect.center.dy, 1),
+      );
       await tester.enterText(
         find.byKey(const Key('productDetailQuantityInput')),
         '50',
       );
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
+
+      await tester.tap(find.byKey(const Key('addToCartButton')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
+    });
+
+    testWidgets('uses typed quantity for add and stepper actions', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: cartCubit),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
+            child: ProductDetailScreen(
+              productId: 'prod-001',
+              productRepository: ProductMockRepository(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('productDetailQuantityInput')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.enterText(
+        find.byKey(const Key('productDetailQuantityInput')),
+        '50',
+      );
+      await tester.tap(find.byKey(const Key('productDetailIncreaseButton')));
+      await tester.pump();
+
+      expect(_productDetailQuantityText(tester), '51');
+
+      await tester.tap(find.byKey(const Key('productDetailDecreaseButton')));
+      await tester.pump();
+
+      expect(_productDetailQuantityText(tester), '50');
 
       await tester.tap(find.byKey(const Key('addToCartButton')));
       await tester.pump();
@@ -855,6 +918,16 @@ double _productListScrollOffset(WidgetTester tester) {
     matching: find.byType(Scrollable),
   );
   return tester.state<ScrollableState>(scrollable).position.pixels;
+}
+
+String _productDetailQuantityText(WidgetTester tester) {
+  final quantityTextField = tester.widget<TextField>(
+    find.descendant(
+      of: find.byKey(const Key('productDetailQuantityInput')),
+      matching: find.byType(TextField),
+    ),
+  );
+  return quantityTextField.controller?.text ?? '';
 }
 
 class _CartRouteProbe extends StatelessWidget {

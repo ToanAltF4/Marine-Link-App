@@ -146,6 +146,28 @@ void main() {
       expect(find.text('3.920.000\u0111'), findsOneWidget);
     });
 
+    testWidgets('uses typed item quantity for stepper actions', (tester) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+
+      await tester.pumpWidget(_wrap(cartCubit: cartCubit));
+
+      await tester.enterText(
+        find.byKey(const Key('cartQuantityInput-prod-001')),
+        '50',
+      );
+      await tester.tap(find.byKey(const Key('cartIncreaseButton-prod-001')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 51);
+      expect(_cartQuantityText(tester), '51');
+
+      await tester.tap(find.byKey(const Key('cartDecreaseButton-prod-001')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
+      expect(_cartQuantityText(tester), '50');
+    });
+
     testWidgets('toggles selected item out of totals and checkout state', (
       tester,
     ) async {
@@ -207,6 +229,13 @@ bool _isSystemSurfaceCard(Widget widget) {
       decoration.borderRadius == BorderRadius.circular(18) &&
       border is Border &&
       border.top.color == const Color(0xFFE4EEF5);
+}
+
+String _cartQuantityText(WidgetTester tester) {
+  final quantityTextField = tester.widget<TextField>(
+    find.byKey(const Key('cartQuantityInput-prod-001')),
+  );
+  return quantityTextField.controller?.text ?? '';
 }
 
 ProductDetail _product() {
