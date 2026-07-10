@@ -10,6 +10,8 @@ import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 import '../bloc/product_bloc.dart';
@@ -208,9 +210,15 @@ class _ProductDetailContent extends StatelessWidget {
                           : null,
                       onQuantityChanged: (value) =>
                           onQuantityChanged(detail, value),
-                      onAddToCart: outOfStock
+                      onAddToCart: (context.read<AuthBloc>().state
+                                  is AuthAuthenticated &&
+                              (context.read<AuthBloc>().state
+                                      as AuthAuthenticated)
+                                  .user
+                                  .status ==
+                                  'PENDING_APPROVAL')
                           ? null
-                          : () => onAddToCart(detail),
+                          : (outOfStock ? null : () => onAddToCart(detail)),
                     ),
                   ],
                 ),

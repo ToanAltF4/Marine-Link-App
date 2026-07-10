@@ -93,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
                   children: [
+                    _buildPendingApprovalBanner(theme),
                     _buildGreetingWidget(theme),
                     const SizedBox(height: 12),
                     Container(
@@ -487,6 +488,40 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildPendingApprovalBanner(ThemeData theme) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthAuthenticated &&
+            state.user.status == 'PENDING_APPROVAL') {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF4E5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.pending_actions, color: Colors.orange),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tài khoản của bạn đang chờ quản trị viên duyệt. Bạn chỉ có thể xem sản phẩm, chức năng đặt hàng sẽ bị khóa.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
   }
 }
 

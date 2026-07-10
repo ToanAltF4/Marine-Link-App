@@ -288,10 +288,8 @@ public class AuthService {
         if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
             throw new BusinessException("Tài khoản chưa được xác thực email", HttpStatus.FORBIDDEN);
         }
-        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
-            throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);
-        }
-        if (!user.isActive()) {
+        // Allow login for PENDING_APPROVAL so they can browse products
+        if (user.getStatus() == UserStatus.DISABLED) {
             throw new BusinessException("Tài khoản không hoạt động", HttpStatus.FORBIDDEN);
         }
     }

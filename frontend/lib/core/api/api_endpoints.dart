@@ -3,7 +3,8 @@
 abstract class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080', // Android emulator → localhost
+    //defaultValue: 'http://10.0.2.2:8080', // Android emulator → localhost
+    defaultValue: 'http://localhost:8080', // Chạy trên Web Chrome
   );
 
   // ── Auth ──────────────────────────────────────────────────────────────────
