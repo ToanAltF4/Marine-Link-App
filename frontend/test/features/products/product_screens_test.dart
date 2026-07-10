@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/router/app_router.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_event.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 import 'package:marinelink/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:marinelink/features/home/presentation/screens/home_screen.dart';
 import 'package:marinelink/features/products/data/product_mock_repository.dart';
@@ -13,9 +16,20 @@ import 'package:marinelink/features/products/presentation/screens/product_list_s
 import 'package:marinelink/shared/navigation/app_back_exit_controller.dart';
 import 'package:marinelink/shared/widgets/buyer_back_to_home_scope.dart';
 import 'package:marinelink/shared/widgets/buyer_bottom_nav.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockAuthBloc extends Mock implements AuthBloc {}
 
 void main() {
-  setUp(AppBackExitController.resetForTesting);
+  late MockAuthBloc mockAuthBloc;
+
+  setUp(() {
+    AppBackExitController.resetForTesting();
+    mockAuthBloc = MockAuthBloc();
+    when(() => mockAuthBloc.state).thenReturn(const AuthInitial());
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+  });
+
   tearDown(AppBackExitController.resetForTesting);
 
   group('HomeScreen', () {
@@ -25,8 +39,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: HomeScreen(productRepository: ProductMockRepository()),
           ),
         ),
@@ -67,8 +84,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: HomeScreen(productRepository: ProductMockRepository()),
           ),
         ),
@@ -105,8 +125,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: HomeScreen(productRepository: ProductMockRepository()),
           ),
         ),
@@ -147,8 +170,11 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: HomeScreen(
               productRepository: ProductMockRepository(),
               onQuickSearch: (query) => capturedQuery = query,
@@ -219,8 +245,11 @@ void main() {
       addTearDown(router.dispose);
 
       await tester.pumpWidget(
-        BlocProvider(
-          create: (_) => CartCubit(),
+        MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => CartCubit()),
+            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          ],
           child: MaterialApp.router(routerConfig: router),
         ),
       );
@@ -290,8 +319,11 @@ void main() {
       addTearDown(router.dispose);
 
       await tester.pumpWidget(
-        BlocProvider(
-          create: (_) => CartCubit(),
+        MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => CartCubit()),
+            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          ],
           child: MaterialApp.router(routerConfig: router),
         ),
       );
@@ -332,8 +364,11 @@ void main() {
     testWidgets('supports search and empty state', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductListScreen(
               productRepository: ProductMockRepository(),
             ),
@@ -368,8 +403,11 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductListScreen(
               productRepository: ProductMockRepository(),
             ),
@@ -437,8 +475,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductListScreen(
               productRepository: ProductMockRepository(),
             ),
@@ -496,8 +537,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductListScreen(
               productRepository: ProductMockRepository(),
             ),
@@ -543,8 +587,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductListScreen(
               productRepository: ProductMockRepository(),
             ),
@@ -597,8 +644,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductListScreen(
               productRepository: ProductMockRepository(),
             ),
@@ -637,8 +687,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          home: BlocProvider(
-            create: (_) => CartCubit(),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => CartCubit()),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductDetailScreen(
               productId: 'prod-001',
               productRepository: ProductMockRepository(),
@@ -692,8 +745,11 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider.value(
-            value: cartCubit,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: cartCubit),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductDetailScreen(
               productId: 'prod-001',
               productRepository: ProductMockRepository(),
@@ -745,8 +801,11 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider.value(
-            value: cartCubit,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: cartCubit),
+              BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            ],
             child: ProductDetailScreen(
               productId: 'prod-001',
               productRepository: ProductMockRepository(),
