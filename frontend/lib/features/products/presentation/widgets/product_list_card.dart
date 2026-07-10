@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../domain/product.dart';
 import 'product_visuals.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 
 /// Thẻ sản phẩm trong danh sách, hiển thị ảnh, tên, xuất xứ, giá và nút mở chi tiết.
 class ProductListCard extends StatelessWidget {
@@ -17,6 +20,10 @@ class ProductListCard extends StatelessWidget {
     final theme = Theme.of(context);
     final imageProvider = productImageProvider(product);
     final fallbackVisual = productVisualStyle(product);
+
+    final authState = context.watch<AuthBloc>().state;
+    final isPending = authState is AuthAuthenticated &&
+        authState.user.status == 'PENDING_APPROVAL';
 
     return InkWell(
       key: Key('productCard-${product.id}'),
@@ -143,59 +150,67 @@ class ProductListCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Giá từ (MOQ ${product.minOrderQuantity}${product.unit})',
+                    isPending
+                        ? 'Giá sản phẩm: Đang xét duyệt'
+                        : 'Giá từ (MOQ ${product.minOrderQuantity}${product.unit})',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: isPending
+                          ? Colors.orange.shade800
+                          : AppColors.textPrimary,
+                      fontWeight: isPending ? FontWeight.w700 : null,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: AppColors.textPrimary,
+                  if (!isPending)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text:
+                                      MoneyFormatter.format(product.basePrice),
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
+                                    color: AppColors.primaryDark,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' đ/${product.unit}',
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            children: [
-                              TextSpan(
-                                text: MoneyFormatter.format(product.basePrice),
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  color: AppColors.primaryDark,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' đ/${product.unit}',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      InkWell(
-                        onTap: onTap,
-                        borderRadius: BorderRadius.circular(999),
-                        child: Ink(
-                          width: 42,
-                          height: 42,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart_checkout_rounded,
-                            color: Colors.white,
-                            size: 20,
+                        const SizedBox(width: 12),
+                        InkWell(
+                          onTap: onTap,
+                          borderRadius: BorderRadius.circular(999),
+                          child: Ink(
+                            width: 42,
+                            height: 42,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.shopping_cart_checkout_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
             ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/product.dart';
 import 'product_detail_card.dart';
 import 'product_detail_price_formatter.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class OrderQuantityCard extends StatelessWidget {
   final ProductDetail detail;
@@ -31,6 +34,10 @@ class OrderQuantityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final authState = context.watch<AuthBloc>().state;
+    final isPending = authState is AuthAuthenticated &&
+        authState.user.status == 'PENDING_APPROVAL';
 
     return ProductDetailCard(
       child: Column(
@@ -59,10 +66,19 @@ class OrderQuantityCard extends StatelessWidget {
                       onQuantityChanged: onQuantityChanged,
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      productDetailUnitPrice(effectivePrice, detail.unit),
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                    if (!isPending)
+                      Text(
+                        productDetailUnitPrice(effectivePrice, detail.unit),
+                        style: theme.textTheme.bodyMedium,
+                      )
+                    else
+                      Text(
+                        'Giá: Đang xét duyệt',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -72,12 +88,16 @@ class OrderQuantityCard extends StatelessWidget {
           const SizedBox(height: 14),
           FilledButton.icon(
             key: const Key('addToCartButton'),
-            onPressed: onAddToCart,
-            icon: const Icon(Icons.add_shopping_cart_outlined),
+            onPressed: isPending ? null : onAddToCart,
+            icon: Icon(
+              isPending
+                  ? Icons.lock_clock_outlined
+                  : Icons.add_shopping_cart_outlined,
+            ),
             label: Text(
-              outOfStock
-                  ? 'T\u1ea1m h\u1ebft h\u00e0ng'
-                  : 'Th\u00eam v\u00e0o gi\u1ecf',
+              isPending
+                  ? 'Tài khoản chờ duyệt'
+                  : (outOfStock ? 'T\u1ea1m h\u1ebft h\u00e0ng' : 'Th\u00eam v\u00e0o gi\u1ecf'),
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(52),

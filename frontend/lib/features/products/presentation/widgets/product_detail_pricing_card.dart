@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../cart/domain/cart_pricing.dart';
@@ -6,6 +7,8 @@ import '../../domain/product.dart';
 import 'product_detail_card.dart';
 import 'product_detail_price_formatter.dart';
 import 'product_visuals.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class WholesalePricingCard extends StatelessWidget {
   final ProductDetail detail;
@@ -16,6 +19,10 @@ class WholesalePricingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final rows = _buildWholesaleRows(detail);
+
+    final authState = context.watch<AuthBloc>().state;
+    final isPending = authState is AuthAuthenticated &&
+        authState.user.status == 'PENDING_APPROVAL';
 
     return ProductDetailCard(
       key: const Key('productDetailWholesaleCard'),
@@ -49,72 +56,98 @@ class WholesalePricingCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Text(
-            'Gi\u00e1 s\u1ec9 t\u1eeb:',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textPrimary,
+          if (isPending) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock_clock_outlined, color: Colors.orange.shade800),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Giá sản phẩm: Đang xét duyệt',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.orange.shade900,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    productDetailUnitPrice(detail.basePrice, detail.unit),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+          ] else ...[
+            Text(
+              'Gi\u00e1 s\u1ec9 t\u1eeb:',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      productDetailUnitPrice(detail.basePrice, detail.unit),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: AppColors.primary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDDF7FA),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
+                const SizedBox(width: 10),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDDF7FA),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    'D\u1eb7t t\u1ed1i thi\u1ec3u ${detail.minOrderQuantity}${detail.unit}',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: const Color(0xFF007C89),
-                      fontWeight: FontWeight.w800,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    child: Text(
+                      'D\u1eb7t t\u1ed1i thi\u1ec3u ${detail.minOrderQuantity}${detail.unit}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: const Color(0xFF007C89),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const Divider(height: 1, color: Color(0xFFEAF0F5)),
+            const SizedBox(height: 14),
+            Text(
+              'B\u1ea3ng gi\u00e1 s\u1ec9',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
               ),
+            ),
+            const SizedBox(height: 8),
+            for (var i = 0; i < rows.length; i++) ...[
+              _WholesalePriceRow(
+                key: rows[i].keyId == null
+                    ? null
+                    : Key('priceTier-${rows[i].keyId}'),
+                row: rows[i],
+              ),
+              if (i != rows.length - 1)
+                const Divider(height: 1, color: Color(0xFFF0F4F8)),
             ],
-          ),
-          const SizedBox(height: 18),
-          const Divider(height: 1, color: Color(0xFFEAF0F5)),
-          const SizedBox(height: 14),
-          Text(
-            'B\u1ea3ng gi\u00e1 s\u1ec9',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.primaryDark,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          for (var i = 0; i < rows.length; i++) ...[
-            _WholesalePriceRow(
-              key: rows[i].keyId == null
-                  ? null
-                  : Key('priceTier-${rows[i].keyId}'),
-              row: rows[i],
-            ),
-            if (i != rows.length - 1)
-              const Divider(height: 1, color: Color(0xFFF0F4F8)),
           ],
         ],
       ),
