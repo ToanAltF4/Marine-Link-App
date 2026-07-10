@@ -70,12 +70,11 @@ public class CartService {
     public CartResponse addItem(UUID userPublicId, CartItemCreateRequest request) {
         Cart cart = getOrCreateCart(userPublicId);
         Product product = getProduct(request.productId());
-        int currentQuantity = findItem(cart, request.productId())
-                .map(CartItem::getQuantity)
-                .orElse(0);
-        int nextQuantity = currentQuantity + request.quantity();
+        
+        int nextQuantity = request.quantity();
         validateItem(product, nextQuantity);
 
+        // Find the first one to update, if multiple exist (cleanup), we'll merge them here
         CartItem item = findItem(cart, request.productId())
                 .orElseGet(() -> {
                     CartItem created = CartItem.builder()
@@ -86,6 +85,11 @@ public class CartService {
                     cart.getItems().add(created);
                     return created;
                 });
+        
+        // If there were duplicates, remove them and keep only this one
+        cart.getItems().removeIf(i -> 
+            i != item && i.getProduct().getPublicId().equals(request.productId()));
+
         item.setQuantity(nextQuantity);
         item.setSelected(request.selected() == null || request.selected());
         item.setPriceTier(resolvePriceTier(product, nextQuantity));
@@ -103,6 +107,10 @@ public class CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham trong gio hang"));
         Product product = item.getProduct();
 
+        // Ensure no duplicate rows exist for this product before updating
+        cart.getItems().removeIf(i ->
+                i != item && i.getProduct().getPublicId().equals(productPublicId));
+
         if (request.quantity() != null) {
             validateItem(product, request.quantity());
             item.setQuantity(request.quantity());
@@ -118,9 +126,13 @@ public class CartService {
     @Transactional
     public CartResponse removeItem(UUID userPublicId, UUID productPublicId) {
         Cart cart = getActiveCartOrThrow(userPublicId);
-        CartItem item = findItem(cart, productPublicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham trong gio hang"));
-        cart.getItems().remove(item);
+        // Fix: Use removeIf to ensure ALL duplicate rows for this product are removed
+        boolean removed = cart.getItems().removeIf(item ->
+                item.getProduct().getPublicId().equals(productPublicId));
+        
+        if (!removed) {
+            throw new ResourceNotFoundException("Khong tim thay san pham trong gio hang");
+        }
         return toResponse(cartRepository.save(cart));
     }
 
@@ -251,7 +263,8 @@ public class CartService {
             int quantity = item.getQuantity();
             boolean selected = item.isSelected();
             if (existing != null) {
-                quantity += existing.quantity();
+                // Fix: Do not sum quantity if duplicates exist to prevent x2 issues.
+                // Just keep the latest item's state or merge selection status.
                 selected = selected || existing.selected();
             }
             PriceTier tier = resolvePriceTier(product, quantity);

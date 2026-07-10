@@ -66,7 +66,9 @@ app:
     secret: ${JWT_SECRET}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:1440}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8081}
+    allowed-origins: "*"
+    allowed-methods: "*"
+    allowed-headers: "*"
   supabase:
     url: ${SUPABASE_URL:https://kpmxyzvlnvjdiaiutnhe.supabase.co}
     key: ${SUPABASE_KEY:sb_publishable_xdMkwMU4bVTcsqHMYH8CWQ_cuxh24JJ_SUPER_SECRET_KEY_FOR_LOCAL_JWT}

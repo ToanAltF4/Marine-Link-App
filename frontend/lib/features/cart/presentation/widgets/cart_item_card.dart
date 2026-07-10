@@ -24,33 +24,43 @@ class CartItemCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cubit = context.read<CartCubit>();
 
-    return InkWell(
-      key: Key('cartSelectedToggle-${item.productId}'),
-      onTap: () => cubit.toggleSelected(item.productId),
-      borderRadius: BorderRadius.circular(_cartSurfaceRadius),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 160),
-        opacity: item.selected ? 1 : 0.56,
-        child: CartCard(
-          selected: item.selected,
-          child: SizedBox(
-            height: 74,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final priceLeft = constraints.maxWidth < 330 ? 186.0 : 204.0;
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 160),
+      opacity: item.selected ? 1 : 0.56,
+      child: CartCard(
+        selected: item.selected,
+        child: SizedBox(
+          height: 74,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final priceLeft = constraints.maxWidth < 330 ? 186.0 : 204.0;
 
-                return Stack(
-                  children: [
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: CartItemThumbnail(item: item),
+              return Stack(
+                children: [
+                  // Lớp dưới cùng: Vùng bấm để chọn/bỏ chọn sản phẩm
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        key: Key('cartSelectedToggle-${item.productId}'),
+                        onTap: () => cubit.toggleSelected(item.productId),
+                        borderRadius: BorderRadius.circular(_cartSurfaceRadius),
+                      ),
                     ),
-                    Positioned(
-                      left: 86,
-                      right: 30,
-                      top: 4,
+                  ),
+
+                  // Lớp hiển thị nội dung (không nhận sự kiện để InkWell bên dưới nhận được)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: IgnorePointer(child: CartItemThumbnail(item: item)),
+                  ),
+                  Positioned(
+                    left: 86,
+                    right: 30,
+                    top: 4,
+                    child: IgnorePointer(
                       child: Text(
                         _cartProductName(item),
                         maxLines: 1,
@@ -63,10 +73,12 @@ class CartItemCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      left: 86,
-                      right: 30,
-                      top: 27,
+                  ),
+                  Positioned(
+                    left: 86,
+                    right: 30,
+                    top: 27,
+                    child: IgnorePointer(
                       child: Text(
                         '${_formatVnd(item.unitPrice)}/${item.unit}',
                         maxLines: 1,
@@ -79,32 +91,36 @@ class CartItemCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: SizedBox.square(
-                        dimension: 28,
-                        child: IconButton(
-                          key: Key('cartRemoveButton-${item.productId}'),
-                          onPressed: () => cubit.removeItem(item.productId),
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          tooltip: 'Xóa sản phẩm',
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          iconSize: 18,
-                          color: AppColors.textSecondary,
-                        ),
+                  ),
+
+                  // Lớp trên cùng: Các nút điều khiển (phải nằm trên InkWell)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: SizedBox.square(
+                      dimension: 28,
+                      child: IconButton(
+                        key: Key('cartRemoveButton-${item.productId}'),
+                        onPressed: () => cubit.removeItem(item.productId),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Xóa sản phẩm',
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        iconSize: 18,
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    Positioned(
-                      left: 86,
-                      bottom: 2,
-                      child: QuantityStepper(item: item),
-                    ),
-                    Positioned(
-                      left: priceLeft,
-                      right: 0,
-                      bottom: 6,
+                  ),
+                  Positioned(
+                    left: 86,
+                    bottom: 2,
+                    child: QuantityStepper(item: item),
+                  ),
+                  Positioned(
+                    left: priceLeft,
+                    right: 0,
+                    bottom: 6,
+                    child: IgnorePointer(
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: FittedBox(
@@ -123,10 +139,10 @@ class CartItemCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -235,6 +251,11 @@ class _QuantityStepperState extends State<QuantityStepper> {
     super.initState();
     _controller = TextEditingController(text: '${item.quantity}');
     _focusNode = FocusNode();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        _commit(_controller.text);
+      }
+    });
   }
 
   @override

@@ -52,7 +52,7 @@ class CartCubit extends Cubit<CartState> {
       productName: product.name,
       productImageUrl: product.imageUrl ?? '',
       unit: product.unit,
-      quantity: clamped,
+      quantity: clamped, // Giao diện hiển thị tổng số lượng sau khi cộng
       baseUnitPrice: product.basePrice,
       unitPrice: unitPrice,
       selectedPriceTierId: tier?.id,
@@ -72,7 +72,7 @@ class CartCubit extends Cubit<CartState> {
       nextCart,
       () => repository.addItem(
         productId: product.id,
-        quantity: clamped,
+        quantity: item.quantity,
         selected: item.selected,
       ),
     );
