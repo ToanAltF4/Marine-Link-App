@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
@@ -73,7 +74,7 @@ class _NotificationsView extends StatelessWidget {
                     height: 360,
                     child: AppLoadingIndicator(
                       key: Key('notificationsLoading'),
-                      message: 'Đang tải thông báo',
+                      message: AppStrings.loadingNotifications,
                     ),
                   )
                 else if (state.status == NotificationStatus.failure)
@@ -83,7 +84,7 @@ class _NotificationsView extends StatelessWidget {
                       key: const Key('notificationsError'),
                       message:
                           state.errorMessage ??
-                          'Không tải được danh sách thông báo.',
+                          AppStrings.notificationsLoadFailed,
                       onRetry: () =>
                           context.read<NotificationCubit>().loadNotifications(),
                     ),
@@ -93,7 +94,7 @@ class _NotificationsView extends StatelessWidget {
                     height: 360,
                     child: AppEmptyState(
                       key: Key('notificationsEmpty'),
-                      message: 'Chưa có thông báo phù hợp.',
+                      message: AppStrings.notificationsEmpty,
                       icon: Icons.notifications_none_rounded,
                     ),
                   )
@@ -184,7 +185,7 @@ class _BroadcastManagerState extends State<_BroadcastManager> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Tạo thông báo cho đại lý',
+                      AppStrings.broadcastCreateTitle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -194,7 +195,7 @@ class _BroadcastManagerState extends State<_BroadcastManager> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Thông báo sẽ được gửi đến tất cả đại lý.',
+                AppStrings.broadcastCreateSubtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -210,12 +211,12 @@ class _BroadcastManagerState extends State<_BroadcastManager> {
                       controller: _titleController,
                       maxLength: 200,
                       decoration: const InputDecoration(
-                        labelText: 'Tiêu đề',
+                        labelText: AppStrings.notificationTitleLabel,
                         counterText: '',
                       ),
                       validator: (value) =>
                           (value == null || value.trim().isEmpty)
-                          ? 'Vui lòng nhập tiêu đề'
+                          ? AppStrings.notificationTitleRequired
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -225,11 +226,11 @@ class _BroadcastManagerState extends State<_BroadcastManager> {
                       minLines: 2,
                       maxLines: 5,
                       decoration: const InputDecoration(
-                        labelText: 'Nội dung',
+                        labelText: AppStrings.notificationBodyLabel,
                       ),
                       validator: (value) =>
                           (value == null || value.trim().isEmpty)
-                          ? 'Vui lòng nhập nội dung'
+                          ? AppStrings.notificationBodyRequired
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -242,11 +243,15 @@ class _BroadcastManagerState extends State<_BroadcastManager> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.send_rounded),
                         label: Text(
-                          state.submitting ? 'Đang gửi...' : 'Gửi thông báo',
+                          state.submitting
+                              ? AppStrings.sending
+                              : AppStrings.sendNotification,
                         ),
                       ),
                     ),
@@ -255,7 +260,7 @@ class _BroadcastManagerState extends State<_BroadcastManager> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Lịch sử thông báo đã gửi',
+                AppStrings.broadcastHistoryTitle,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),

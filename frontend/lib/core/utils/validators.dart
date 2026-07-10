@@ -1,18 +1,18 @@
-/// Client-side validation utilities.
-///
-/// Used in form widgets before calling repository/BLoC.
-/// Backend always re-validates; these are convenience checks for UX.
+// Client-side validation utilities used before calling repository/BLoC.
+// Backend always re-validates; these are convenience checks for UX.
+import '../constants/app_strings.dart';
+
 abstract class Validators {
   static String? email(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Email không được để trống';
+      return AppStrings.emailRequired;
     }
 
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
     if (!emailRegex.hasMatch(value.trim())) {
-      return 'Email không hợp lệ';
+      return AppStrings.emailInvalid;
     }
 
     return null;
@@ -20,12 +20,12 @@ abstract class Validators {
 
   static String? phone(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Số điện thoại không được để trống';
+      return AppStrings.phoneRequired;
     }
 
     final phoneRegex = RegExp(r'^(0|\+84)[0-9]{9,10}$');
     if (!phoneRegex.hasMatch(value.trim())) {
-      return 'Số điện thoại không hợp lệ';
+      return AppStrings.phoneInvalid;
     }
 
     return null;
@@ -33,10 +33,10 @@ abstract class Validators {
 
   static String? password(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Mật khẩu không được để trống';
+      return AppStrings.passwordRequired;
     }
     if (value.length < 8) {
-      return 'Mật khẩu phải có ít nhất 8 ký tự';
+      return AppStrings.passwordMin8;
     }
 
     return null;
@@ -44,10 +44,10 @@ abstract class Validators {
 
   static String? confirmPassword(String? value, String? original) {
     if (value == null || value.isEmpty) {
-      return 'Vui lòng nhập lại mật khẩu';
+      return AppStrings.confirmPasswordRequired;
     }
     if (value != original) {
-      return 'Mật khẩu không khớp';
+      return AppStrings.passwordMismatch;
     }
 
     return null;
@@ -55,7 +55,7 @@ abstract class Validators {
 
   static String? required(String? value, {String fieldName = 'Trường này'}) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldName không được để trống';
+      return AppStrings.requiredField(fieldName);
     }
 
     return null;
@@ -68,7 +68,7 @@ abstract class Validators {
 
     final taxRegex = RegExp(r'^\d{10}(-\d{3})?$');
     if (!taxRegex.hasMatch(value.trim())) {
-      return 'Mã số thuế không hợp lệ';
+      return AppStrings.taxCodeInvalid;
     }
 
     return null;
@@ -76,15 +76,15 @@ abstract class Validators {
 
   static String? quantity(String? value, {int minQuantity = 1}) {
     if (value == null || value.isEmpty) {
-      return 'Số lượng không được để trống';
+      return AppStrings.quantityRequired;
     }
 
     final qty = int.tryParse(value);
     if (qty == null) {
-      return 'Số lượng phải là số nguyên';
+      return AppStrings.quantityInteger;
     }
     if (qty < minQuantity) {
-      return 'Số lượng tối thiểu là $minQuantity';
+      return AppStrings.minimumQuantity(minQuantity);
     }
 
     return null;
@@ -92,10 +92,10 @@ abstract class Validators {
 
   static String? address(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Địa chỉ không được để trống';
+      return AppStrings.addressRequired;
     }
     if (value.trim().length < 10) {
-      return 'Địa chỉ phải đủ chi tiết (tối thiểu 10 ký tự)';
+      return AppStrings.addressTooShort;
     }
 
     return null;

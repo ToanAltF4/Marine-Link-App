@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/app_router.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -175,7 +177,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Đã xác nhận thành công. Yêu cầu tạo tài khoản của bạn sẽ được duyệt trong 1h.',
+                      AppStrings.emailVerificationSuccess,
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -191,13 +193,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           );
           final router = GoRouter.of(context);
           Future.delayed(const Duration(milliseconds: 3500), () {
-            if (mounted) router.go('/login');
+            if (mounted) router.go(AppRoutes.login);
           });
         }
         if (state is AuthOtpResent) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Mã OTP mới đã được gửi đến email của bạn'),
+              content: const Text(AppStrings.otpResent),
               backgroundColor: const Color(0xFF0B3D91),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -285,7 +287,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
 
                           // Title
                           Text(
-                            'Xác thực email',
+                            AppStrings.verifyEmailTitle,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
@@ -301,7 +303,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                   ?.copyWith(color: const Color(0xFF4A5160)),
                               children: [
                                 const TextSpan(
-                                  text: 'Nhập mã 6 chữ số đã gửi đến\n',
+                                  text: AppStrings.verifyEmailInstruction,
                                 ),
                                 TextSpan(
                                   text: widget.email,
@@ -372,7 +374,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
-                                      'Mã hết hạn sau $_expiryDisplay',
+                                      AppStrings.otpExpiresAfter(
+                                        _expiryDisplay,
+                                      ),
                                       style: const TextStyle(
                                         color: Color(0xFF0B3D91),
                                         fontSize: 13,
@@ -405,7 +409,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                   ),
                                   SizedBox(width: 5),
                                   Text(
-                                    'Mã OTP đã hết hạn — hãy gửi lại',
+                                    AppStrings.otpExpired,
                                     style: TextStyle(
                                       color: Color(0xFFD32F2F),
                                       fontSize: 13,
@@ -435,7 +439,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                         ),
                                       )
                                     : const Icon(Icons.verified_rounded),
-                                label: const Text('Xác thực ngay'),
+                                label: const Text(AppStrings.verifyNow),
                                 style: FilledButton.styleFrom(
                                   minimumSize: const Size.fromHeight(52),
                                   backgroundColor: const Color(0xFF0B3D91),
@@ -466,8 +470,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                               ),
                               label: Text(
                                 _resendEnabled
-                                    ? 'Gửi lại mã OTP'
-                                    : 'Gửi lại sau ${_resendCountdown}s',
+                                    ? AppStrings.resendOtp
+                                    : AppStrings.resendOtpCountdown(
+                                        _resendCountdown,
+                                      ),
                                 style: TextStyle(
                                   color: _resendEnabled
                                       ? const Color(0xFF0B3D91)
@@ -483,12 +489,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                     const SizedBox(height: 18),
                     TextButton.icon(
                       key: const Key('otpBackToRegisterButton'),
-                      onPressed: () => context.go('/register'),
+                      onPressed: () => context.go(AppRoutes.register),
                       icon: const Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 14,
                       ),
-                      label: const Text('Quay lại đăng ký'),
+                      label: const Text(AppStrings.backToRegister),
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF4A5160),
                       ),

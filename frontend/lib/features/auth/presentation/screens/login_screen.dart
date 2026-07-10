@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/app_router.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../domain/user.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -47,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (state is AuthAuthenticated) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Đăng nhập thành công: ${state.user.fullName}'),
+                content: Text(AppStrings.loginSuccess(state.user.fullName)),
               ),
             );
             _routeByRole(context, state.user);
@@ -77,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                'Đăng nhập',
+                                AppStrings.loginTitle,
                                 style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       color: const Color(0xFF052449),
@@ -86,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Chào mừng quay lại',
+                                AppStrings.loginWelcomeBack,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(color: const Color(0xFF4A5160)),
                               ),
@@ -96,8 +98,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _emailOrPhoneController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Email hoặc số điện thoại',
-                                  hintText: 'Nhập email hoặc số điện thoại',
+                                  labelText: AppStrings.loginEmailOrPhoneLabel,
+                                  hintText: AppStrings.loginEmailOrPhoneHint,
                                   prefixIcon: const Icon(Icons.person_outline),
                                   suffixIcon: _fieldStatusIcon(
                                     formState.loginEmailOrPhone,
@@ -116,16 +118,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 key: const Key('loginPasswordField'),
                                 controller: _passwordController,
                                 decoration: InputDecoration(
-                                  labelText: 'Mật khẩu',
-                                  hintText: 'Nhập mật khẩu',
+                                  labelText: AppStrings.passwordLabel,
+                                  hintText: AppStrings.passwordHint,
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: _fieldStatusIcon(
                                     formState.loginPassword,
                                     actions: [
                                       IconButton(
                                         tooltip: _obscurePassword
-                                            ? 'Hiện mật khẩu'
-                                            : 'Ẩn mật khẩu',
+                                            ? AppStrings.showPassword
+                                            : AppStrings.hidePassword,
                                         onPressed: () => setState(
                                           () => _obscurePassword =
                                               !_obscurePassword,
@@ -151,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {},
-                                  child: const Text('Quên mật khẩu?'),
+                                  child: const Text(AppStrings.forgotPassword),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -172,12 +174,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                               color: Colors.white,
                                             ),
                                           )
-                                        : const Text('Đăng nhập'),
+                                        : const Text(AppStrings.loginTitle),
                                   );
                                 },
                               ),
                               const SizedBox(height: 24),
-                              const _DividerLabel(label: 'Hoặc'),
+                              const _DividerLabel(label: AppStrings.or),
                               const SizedBox(height: 18),
                               BlocBuilder<AuthBloc, AuthState>(
                                 builder: (context, state) {
@@ -190,7 +192,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                             const AuthGoogleLoginRequested(),
                                           ),
                                     icon: const _GoogleMark(),
-                                    label: const Text('Đăng nhập với Google'),
+                                    label: const Text(
+                                      AppStrings.loginWithGoogle,
+                                    ),
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size.fromHeight(56),
                                       foregroundColor: const Color(0xFF006C67),
@@ -215,13 +219,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            'Chưa có tài khoản?',
+                            AppStrings.noAccount,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(color: const Color(0xFF303642)),
                           ),
                           TextButton(
-                            onPressed: () => context.go('/register'),
-                            child: const Text('Đăng ký'),
+                            onPressed: () => context.go(AppRoutes.register),
+                            child: const Text(AppStrings.register),
                           ),
                         ],
                       ),
@@ -256,14 +260,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (router == null) return;
 
     if (user.isAdmin) {
-      router.go('/admin');
+      router.go(AppRoutes.adminDashboard);
       return;
     }
     if (user.isStaff) {
-      router.go('/staff');
+      router.go(AppRoutes.staffDashboard);
       return;
     }
-    router.go('/home');
+    router.go(AppRoutes.home);
   }
 
   Widget? _fieldStatusIcon(

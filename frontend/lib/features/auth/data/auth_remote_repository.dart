@@ -1,5 +1,6 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/storage/secure_token_storage.dart';
 import '../domain/auth_repository.dart';
 import '../domain/user.dart';
@@ -31,7 +32,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success || response.data == null) {
       throw ApiException(
-        message: response.message ?? 'Dang nhap that bai',
+        message: response.message ?? AppStrings.loginFailed,
         type: ApiExceptionType.unauthorized,
       );
     }
@@ -55,7 +56,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success || response.data == null) {
       throw ApiException(
-        message: response.message ?? 'Đăng nhập Google thất bại',
+        message: response.message ?? AppStrings.googleLoginFailed,
         type: ApiExceptionType.unauthorized,
       );
     }
@@ -93,7 +94,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success || response.data == null) {
       throw ApiException(
-        message: response.message ?? 'Dang ky that bai',
+        message: response.message ?? AppStrings.registerFailed,
         type: ApiExceptionType.validation,
       );
     }
@@ -173,7 +174,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success) {
       throw ApiException(
-        message: response.message ?? 'Xác thực email thất bại',
+        message: response.message ?? AppStrings.verifyEmailFailed,
         type: ApiExceptionType.validation,
       );
     }
@@ -189,7 +190,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success) {
       throw ApiException(
-        message: response.message ?? 'Không thể gửi lại OTP',
+        message: response.message ?? AppStrings.resendOtpFailed,
         type: ApiExceptionType.validation,
       );
     }
@@ -208,7 +209,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success) {
       throw ApiException(
-        message: response.message ?? 'Đổi mật khẩu thất bại',
+        message: response.message ?? AppStrings.changePasswordFailed,
         type: ApiExceptionType.validation,
       );
     }
