@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../shared/widgets/app_back_exit_scope.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/admin_product.dart';
 import '../cubit/admin_product_cubit.dart';
@@ -39,16 +39,8 @@ class _AdminProductView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBackExitScope(
-      onFirstBack: staffMode
-          ? (ctx) {
-              if (ctx.canPop()) {
-                ctx.pop();
-              } else {
-                ctx.go(AppRoutes.staffDashboard);
-              }
-            }
-          : null,
+    return RoleBackToDashboardScope(
+      dashboardLocation: staffMode ? AppRoutes.staffDashboard : AppRoutes.adminDashboard,
       child: Scaffold(
         key: const Key('adminProductsScreen'),
         backgroundColor: AppColors.background,

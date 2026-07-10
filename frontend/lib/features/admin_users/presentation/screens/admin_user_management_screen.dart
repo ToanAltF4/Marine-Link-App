@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/di/service_locator.dart';
+import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../shared/widgets/app_back_exit_scope.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/admin_user.dart';
@@ -26,7 +27,8 @@ class _AdminUserView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBackExitScope(
+    return RoleBackToDashboardScope(
+      dashboardLocation: AppRoutes.adminDashboard,
       child: Scaffold(
         key: const Key('adminUsersScreen'),
         backgroundColor: AppColors.background,
