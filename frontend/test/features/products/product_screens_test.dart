@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:marinelink/app/router/app_router.dart';
 import 'package:marinelink/app/theme/app_theme.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:marinelink/features/auth/presentation/bloc/auth_event.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
 import 'package:marinelink/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:marinelink/features/home/presentation/screens/home_screen.dart';
