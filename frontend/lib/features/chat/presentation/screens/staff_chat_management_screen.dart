@@ -9,8 +9,8 @@ import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
-import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../domain/chat.dart';
 import '../cubit/staff_chat_cubit.dart';
@@ -72,7 +72,8 @@ class _StaffChatViewState extends State<_StaffChatView> {
           ),
         );
       },
-      child: AppBackExitScope(
+      child: RoleBackToDashboardScope(
+        dashboardLocation: AppRoutes.staffDashboard,
         child: Scaffold(
           key: const Key('staffChatManagementScreen'),
           backgroundColor: AppColors.background,
