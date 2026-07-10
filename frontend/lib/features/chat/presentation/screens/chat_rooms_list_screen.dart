@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
@@ -59,6 +60,11 @@ class _ChatRoomsView extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
+          leading: IconButton(
+            key: const Key('chatRoomsBackButton'),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => BuyerNavigation.popOrGo(context, AppRoutes.home),
+          ),
           title: const Text('Lịch sử chat'),
           centerTitle: true,
         ),

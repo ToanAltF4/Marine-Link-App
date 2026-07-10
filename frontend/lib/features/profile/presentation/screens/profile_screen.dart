@@ -10,6 +10,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
+import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -71,99 +72,106 @@ class _ProfileViewState extends State<_ProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: const Key('profileScreen'),
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(AppStrings.personalProfileTitle),
-        actions: [
-          if (!_isEditing)
-            IconButton(
-              key: const Key('profileEditButton'),
-              tooltip: AppStrings.editProfile,
-              onPressed: () => setState(() => _isEditing = true),
-              icon: const Icon(Icons.edit_rounded, color: AppColors.primary),
-            ),
-        ],
-      ),
-      bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          final user = state is AuthAuthenticated ? state.user : null;
-          if (user?.isStaff == true) {
-            return const StaffBottomNav(currentTab: StaffBottomNavTab.profile);
-          }
-          if (user?.isAdmin == true) {
-            return const AdminBottomNav(currentTab: AdminBottomNavTab.profile);
-          }
-          return const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile);
-        },
-      ),
-      body: BlocConsumer<ProfileCubit, ProfileState>(
-        listener: (context, state) {
-          if (state.status == ProfileStatus.updateSuccess) {
-            setState(() => _isEditing = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(AppStrings.profileUpdateSuccess)),
-            );
-          }
-          if (state.status == ProfileStatus.updateFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.errorMessage ?? AppStrings.profileUpdateFailed,
+    return BuyerBackToHomeScope(
+      child: Scaffold(
+        key: const Key('profileScreen'),
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          leading: IconButton(
+            key: const Key('profileBackButton'),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => _handleBack(context),
+          ),
+          title: const Text(AppStrings.personalProfileTitle),
+          actions: [
+            if (!_isEditing)
+              IconButton(
+                key: const Key('profileEditButton'),
+                tooltip: AppStrings.editProfile,
+                onPressed: () => setState(() => _isEditing = true),
+                icon: const Icon(Icons.edit_rounded, color: AppColors.primary),
+              ),
+          ],
+        ),
+        bottomNavigationBar: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            final user = state is AuthAuthenticated ? state.user : null;
+            if (user?.isStaff == true) {
+              return const StaffBottomNav(currentTab: StaffBottomNavTab.profile);
+            }
+            if (user?.isAdmin == true) {
+              return const AdminBottomNav(currentTab: AdminBottomNavTab.profile);
+            }
+            return const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile);
+          },
+        ),
+        body: BlocConsumer<ProfileCubit, ProfileState>(
+          listener: (context, state) {
+            if (state.status == ProfileStatus.updateSuccess) {
+              setState(() => _isEditing = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(AppStrings.profileUpdateSuccess)),
+              );
+            }
+            if (state.status == ProfileStatus.updateFailure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.errorMessage ?? AppStrings.profileUpdateFailed,
+                  ),
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            final profile = state.profile;
+            if (state.status == ProfileStatus.loading && profile == null) {
+              return const AppLoadingIndicator(
+                key: Key('profileLoading'),
+                message: AppStrings.profileLoading,
+              );
+            }
+
+            if (state.status == ProfileStatus.failure && profile == null) {
+              return AppErrorState(
+                key: const Key('profileError'),
+                message: state.errorMessage ?? AppStrings.profileLoadFailed,
+                retryLabel: AppStrings.reload,
+                onRetry: context.read<ProfileCubit>().loadProfile,
+              );
+            }
+
+            if (profile == null) {
+              return const AppErrorState(
+                key: Key('profileError'),
+                message: AppStrings.profileNotFound,
+              );
+            }
+
+            _fillFields(profile);
+
+            return SingleChildScrollView(
+              key: const Key('profileScrollView'),
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ProfileHeader(profile: profile),
+                    const SizedBox(height: 16),
+                    _buildInfoPanel(),
+                    const SizedBox(height: 16),
+                    if (_isEditing)
+                      _buildActionButtons(context, state)
+                    else
+                      _buildNavigationTiles(context),
+                  ],
                 ),
               ),
             );
-          }
-        },
-        builder: (context, state) {
-          final profile = state.profile;
-          if (state.status == ProfileStatus.loading && profile == null) {
-            return const AppLoadingIndicator(
-              key: Key('profileLoading'),
-              message: AppStrings.profileLoading,
-            );
-          }
-
-          if (state.status == ProfileStatus.failure && profile == null) {
-            return AppErrorState(
-              key: const Key('profileError'),
-              message: state.errorMessage ?? AppStrings.profileLoadFailed,
-              retryLabel: AppStrings.reload,
-              onRetry: context.read<ProfileCubit>().loadProfile,
-            );
-          }
-
-          if (profile == null) {
-            return const AppErrorState(
-              key: Key('profileError'),
-              message: AppStrings.profileNotFound,
-            );
-          }
-
-          _fillFields(profile);
-
-          return SingleChildScrollView(
-            key: const Key('profileScrollView'),
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ProfileHeader(profile: profile),
-                  const SizedBox(height: 16),
-                  _buildInfoPanel(),
-                  const SizedBox(height: 16),
-                  if (_isEditing)
-                    _buildActionButtons(context, state)
-                  else
-                    _buildNavigationTiles(context),
-                ],
-              ),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -447,6 +455,21 @@ class _ProfileViewState extends State<_ProfileView> {
   String? _emptyToNull(String value) {
     final text = value.trim();
     return text.isEmpty ? null : text;
+  }
+
+  void _handleBack(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      if (authState.user.isAdmin) {
+        context.go(AppRoutes.adminDashboard);
+        return;
+      }
+      if (authState.user.isStaff) {
+        context.go(AppRoutes.staffDashboard);
+        return;
+      }
+    }
+    BuyerNavigation.popOrGo(context, AppRoutes.home);
   }
 }
 
