@@ -28,6 +28,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AdminUserNotificationService notificationService;
 
     public Page<AdminUserResponse> listUsers(
             int page,
@@ -76,6 +77,7 @@ public class AdminUserService {
     @Transactional
     public AdminUserResponse updateUser(UUID publicId, AdminUserUpdateRequest request) {
         User user = findUser(publicId);
+        UserStatus previousStatus = user.getStatus();
 
         if (request.status() != null) {
             user.setStatus(request.status());
@@ -90,7 +92,12 @@ public class AdminUserService {
             user.setBusinessAddress(request.businessAddress().trim());
         }
 
-        return AdminUserResponse.from(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        if (previousStatus == UserStatus.PENDING_APPROVAL && savedUser.getStatus() == UserStatus.ACTIVE) {
+            notificationService.sendAccountApprovedEmail(savedUser);
+        }
+
+        return AdminUserResponse.from(savedUser);
     }
 
     @Transactional

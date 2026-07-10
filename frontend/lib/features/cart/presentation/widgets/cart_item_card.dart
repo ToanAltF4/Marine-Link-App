@@ -190,7 +190,11 @@ class ProductImage extends StatelessWidget {
   final String path;
   final BoxFit fit;
 
-  const ProductImage({super.key, required this.path, this.fit = BoxFit.contain});
+  const ProductImage({
+    super.key,
+    required this.path,
+    this.fit = BoxFit.contain,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +265,11 @@ class _QuantityStepperState extends State<QuantityStepper> {
   @override
   void didUpdateWidget(covariant QuantityStepper oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (item.quantity != oldWidget.item.quantity && !_focusNode.hasFocus) {
+    final visibleQuantity = int.tryParse(_controller.text);
+    final shouldSyncFocusedValue =
+        _focusNode.hasFocus && visibleQuantity != item.quantity;
+    if (item.quantity != oldWidget.item.quantity &&
+        (!_focusNode.hasFocus || shouldSyncFocusedValue)) {
       _controller.text = '${item.quantity}';
     }
   }
@@ -275,8 +283,6 @@ class _QuantityStepperState extends State<QuantityStepper> {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<CartCubit>();
-
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFFF1F6FC),
@@ -291,8 +297,7 @@ class _QuantityStepperState extends State<QuantityStepper> {
               key: Key('cartDecreaseButton-${item.productId}'),
               icon: Icons.remove_rounded,
               onPressed: item.quantity > item.minOrderQuantity
-                  ? () =>
-                        cubit.updateQuantity(item.productId, item.quantity - 1)
+                  ? () => _stepQuantity(-1)
                   : null,
             ),
             SizedBox(
@@ -321,6 +326,7 @@ class _QuantityStepperState extends State<QuantityStepper> {
                   filled: false,
                   contentPadding: EdgeInsets.zero,
                 ),
+                onChanged: _handleChanged,
                 onSubmitted: _commit,
                 onEditingComplete: () => _commit(_controller.text),
               ),
@@ -329,8 +335,7 @@ class _QuantityStepperState extends State<QuantityStepper> {
               key: Key('cartIncreaseButton-${item.productId}'),
               icon: Icons.add_rounded,
               onPressed: item.quantity < item.stockQuantity
-                  ? () =>
-                        cubit.updateQuantity(item.productId, item.quantity + 1)
+                  ? () => _stepQuantity(1)
                   : null,
             ),
           ],
@@ -351,6 +356,39 @@ class _QuantityStepperState extends State<QuantityStepper> {
     );
     context.read<CartCubit>().updateQuantity(item.productId, next);
     _focusNode.unfocus();
+  }
+
+  void _handleChanged(String value) {
+    if (value.isEmpty) return;
+
+    final parsed = int.tryParse(value);
+    if (parsed == null) return;
+
+    final next = parsed.clamp(item.minOrderQuantity, item.stockQuantity);
+    if (next != parsed) {
+      _controller.text = '$next';
+      _controller.selection = TextSelection.collapsed(
+        offset: _controller.text.length,
+      );
+    }
+    context.read<CartCubit>().updateQuantity(item.productId, next);
+  }
+
+  void _stepQuantity(int delta) {
+    final parsed = int.tryParse(_controller.text);
+    final current = (parsed ?? item.quantity).clamp(
+      item.minOrderQuantity,
+      item.stockQuantity,
+    );
+    final next = (current + delta).clamp(
+      item.minOrderQuantity,
+      item.stockQuantity,
+    );
+    _controller.text = '$next';
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+    context.read<CartCubit>().updateQuantity(item.productId, next);
   }
 }
 
