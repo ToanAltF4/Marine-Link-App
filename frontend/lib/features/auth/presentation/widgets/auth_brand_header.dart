@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/assets/app_assets.dart';
+import '../../../../core/constants/app_strings.dart';
 
 class AuthBrandHeader extends StatelessWidget {
   final bool compact;
@@ -24,7 +25,7 @@ class AuthBrandHeader extends StatelessWidget {
         ),
         SizedBox(height: compact ? 12 : 18),
         Text(
-          'MarineLink',
+          AppStrings.appName,
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineMedium?.copyWith(
             color: const Color(0xFF052449),
@@ -34,7 +35,7 @@ class AuthBrandHeader extends StatelessWidget {
         ),
         SizedBox(height: compact ? 8 : 12),
         Text(
-          'Nền tảng giao thương hải sản B2B hàng đầu',
+          AppStrings.appTagline,
           textAlign: TextAlign.center,
           style: theme.textTheme.titleMedium?.copyWith(
             color: const Color(0xFF303642),

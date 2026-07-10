@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../../core/assets/app_assets.dart';
+import '../../core/constants/app_strings.dart';
 
 class DashboardHeader extends StatelessWidget {
   final bool hasNotification;
@@ -32,7 +33,7 @@ class DashboardHeader extends StatelessWidget {
               const SizedBox(width: 8),
               _HeaderIconButton(
                 key: const Key('dashboardNotificationButton'),
-                tooltip: 'Thông báo',
+                tooltip: AppStrings.notificationsTitle,
                 onPressed: onNotificationPressed,
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -61,7 +62,7 @@ class DashboardHeader extends StatelessWidget {
               const SizedBox(width: 8),
               _HeaderIconButton(
                 key: const Key('dashboardProfileButton'),
-                tooltip: 'Hồ sơ',
+                tooltip: AppStrings.profileTitle,
                 onPressed: onProfilePressed,
                 child: const Icon(
                   Icons.person_outline_rounded,
@@ -93,7 +94,7 @@ class _BrandMark extends StatelessWidget {
         const SizedBox(width: 10),
         Flexible(
           child: Text(
-            'MarineLink',
+            AppStrings.appName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(

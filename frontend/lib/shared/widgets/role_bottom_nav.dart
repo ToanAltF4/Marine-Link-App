@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_router.dart';
 import '../../app/theme/app_theme.dart';
+import '../../core/constants/app_strings.dart';
 
 enum AdminBottomNavTab { dashboard, products, orders, users, profile }
 
@@ -21,35 +22,35 @@ class AdminBottomNav extends StatelessWidget {
           key: const Key('adminBottomNavDashboard'),
           selected: currentTab == AdminBottomNavTab.dashboard,
           icon: Icons.dashboard_outlined,
-          label: 'Tổng quan',
+          label: AppStrings.overviewTitle,
           location: AppRoutes.adminDashboard,
         ),
         RoleBottomNavItem(
           key: const Key('adminBottomNavProducts'),
           selected: currentTab == AdminBottomNavTab.products,
           icon: Icons.inventory_2_outlined,
-          label: 'Sản phẩm',
+          label: AppStrings.productsTitle,
           location: AppRoutes.adminProducts,
         ),
         RoleBottomNavItem(
           key: const Key('adminBottomNavOrders'),
           selected: currentTab == AdminBottomNavTab.orders,
           icon: Icons.fact_check_outlined,
-          label: 'Đơn hàng',
+          label: AppStrings.ordersTitle,
           location: AppRoutes.adminOrders,
         ),
         RoleBottomNavItem(
           key: const Key('adminBottomNavUsers'),
           selected: currentTab == AdminBottomNavTab.users,
           icon: Icons.people_alt_outlined,
-          label: 'Tài khoản',
+          label: AppStrings.accountTitle,
           location: AppRoutes.adminUsers,
         ),
         RoleBottomNavItem(
           key: const Key('adminBottomNavProfile'),
           selected: currentTab == AdminBottomNavTab.profile,
           icon: Icons.person_outline_rounded,
-          label: 'Hồ sơ',
+          label: AppStrings.profileTitle,
           location: AppRoutes.adminProfile,
         ),
       ],
@@ -70,28 +71,28 @@ class StaffBottomNav extends StatelessWidget {
           key: const Key('staffBottomNavWork'),
           selected: currentTab == StaffBottomNavTab.work,
           icon: Icons.work_outline_rounded,
-          label: 'Công việc',
+          label: AppStrings.workTitle,
           location: AppRoutes.staffDashboard,
         ),
         RoleBottomNavItem(
           key: const Key('staffBottomNavOrders'),
           selected: currentTab == StaffBottomNavTab.orders,
           icon: Icons.fact_check_outlined,
-          label: 'Đơn hàng',
+          label: AppStrings.ordersTitle,
           location: AppRoutes.staffOrders,
         ),
         RoleBottomNavItem(
           key: const Key('staffBottomNavChat'),
           selected: currentTab == StaffBottomNavTab.chat,
           icon: Icons.chat_bubble_outline_rounded,
-          label: 'Tin nhắn',
+          label: AppStrings.messagesTitle,
           location: AppRoutes.staffChat,
         ),
         RoleBottomNavItem(
           key: const Key('staffBottomNavProfile'),
           selected: currentTab == StaffBottomNavTab.profile,
           icon: Icons.person_outline_rounded,
-          label: 'Hồ sơ',
+          label: AppStrings.profileTitle,
           location: AppRoutes.staffProfile,
         ),
       ],

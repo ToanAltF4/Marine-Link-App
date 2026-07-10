@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/assets/app_assets.dart';
+import '../../core/constants/app_strings.dart';
 import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/admin_products/presentation/screens/admin_product_management_screen.dart';
@@ -412,7 +413,7 @@ class _SplashPageState extends State<_SplashPage> {
               Image.asset(AppAssets.appIcon, width: 104, height: 104),
               const SizedBox(height: 18),
               Text(
-                'MarineLink',
+                AppStrings.appName,
                 style: theme.textTheme.headlineLarge?.copyWith(
                   color: theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.w900,
@@ -420,7 +421,7 @@ class _SplashPageState extends State<_SplashPage> {
               ),
               const SizedBox(height: 12),
               Text(
-                'B2B Seafood Ordering',
+                AppStrings.appSubtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
                 ),

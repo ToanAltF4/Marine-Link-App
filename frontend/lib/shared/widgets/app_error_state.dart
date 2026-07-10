@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../../core/constants/app_strings.dart';
 
 /// Standard error state widget.
 /// Usage: show when BLoC/Cubit state is failure.
@@ -61,7 +62,7 @@ class AppErrorState extends StatelessWidget {
                   onPressed: onRetry,
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: Text(
-                    retryLabel ?? 'Thử lại',
+                    retryLabel ?? AppStrings.retry,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -6,6 +6,7 @@ import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/assets/app_assets.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
@@ -74,12 +75,12 @@ class _ProfileViewState extends State<_ProfileView> {
       key: const Key('profileScreen'),
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Hồ sơ cá nhân'),
+        title: const Text(AppStrings.personalProfileTitle),
         actions: [
           if (!_isEditing)
             IconButton(
               key: const Key('profileEditButton'),
-              tooltip: 'Chỉnh sửa hồ sơ',
+              tooltip: AppStrings.editProfile,
               onPressed: () => setState(() => _isEditing = true),
               icon: const Icon(Icons.edit_rounded, color: AppColors.primary),
             ),
@@ -102,13 +103,15 @@ class _ProfileViewState extends State<_ProfileView> {
           if (state.status == ProfileStatus.updateSuccess) {
             setState(() => _isEditing = false);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cập nhật hồ sơ thành công')),
+              const SnackBar(content: Text(AppStrings.profileUpdateSuccess)),
             );
           }
           if (state.status == ProfileStatus.updateFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.errorMessage ?? 'Cập nhật hồ sơ thất bại'),
+                content: Text(
+                  state.errorMessage ?? AppStrings.profileUpdateFailed,
+                ),
               ),
             );
           }
@@ -118,15 +121,15 @@ class _ProfileViewState extends State<_ProfileView> {
           if (state.status == ProfileStatus.loading && profile == null) {
             return const AppLoadingIndicator(
               key: Key('profileLoading'),
-              message: 'Đang tải hồ sơ',
+              message: AppStrings.profileLoading,
             );
           }
 
           if (state.status == ProfileStatus.failure && profile == null) {
             return AppErrorState(
               key: const Key('profileError'),
-              message: state.errorMessage ?? 'Không tải được hồ sơ.',
-              retryLabel: 'Tải lại',
+              message: state.errorMessage ?? AppStrings.profileLoadFailed,
+              retryLabel: AppStrings.reload,
               onRetry: context.read<ProfileCubit>().loadProfile,
             );
           }
@@ -134,7 +137,7 @@ class _ProfileViewState extends State<_ProfileView> {
           if (profile == null) {
             return const AppErrorState(
               key: Key('profileError'),
-              message: 'Không tìm thấy hồ sơ.',
+              message: AppStrings.profileNotFound,
             );
           }
 
@@ -179,7 +182,7 @@ class _ProfileViewState extends State<_ProfileView> {
           children: [
             _buildField(
               key: const Key('profileNameField'),
-              label: 'Họ và tên',
+              label: AppStrings.fullNameLabel,
               controller: _nameController,
               enabled: _isEditing,
               icon: Icons.person_outline_rounded,
@@ -189,7 +192,7 @@ class _ProfileViewState extends State<_ProfileView> {
             const SizedBox(height: 14),
             _buildField(
               key: const Key('profilePhoneField'),
-              label: 'Số điện thoại',
+              label: AppStrings.phoneLabel,
               controller: _phoneController,
               enabled: _isEditing,
               icon: Icons.phone_outlined,
@@ -200,7 +203,7 @@ class _ProfileViewState extends State<_ProfileView> {
             const SizedBox(height: 14),
             _buildField(
               key: const Key('profileAddressField'),
-              label: 'Địa chỉ kinh doanh',
+              label: AppStrings.businessAddressLabel,
               controller: _addressController,
               enabled: _isEditing,
               icon: Icons.location_on_outlined,
@@ -264,7 +267,7 @@ class _ProfileViewState extends State<_ProfileView> {
                     if (profile != null) _fillFields(profile);
                   },
             icon: const Icon(Icons.close_rounded),
-            label: const Text('Hủy'),
+            label: const Text(AppStrings.cancel),
           ),
         ),
         const SizedBox(width: 12),
@@ -281,7 +284,7 @@ class _ProfileViewState extends State<_ProfileView> {
                     ),
                   )
                 : const Icon(Icons.save_outlined),
-            label: const Text('Lưu'),
+            label: const Text(AppStrings.save),
           ),
         ),
       ],
@@ -305,8 +308,8 @@ class _ProfileViewState extends State<_ProfileView> {
             _ProfileActionTile(
               key: const Key('profileOrdersTile'),
               icon: Icons.receipt_long_outlined,
-              title: 'Đơn hàng của tôi',
-              subtitle: 'Theo dõi đơn đã đặt và trạng thái giao hàng',
+              title: AppStrings.myOrders,
+              subtitle: AppStrings.myOrdersSubtitle,
               onTap: () => BuyerNavigation.push(context, AppRoutes.orders),
             ),
             const Divider(height: 1, indent: 64),
@@ -314,10 +317,10 @@ class _ProfileViewState extends State<_ProfileView> {
           _ProfileActionTile(
             key: const Key('profileSupportTile'),
             icon: Icons.support_agent_outlined,
-            title: 'Hỗ trợ',
+            title: AppStrings.support,
             subtitle: isBuyer
-                ? 'Chat với nhân viên MarineLink'
-                : 'Trung tâm hỗ trợ nội bộ',
+                ? AppStrings.buyerSupportSubtitle
+                : AppStrings.internalSupportSubtitle,
             onTap: () {
               if (user?.isStaff == true) {
                 context.push(AppRoutes.staffChat);
@@ -332,16 +335,16 @@ class _ProfileViewState extends State<_ProfileView> {
           _ProfileActionTile(
             key: const Key('profileChangePasswordTile'),
             icon: Icons.lock_outline_rounded,
-            title: 'Đổi mật khẩu',
-            subtitle: 'Thay đổi mật khẩu đăng nhập',
+            title: AppStrings.changePasswordTitle,
+            subtitle: AppStrings.changePasswordSubtitle,
             onTap: () => context.push(AppRoutes.changePassword),
           ),
           const Divider(height: 1, indent: 64),
           _ProfileActionTile(
             key: const Key('profileLogoutTile'),
             icon: Icons.logout_rounded,
-            title: 'Đăng xuất',
-            subtitle: 'Thoát khỏi tài khoản hiện tại',
+            title: AppStrings.logout,
+            subtitle: AppStrings.logoutSubtitle,
             onTap: () => _showLogoutConfirmation(context),
           ),
         ],
@@ -357,14 +360,14 @@ class _ProfileViewState extends State<_ProfileView> {
         surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Đăng xuất?',
+          AppStrings.logoutTitle,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: AppColors.primary,
             fontWeight: FontWeight.w900,
           ),
         ),
         content: Text(
-          'Bạn có chắc chắn muốn đăng xuất khỏi MarineLink?',
+          AppStrings.logoutConfirmMessage,
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         actionsPadding: const EdgeInsets.symmetric(
@@ -376,7 +379,7 @@ class _ProfileViewState extends State<_ProfileView> {
             key: const Key('profileLogoutCancelButton'),
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              'Hủy',
+              AppStrings.cancel,
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
@@ -400,7 +403,7 @@ class _ProfileViewState extends State<_ProfileView> {
               ),
             ),
             child: const Text(
-              'Đăng xuất',
+              AppStrings.logout,
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
@@ -411,22 +414,22 @@ class _ProfileViewState extends State<_ProfileView> {
 
   String? _validateName(String? value) {
     final text = value?.trim() ?? '';
-    if (text.isEmpty) return 'Vui lòng nhập họ tên';
-    if (text.length < 2) return 'Họ tên quá ngắn';
-    if (text.length > 100) return 'Họ tên không quá 100 ký tự';
+    if (text.isEmpty) return AppStrings.nameRequired;
+    if (text.length < 2) return AppStrings.nameTooShort;
+    if (text.length > 100) return AppStrings.nameTooLong;
     return null;
   }
 
   String? _validatePhone(String? value) {
     final text = value?.trim() ?? '';
-    if (text.isEmpty) return 'Vui lòng nhập số điện thoại';
-    if (!_phoneRegex.hasMatch(text)) return 'Số điện thoại không hợp lệ';
+    if (text.isEmpty) return AppStrings.phoneRequired;
+    if (!_phoneRegex.hasMatch(text)) return AppStrings.phoneInvalidShort;
     return null;
   }
 
   String? _validateAddress(String? value) {
     final text = value?.trim() ?? '';
-    if (text.length > 255) return 'Địa chỉ không quá 255 ký tự';
+    if (text.length > 255) return AppStrings.addressTooLong;
     return null;
   }
 

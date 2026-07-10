@@ -4,6 +4,7 @@ import 'di/service_locator.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/presentation/bloc/auth_event.dart';
 import '../features/cart/presentation/cubit/cart_cubit.dart';
+import '../core/constants/app_strings.dart';
 import 'router/app_router.dart';
 import 'system_back_button_dispatcher.dart';
 import 'theme/app_theme.dart';
@@ -23,7 +24,7 @@ class MarineLinkApp extends StatelessWidget {
         BlocProvider<CartCubit>(create: (_) => sl<CartCubit>()),
       ],
       child: MaterialApp.router(
-        title: 'MarineLink',
+        title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),

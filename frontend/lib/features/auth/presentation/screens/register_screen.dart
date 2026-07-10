@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/di/service_locator.dart';
+import '../../../../app/router/app_router.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../domain/auth_repository.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -57,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthOtpSent) {
-            context.go('/verify-email', extra: state.email);
+            context.go(AppRoutes.verifyEmail, extra: state.email);
           }
           if (state is AuthFailure) {
             _applyServerFieldError(state.message);
@@ -85,7 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                'Đăng ký đại lý',
+                                AppStrings.registerDealerTitle,
                                 style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       color: const Color(0xFF052449),
@@ -94,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Tạo hồ sơ giao dịch cho cửa hàng hải sản',
+                                AppStrings.registerDealerSubtitle,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(color: const Color(0xFF4A5160)),
                               ),
@@ -103,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 key: const Key('registerFullNameField'),
                                 controller: _fullNameController,
                                 decoration: InputDecoration(
-                                  labelText: 'Họ tên *',
+                                  labelText: AppStrings.fullNameRequiredLabel,
                                   prefixIcon: const Icon(Icons.badge_outlined),
                                   suffixIcon: _fieldStatusIcon(
                                     formState.fullName,
@@ -121,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Email *',
+                                  labelText: AppStrings.emailRequiredLabel,
                                   prefixIcon: const Icon(Icons.email_outlined),
                                   suffixIcon: _fieldStatusIcon(formState.email),
                                   errorText: formState.email.visibleMessage,
@@ -137,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _phoneController,
                                 keyboardType: TextInputType.phone,
                                 decoration: InputDecoration(
-                                  labelText: 'Số điện thoại *',
+                                  labelText: AppStrings.phoneRequiredLabel,
                                   prefixIcon: const Icon(Icons.phone_outlined),
                                   suffixIcon: _fieldStatusIcon(formState.phone),
                                   errorText: formState.phone.visibleMessage,
@@ -152,7 +154,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 key: const Key('registerPasswordField'),
                                 controller: _passwordController,
                                 decoration: InputDecoration(
-                                  labelText: 'Mật khẩu *',
+                                  labelText: AppStrings.passwordRequiredLabel,
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: _fieldStatusIcon(
                                     formState.password,
@@ -170,7 +172,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 key: const Key('registerConfirmPasswordField'),
                                 controller: _confirmPasswordController,
                                 decoration: InputDecoration(
-                                  labelText: 'Nhập lại mật khẩu *',
+                                  labelText:
+                                      AppStrings.confirmPasswordRequiredLabel,
                                   prefixIcon: const Icon(
                                     Icons.verified_user_outlined,
                                   ),
@@ -191,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 key: const Key('registerStoreNameField'),
                                 controller: _storeNameController,
                                 decoration: InputDecoration(
-                                  labelText: 'Tên cửa hàng',
+                                  labelText: AppStrings.storeNameLabel,
                                   prefixIcon: const Icon(
                                     Icons.storefront_outlined,
                                   ),
@@ -209,7 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 key: const Key('registerBusinessAddressField'),
                                 controller: _addressController,
                                 decoration: InputDecoration(
-                                  labelText: 'Địa chỉ kinh doanh *',
+                                  labelText:
+                                      AppStrings.businessAddressRequiredLabel,
                                   prefixIcon: const Icon(
                                     Icons.location_on_outlined,
                                   ),
@@ -228,7 +232,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 key: const Key('registerTaxCodeField'),
                                 controller: _taxCodeController,
                                 decoration: InputDecoration(
-                                  labelText: 'Mã số thuế',
+                                  labelText: AppStrings.taxCodeLabel,
                                   prefixIcon: const Icon(
                                     Icons.receipt_long_outlined,
                                   ),
@@ -261,7 +265,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             ),
                                           )
                                         : const Icon(Icons.person_add_alt_1),
-                                    label: const Text('Đăng ký'),
+                                    label: const Text(AppStrings.register),
                                     style: FilledButton.styleFrom(
                                       minimumSize: const Size.fromHeight(56),
                                       textStyle: const TextStyle(
@@ -282,13 +286,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            'Đã có tài khoản?',
+                            AppStrings.alreadyHaveAccount,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(color: const Color(0xFF303642)),
                           ),
                           TextButton(
-                            onPressed: () => context.go('/login'),
-                            child: const Text('Đăng nhập'),
+                            onPressed: () => context.go(AppRoutes.login),
+                            child: const Text(AppStrings.loginTitle),
                           ),
                         ],
                       ),
