@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/auth_exceptions.dart';
 import '../../domain/auth_repository.dart';
@@ -54,7 +55,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user: result.user, token: result.token));
     } catch (e) {
       emit(
-        AuthFailure(userFacingErrorMessage(e, fallback: 'Đăng nhập thất bại.')),
+        AuthFailure(
+          userFacingErrorMessage(e, fallback: AppStrings.loginFailed),
+        ),
       );
     }
   }
@@ -73,7 +76,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(
         AuthFailure(
-          userFacingErrorMessage(e, fallback: 'Đăng nhập Google thất bại.'),
+          userFacingErrorMessage(e, fallback: AppStrings.googleLoginFailed),
         ),
       );
     }
@@ -98,7 +101,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthOtpSent(email: event.email));
     } catch (e) {
       emit(
-        AuthFailure(userFacingErrorMessage(e, fallback: 'Đăng ký thất bại.')),
+        AuthFailure(
+          userFacingErrorMessage(e, fallback: AppStrings.registerFailed),
+        ),
       );
     }
   }
@@ -117,7 +122,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(
         AuthFailure(
-          userFacingErrorMessage(e, fallback: 'Xác thực email thất bại.'),
+          userFacingErrorMessage(e, fallback: AppStrings.verifyEmailFailed),
         ),
       );
     }
@@ -133,7 +138,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(
         AuthFailure(
-          userFacingErrorMessage(e, fallback: 'Không thể gửi lại OTP.'),
+          userFacingErrorMessage(e, fallback: AppStrings.resendOtpFailed),
         ),
       );
     }
@@ -168,7 +173,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(
         AuthFailure(
-          userFacingErrorMessage(e, fallback: 'Đổi mật khẩu thất bại.'),
+          userFacingErrorMessage(e, fallback: AppStrings.changePasswordFailed),
         ),
       );
       if (currentState is AuthAuthenticated) {

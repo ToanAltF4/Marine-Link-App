@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -35,13 +36,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Đổi mật khẩu'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text(AppStrings.changePasswordTitle),
+        centerTitle: true,
+      ),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthPasswordChangeSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Đổi mật khẩu thành công'),
+                content: Text(AppStrings.changePasswordSuccess),
                 backgroundColor: AppColors.success,
               ),
             );
@@ -66,7 +70,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Mật khẩu mới của bạn phải có ít nhất 6 ký tự để đảm bảo bảo mật.',
+                    AppStrings.passwordSecurityHint,
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 14,
@@ -74,40 +78,40 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(height: 32),
                   _buildPasswordField(
-                    label: 'Mật khẩu hiện tại',
+                    label: AppStrings.currentPasswordLabel,
                     controller: _oldPasswordController,
                     obscureText: _obscureOld,
                     onToggle: () => setState(() => _obscureOld = !_obscureOld),
                     validator: (v) => (v == null || v.isEmpty)
-                        ? 'Vui lòng nhập mật khẩu hiện tại'
+                        ? AppStrings.currentPasswordRequired
                         : null,
                   ),
                   const SizedBox(height: 20),
                   _buildPasswordField(
-                    label: 'Mật khẩu mới',
+                    label: AppStrings.newPasswordLabel,
                     controller: _newPasswordController,
                     obscureText: _obscureNew,
                     onToggle: () => setState(() => _obscureNew = !_obscureNew),
                     validator: (v) {
                       if (v == null || v.isEmpty) {
-                        return 'Vui lòng nhập mật khẩu mới';
+                        return AppStrings.newPasswordRequired;
                       }
                       if (v.length < 6) {
-                        return 'Mật khẩu phải có ít nhất 6 ký tự';
+                        return AppStrings.passwordMin6;
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 20),
                   _buildPasswordField(
-                    label: 'Xác nhận mật khẩu mới',
+                    label: AppStrings.confirmNewPasswordLabel,
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirm,
                     onToggle: () =>
                         setState(() => _obscureConfirm = !_obscureConfirm),
                     validator: (v) {
                       if (v != _newPasswordController.text) {
-                        return 'Mật khẩu xác nhận không khớp';
+                        return AppStrings.confirmPasswordMismatch;
                       }
                       return null;
                     },
@@ -134,7 +138,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             ),
                           )
                         : const Text(
-                            'Cập nhật mật khẩu',
+                            AppStrings.updatePasswordButton,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -174,7 +178,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           obscureText: obscureText,
           validator: validator,
           decoration: InputDecoration(
-            hintText: 'Nhập $label',
+            hintText: AppStrings.inputHint(label),
             prefixIcon: const Icon(
               Icons.lock_outline_rounded,
               color: AppColors.primary,
