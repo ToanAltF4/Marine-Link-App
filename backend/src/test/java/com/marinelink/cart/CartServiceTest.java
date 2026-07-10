@@ -71,7 +71,7 @@ class CartServiceTest {
     }
 
     @Test
-    void getActiveCartMergesDuplicateProductRowsForDisplay() {
+    void getActiveCartHandlesDuplicateProductRowsWithoutSumming() {
         UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
         UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
         User user = user(userPublicId);
@@ -103,13 +103,13 @@ class CartServiceTest {
         CartResponse response = cartService.getActiveCart(userPublicId);
 
         assertEquals(1, response.items().size());
-        assertEquals(5, response.items().getFirst().quantity());
-        assertEquals(5, response.totalSelectedItemCount());
-        assertEquals(new BigDecimal("2250000"), response.subtotalAmount());
+        assertEquals(3, response.items().getFirst().quantity());
+        assertEquals(3, response.totalSelectedItemCount());
+        assertEquals(new BigDecimal("1350000"), response.subtotalAmount());
     }
 
     @Test
-    void addItemIncrementsExistingProductAndRecomputesTier() {
+    void addItemSetsAbsoluteQuantityAndRecomputesTier() {
         UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
         UUID productPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440012");
         User user = user(userPublicId);
@@ -118,7 +118,7 @@ class CartServiceTest {
                 .id(51L)
                 .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440051"))
                 .product(product)
-                .minQuantity(5)
+                .minQuantity(3)
                 .unitPrice(new BigDecimal("400000"))
                 .build();
         product.setPriceTiers(Set.of(tier));
@@ -134,8 +134,8 @@ class CartServiceTest {
                 new CartItemCreateRequest(productPublicId, 3, true));
 
         assertEquals(1, response.items().size());
-        assertEquals(5, response.items().getFirst().quantity());
-        assertEquals(new BigDecimal("2000000"), response.subtotalAmount());
+        assertEquals(3, response.items().getFirst().quantity());
+        assertEquals(new BigDecimal("1200000"), response.subtotalAmount());
         assertEquals(tier.getPublicId(), response.items().getFirst().selectedPriceTierId());
     }
 
