@@ -284,6 +284,33 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    /**
+     * Quên mật khẩu: gửi OTP đặt lại tới email nếu có tài khoản đang hoạt động.
+     * Luôn trả về thành công để không tiết lộ email có tồn tại hay không.
+     */
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        userRepository.findActiveByEmailOrPhone(email)
+                .ifPresent(user -> emailOtpService.sendOtp(email));
+    }
+
+    /** Đặt lại mật khẩu bằng OTP hợp lệ đã gửi tới email. */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        // Xác thực OTP trước (ném BusinessException nếu sai/hết hạn).
+        emailOtpService.verifyOtp(email, request.otpCode());
+
+        User user = userRepository.findActiveByEmailOrPhone(email)
+                .orElseThrow(() -> new BusinessException(
+                        "Không tìm thấy tài khoản với email này", HttpStatus.NOT_FOUND));
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
     private void requireLoginAllowed(User user) {
         if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
             throw new BusinessException("Tài khoản chưa được xác thực email", HttpStatus.FORBIDDEN);

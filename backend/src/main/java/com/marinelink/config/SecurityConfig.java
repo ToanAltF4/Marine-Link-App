@@ -68,7 +68,9 @@ public class SecurityConfig {
                     "/api/auth/google",
                     "/api/auth/register",
                     "/api/auth/verify-email",
-                    "/api/auth/resend-otp").permitAll()
+                    "/api/auth/resend-otp",
+                    "/api/auth/forgot-password",
+                    "/api/auth/reset-password").permitAll()
                 // WebSocket handshake (STOMP auth happens on the CONNECT frame)
                 .requestMatchers("/ws/**", "/ws").permitAll()
                 .requestMatchers(HttpMethod.GET,
