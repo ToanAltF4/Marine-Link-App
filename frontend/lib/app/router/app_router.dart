@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/assets/app_assets.dart';
 import '../../core/constants/app_strings.dart';
 import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
+import '../../features/admin/presentation/screens/admin_revenue_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/admin_products/presentation/screens/admin_product_management_screen.dart';
 import '../../features/admin_users/domain/admin_user.dart';
@@ -71,6 +72,7 @@ abstract class AppRoutes {
   static const staffProfile = '/staff/profile';
   static const staffWarehouses = '/staff/warehouses';
   static const adminDashboard = '/admin';
+  static const adminRevenue = '/admin/revenue';
   static const adminProducts = '/admin/products';
   static const adminUsers = '/admin/users';
   static const adminUserDetail = '/admin/users/detail';
@@ -327,6 +329,11 @@ class AppRouter {
         builder: (context, state) =>
             const AdminRoleGuard(child: AdminDashboardScreen()),
         routes: [
+          GoRoute(
+            path: 'revenue',
+            builder: (context, state) =>
+                const AdminRoleGuard(child: AdminRevenueScreen()),
+          ),
           GoRoute(
             path: 'products',
             builder: (context, state) =>

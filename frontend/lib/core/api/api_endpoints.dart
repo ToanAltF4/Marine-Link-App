@@ -74,6 +74,7 @@ abstract class ApiEndpoints {
 
   // ── Admin ─────────────────────────────────────────────────────────────────
   static const String adminDashboard = '/api/admin/dashboard';
+  static const String adminRevenue = '/api/admin/revenue';
   static const String adminProducts = '/api/admin/products';
   static String adminProductDetail(String id) => '/api/admin/products/$id';
   static const String adminUsers = '/api/admin/users';

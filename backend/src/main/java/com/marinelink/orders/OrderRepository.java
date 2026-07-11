@@ -38,6 +38,16 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @EntityGraph(attributePaths = {"user"})
     List<Order> findTop5ByOrderByCreatedAtDesc();
 
+    /** COMPLETED orders whose completion instant falls within [from, to] (for revenue reports). */
+    @Query("select new com.marinelink.orders.CompletedOrderRevenueRow(o.completedAt, o.totalAmount) "
+            + "from Order o "
+            + "where o.status = :status "
+            + "and o.completedAt between :from and :to")
+    List<CompletedOrderRevenueRow> findCompletedRevenueBetween(
+            @Param("status") OrderStatus status,
+            @Param("from") Instant from,
+            @Param("to") Instant to);
+
     /** Đơn còn chờ thanh toán theo phương thức, tạo trước mốc thời gian (để tự hủy). */
     @Query("select o from Order o "
             + "where o.status = :status and o.paymentStatus = :paymentStatus "

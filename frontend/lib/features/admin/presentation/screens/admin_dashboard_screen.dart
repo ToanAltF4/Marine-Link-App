@@ -73,7 +73,11 @@ class _AdminDashboardView extends StatelessWidget {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                           children: [
-                            SystemSummaryBand(data: data),
+                            SystemSummaryBand(
+                              data: data,
+                              onViewRevenue: () =>
+                                  context.push(AppRoutes.adminRevenue),
+                            ),
                             const SizedBox(height: 20),
                             OperationsSection(
                               onOpenOrders: () =>
