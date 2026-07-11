@@ -1,5 +1,5 @@
+import '../../../../core/utils/date_time_formatter.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
@@ -14,7 +14,7 @@ class OrderHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final createdAt = DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt);
+    final createdAt = DateTimeFormatter.fullDateTime(order.createdAt);
     return DecoratedBox(
       decoration: _panelDecoration,
       child: Padding(
