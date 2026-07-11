@@ -97,8 +97,9 @@ app:
     base-url: ${ONESIGNAL_BASE_URL:https://onesignal.com/api/v1/notifications}
     # 'Basic' (key cũ) hoặc 'Key' (key mới) — đổi 1 dòng nếu OneSignal đổi định dạng.
     auth-scheme: ${ONESIGNAL_AUTH_SCHEME:Basic}
-    # Segment mặc định nhận push; đổi sang 'Total Subscriptions' nếu 'Subscribed Users' lỗi.
-    segment: ${ONESIGNAL_SEGMENT:Subscribed Users}
+    # Segment mặc định nhận push. OneSignal SDK v5 dùng 'Total Subscriptions'
+    # (tên cũ 'Subscribed Users' của v4 không khớp -> "not subscribed").
+    segment: ${ONESIGNAL_SEGMENT:Total Subscriptions}
 
 springdoc:
   api-docs:
