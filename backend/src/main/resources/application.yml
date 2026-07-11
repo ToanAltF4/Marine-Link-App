@@ -88,6 +88,10 @@ app:
     payment-url: ${VNPAY_PAYMENT_URL:${VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}}
     return-url: ${VNPAY_RETURN_URL:${VNP_RETURN_URL:http://localhost:8080/api/payments/vnpay/return}}
     frontend-return-url: ${VNPAY_FRONTEND_RETURN_URL:marinelink:///payments/vnpay/result}
+    # Đơn VNPAY chờ thanh toán quá số phút này sẽ bị tự hủy (scheduler).
+    payment-timeout-minutes: ${VNPAY_PAYMENT_TIMEOUT_MINUTES:15}
+    # Chu kỳ quét đơn quá hạn (ms).
+    expiry-check-ms: ${VNPAY_EXPIRY_CHECK_MS:60000}
   onesignal:
     # Push notification (OneSignal). Bỏ trống app-id/rest-api-key -> tự tắt push,
     # broadcast in-app vẫn chạy như cũ.

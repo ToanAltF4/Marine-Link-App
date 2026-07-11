@@ -21,6 +21,8 @@ import java.text.Normalizer;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -51,6 +53,9 @@ public class VnpayPaymentService {
 
     @Value("${app.vnpay.return-url:http://localhost:8080/api/payments/vnpay/return}")
     private String returnUrl;
+
+    @Value("${app.vnpay.payment-timeout-minutes:15}")
+    private long paymentTimeoutMinutes;
 
     @Transactional
     public VnpayPaymentUrlResponse createPaymentUrl(
@@ -159,6 +164,34 @@ public class VnpayPaymentService {
                 payment.getResponseCode(),
                 null,
                 "Payment cancelled");
+    }
+
+    /**
+     * Tự hủy các đơn VNPAY còn "chờ thanh toán" quá {@code paymentTimeoutMinutes}
+     * phút (mặc định 15). Chạy bởi scheduler; trả về số đơn đã hủy.
+     */
+    @Transactional
+    public int cancelExpiredVnpayOrders() {
+        Instant cutoff = Instant.now().minus(paymentTimeoutMinutes, ChronoUnit.MINUTES);
+        List<Order> expired = orderRepository.findExpiredPendingOrders(
+                OrderStatus.PENDING, PaymentStatus.PENDING, PaymentMethodCode.VNPAY, cutoff);
+        for (Order order : expired) {
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setCancelledAt(Instant.now());
+            order.setPaymentStatus(PaymentStatus.FAILED);
+            paymentRepository.findTopByOrderPublicIdOrderByCreatedAtDesc(order.getPublicId())
+                    .filter(payment -> payment.getStatus() != PaymentStatus.PAID)
+                    .ifPresent(payment -> {
+                        payment.setStatus(PaymentStatus.FAILED);
+                        payment.setResponseCode("SYSTEM_TIMEOUT");
+                        payment.setRawResponse(
+                                "VNPAY payment auto-cancelled after " + paymentTimeoutMinutes
+                                        + " minutes without payment");
+                        paymentRepository.save(payment);
+                    });
+            orderRepository.save(order);
+        }
+        return expired.size();
     }
 
     private VnpayProcessResult processCallback(Map<String, String> params, boolean enforcePending) {

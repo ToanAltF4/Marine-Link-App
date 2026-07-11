@@ -37,4 +37,14 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     @EntityGraph(attributePaths = {"user"})
     List<Order> findTop5ByOrderByCreatedAtDesc();
+
+    /** Đơn còn chờ thanh toán theo phương thức, tạo trước mốc thời gian (để tự hủy). */
+    @Query("select o from Order o "
+            + "where o.status = :status and o.paymentStatus = :paymentStatus "
+            + "and o.paymentMethod.code = :methodCode and o.createdAt < :cutoff")
+    List<Order> findExpiredPendingOrders(
+            @Param("status") OrderStatus status,
+            @Param("paymentStatus") PaymentStatus paymentStatus,
+            @Param("methodCode") PaymentMethodCode methodCode,
+            @Param("cutoff") Instant cutoff);
 }
