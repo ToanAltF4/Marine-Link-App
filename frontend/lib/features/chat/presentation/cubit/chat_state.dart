@@ -9,6 +9,9 @@ class ChatState extends Equatable {
   final bool sending;
   final bool canRetrySend;
   final bool offlineFallback;
+
+  /// True while a fresh conversation is being created (buyer "Đoạn chat mới").
+  final bool creating;
   final String? errorMessage;
   final String? sendErrorMessage;
 
@@ -19,6 +22,7 @@ class ChatState extends Equatable {
     this.sending = false,
     this.canRetrySend = false,
     this.offlineFallback = false,
+    this.creating = false,
     this.errorMessage,
     this.sendErrorMessage,
   });
@@ -32,6 +36,7 @@ class ChatState extends Equatable {
     bool? sending,
     bool? canRetrySend,
     bool? offlineFallback,
+    bool? creating,
     String? errorMessage,
     bool clearErrorMessage = false,
     String? sendErrorMessage,
@@ -44,6 +49,7 @@ class ChatState extends Equatable {
       sending: sending ?? this.sending,
       canRetrySend: canRetrySend ?? this.canRetrySend,
       offlineFallback: offlineFallback ?? this.offlineFallback,
+      creating: creating ?? this.creating,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -61,6 +67,7 @@ class ChatState extends Equatable {
     sending,
     canRetrySend,
     offlineFallback,
+    creating,
     errorMessage,
     sendErrorMessage,
   ];
