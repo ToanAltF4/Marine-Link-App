@@ -8,11 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -130,6 +133,41 @@ class VnpayPaymentServiceTest {
         when(orderRepository.findDetailByPublicId(orderId)).thenReturn(Optional.of(order));
 
         assertThrows(BusinessException.class, () -> service.cancelPendingPayment(userId, orderId));
+    }
+
+    @Test
+    void cancelExpiredVnpayOrdersCancelsPendingOnes() {
+        UUID orderId = UUID.randomUUID();
+        PaymentMethod method = paymentMethod(PaymentMethodCode.VNPAY);
+        Order order = Order.builder()
+                .publicId(orderId)
+                .orderCode("ML-20260616-0002")
+                .paymentMethod(method)
+                .status(OrderStatus.PENDING)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+        Payment payment = Payment.builder()
+                .order(order)
+                .paymentMethod(method)
+                .status(PaymentStatus.PENDING)
+                .txnRef("txn-exp")
+                .build();
+        when(orderRepository.findExpiredPendingOrders(
+                eq(OrderStatus.PENDING), eq(PaymentStatus.PENDING),
+                eq(PaymentMethodCode.VNPAY), any()))
+                .thenReturn(List.of(order));
+        when(paymentRepository.findTopByOrderPublicIdOrderByCreatedAtDesc(orderId))
+                .thenReturn(Optional.of(payment));
+
+        int cancelled = service.cancelExpiredVnpayOrders();
+
+        assertEquals(1, cancelled);
+        assertEquals(OrderStatus.CANCELLED, order.getStatus());
+        assertEquals(PaymentStatus.FAILED, order.getPaymentStatus());
+        assertEquals(PaymentStatus.FAILED, payment.getStatus());
+        assertEquals("SYSTEM_TIMEOUT", payment.getResponseCode());
+        verify(orderRepository).save(order);
+        verify(paymentRepository).save(payment);
     }
 
     private PaymentMethod paymentMethod(PaymentMethodCode code) {
