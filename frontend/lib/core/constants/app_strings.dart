@@ -211,6 +211,12 @@ abstract final class AppStrings {
   static const adminUserApproveFailed = 'Không duyệt được tài khoản.';
   static const adminUserApproveUnexpected =
       'Đã xảy ra lỗi khi duyệt tài khoản.';
+  static const adminUserDetailTitle = 'Thông tin tài khoản';
+  static const adminUserDetailContactSection = 'Thông tin liên hệ';
+  static const adminUserDetailBusinessSection = 'Thông tin kinh doanh';
+  static const emailLabel = 'Email';
+  static const taxCodeMstLabel = 'Mã số thuế (MST)';
+  static const notUpdatedValue = 'Chưa cập nhật';
   static const adminProductsTitle = 'Quản lý sản phẩm';
   static const addProduct = 'Thêm sản phẩm';
   static const editProduct = 'Sửa sản phẩm';

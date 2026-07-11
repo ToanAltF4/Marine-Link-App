@@ -28,6 +28,13 @@ void main() {
         response.data!.map((user) => user.status),
         contains(AdminUserStatus.pendingApproval),
       );
+
+      final dealer = response.data!.firstWhere(
+        (user) => user.role == AdminUserRole.user,
+      );
+      expect(dealer.taxCode, isNotNull);
+      expect(dealer.storeName, isNotNull);
+      expect(dealer.businessAddress, isNotNull);
     },
   );
 
