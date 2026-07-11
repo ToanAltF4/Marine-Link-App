@@ -24,7 +24,17 @@ AdminUser adminUserFromJson(dynamic json) {
     phone: _stringOrEmpty(map['phone']),
     role: _roleFromJson(map['role'] ?? map['roleCode'] ?? map['roles']),
     status: _statusFromJson(map['status']),
+    taxCode: _stringOrNull(map['taxCode']),
+    storeName: _stringOrNull(map['storeName']),
+    businessAddress: _stringOrNull(map['businessAddress']),
+    avatarUrl: _stringOrNull(map['avatarUrl']),
   );
+}
+
+String? _stringOrNull(dynamic value) {
+  if (value == null) return null;
+  final text = _stringOrEmpty(value).trim();
+  return text.isEmpty ? null : text;
 }
 
 String _idFromJson(Map<String, dynamic> map) {

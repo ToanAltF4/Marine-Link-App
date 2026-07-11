@@ -7,6 +7,8 @@ import '../../core/constants/app_strings.dart';
 import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/widgets/admin_role_guard.dart';
 import '../../features/admin_products/presentation/screens/admin_product_management_screen.dart';
+import '../../features/admin_users/domain/admin_user.dart';
+import '../../features/admin_users/presentation/screens/admin_user_detail_screen.dart';
 import '../../features/admin_users/presentation/screens/admin_user_management_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/chat/presentation/screens/chat_rooms_list_screen.dart';
@@ -71,6 +73,7 @@ abstract class AppRoutes {
   static const adminDashboard = '/admin';
   static const adminProducts = '/admin/products';
   static const adminUsers = '/admin/users';
+  static const adminUserDetail = '/admin/users/detail';
   static const adminOrders = '/admin/orders';
   static const adminNotifications = '/admin/notifications';
   static const adminProfile = '/admin/profile';
@@ -333,6 +336,14 @@ class AppRouter {
             path: 'users',
             builder: (context, state) =>
                 const AdminRoleGuard(child: AdminUserManagementScreen()),
+            routes: [
+              GoRoute(
+                path: 'detail',
+                builder: (context, state) => AdminRoleGuard(
+                  child: AdminUserDetailScreen(user: state.extra as AdminUser?),
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'orders',

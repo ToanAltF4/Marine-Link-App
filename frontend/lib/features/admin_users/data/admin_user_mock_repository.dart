@@ -56,6 +56,9 @@ const _sampleUsers = [
     phone: '0912345678',
     role: AdminUserRole.user,
     status: AdminUserStatus.active,
+    taxCode: '0301234567',
+    storeName: 'Cửa hàng Ngư cụ Nguyễn Văn A',
+    businessAddress: '25 Nguyễn Tất Thành, Quận 4, TP. Hồ Chí Minh',
   ),
   AdminUser(
     id: 'user-dealer-pending',
@@ -64,6 +67,9 @@ const _sampleUsers = [
     phone: '0911111222',
     role: AdminUserRole.user,
     status: AdminUserStatus.pendingApproval,
+    taxCode: '0409876543',
+    storeName: 'Cửa hàng Hải sản Long Hải',
+    businessAddress: '148 Trần Phú, TP. Vũng Tàu, Bà Rịa - Vũng Tàu',
   ),
   AdminUser(
     id: 'user-dealer-disabled',
@@ -72,5 +78,8 @@ const _sampleUsers = [
     phone: '0922222333',
     role: AdminUserRole.user,
     status: AdminUserStatus.disabled,
+    taxCode: '0312223334',
+    storeName: 'Cửa hàng Ngư nghiệp Biển Đông',
+    businessAddress: '90 Hùng Vương, TP. Nha Trang, Khánh Hòa',
   ),
 ];

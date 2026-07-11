@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
@@ -373,9 +374,16 @@ class _AdminUserCard extends StatelessWidget {
     return DecoratedBox(
       key: Key('adminUserCard_${user.id}'),
       decoration: _cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          key: Key('adminUserCardTap_${user.id}'),
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => context.push(AppRoutes.adminUserDetail, extra: user),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -445,7 +453,9 @@ class _AdminUserCard extends StatelessWidget {
                 ),
               ),
             ],
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

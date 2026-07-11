@@ -11,12 +11,20 @@ void main() {
       'phone': '0912345678',
       'role': 'USER',
       'status': 'PENDING_APPROVAL',
+      'taxCode': '0301234567',
+      'storeName': 'Cửa hàng Ngư cụ Nguyễn Văn A',
+      'businessAddress': '25 Nguyễn Tất Thành, Quận 4, TP. Hồ Chí Minh',
+      'avatarUrl': 'https://cdn.marinelink.demo/avatars/user-001.png',
     });
 
     expect(user.id, 'user-001');
     expect(user.fullName, 'Đại lý Nguyễn Văn A');
     expect(user.role, AdminUserRole.user);
     expect(user.status, AdminUserStatus.pendingApproval);
+    expect(user.taxCode, '0301234567');
+    expect(user.storeName, 'Cửa hàng Ngư cụ Nguyễn Văn A');
+    expect(user.businessAddress, '25 Nguyễn Tất Thành, Quận 4, TP. Hồ Chí Minh');
+    expect(user.avatarUrl, 'https://cdn.marinelink.demo/avatars/user-001.png');
   });
 
   test('adminUserFromJson tolerates missing fields', () {
@@ -28,6 +36,22 @@ void main() {
     expect(user.phone, '');
     expect(user.role, AdminUserRole.user);
     expect(user.status, AdminUserStatus.pendingApproval);
+    expect(user.taxCode, isNull);
+    expect(user.storeName, isNull);
+    expect(user.businessAddress, isNull);
+    expect(user.avatarUrl, isNull);
+  });
+
+  test('adminUserFromJson treats blank business fields as null', () {
+    final user = adminUserFromJson({
+      'id': 'user-002',
+      'fullName': 'Nhân viên Demo',
+      'taxCode': '   ',
+      'storeName': '',
+    });
+
+    expect(user.taxCode, isNull);
+    expect(user.storeName, isNull);
   });
 
   test('adminUsersFromJson parses list and string-like values', () {
