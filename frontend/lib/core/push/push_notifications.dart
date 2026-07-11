@@ -36,4 +36,25 @@ class PushNotifications {
       // Không để lỗi push chặn khởi động app.
     }
   }
+
+  /// Gắn thiết bị với người dùng đang đăng nhập (external_id = public_id) để
+  /// backend có thể đẩy push tới đúng đại lý. Gọi sau khi đăng nhập thành công.
+  static Future<void> setUser(String userPublicId) async {
+    if (!_enabled || kIsWeb || userPublicId.isEmpty) {
+      return;
+    }
+    try {
+      await OneSignal.login(userPublicId);
+    } catch (_) {}
+  }
+
+  /// Bỏ gắn người dùng khỏi thiết bị (khi đăng xuất).
+  static Future<void> clearUser() async {
+    if (!_enabled || kIsWeb) {
+      return;
+    }
+    try {
+      await OneSignal.logout();
+    } catch (_) {}
+  }
 }

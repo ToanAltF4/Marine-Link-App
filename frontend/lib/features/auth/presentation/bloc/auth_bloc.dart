@@ -3,6 +3,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/user_facing_error.dart';
+import '../../../../core/push/push_notifications.dart';
 import '../../domain/auth_exceptions.dart';
 import '../../domain/auth_repository.dart';
 import 'auth_event.dart';
@@ -34,6 +35,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final user = await _authRepository.getCurrentUser();
       if (user != null) {
         emit(AuthAuthenticated(user: user, token: ''));
+        await PushNotifications.setUser(user.id);
       } else {
         emit(const AuthUnauthenticated());
       }
@@ -53,6 +55,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
       emit(AuthAuthenticated(user: result.user, token: result.token));
+      await PushNotifications.setUser(result.user.id);
     } catch (e) {
       emit(
         AuthFailure(
@@ -70,6 +73,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final result = await _authRepository.loginWithGoogle();
       emit(AuthAuthenticated(user: result.user, token: result.token));
+      await PushNotifications.setUser(result.user.id);
     } on GoogleSignInCancelled {
       // User dismissed the picker — return silently, no error message.
       emit(const AuthUnauthenticated());
@@ -151,6 +155,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _authRepository.logout();
     } catch (_) {}
+    await PushNotifications.clearUser();
     emit(const AuthUnauthenticated());
   }
 

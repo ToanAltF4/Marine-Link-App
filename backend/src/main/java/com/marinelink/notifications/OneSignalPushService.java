@@ -58,6 +58,41 @@ public class OneSignalPushService {
         send(event.title(), event.body());
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onUserNotification(UserPushEvent event) {
+        sendToExternalUser(event.externalUserId(), event.title(), event.body());
+    }
+
+    /** Gửi push tới đúng thiết bị của một người dùng (theo external_id). Fail-safe. */
+    public void sendToExternalUser(String externalUserId, String title, String body) {
+        if (!isConfigured() || externalUserId == null || externalUserId.isBlank()) {
+            return;
+        }
+        try {
+            restClient.post()
+                    .uri(baseUrl)
+                    .header("Authorization", authScheme + " " + restApiKey)
+                    .header("Content-Type", "application/json; charset=utf-8")
+                    .body(buildUserPayload(externalUserId, title, body))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Đã gửi push OneSignal tới user {}: {}", externalUserId, title);
+        } catch (Exception ex) {
+            log.warn("Gửi push OneSignal tới user {} thất bại: {}", externalUserId, ex.getMessage());
+        }
+    }
+
+    /** Payload nhắm tới 1 người dùng qua alias external_id. */
+    Map<String, Object> buildUserPayload(String externalUserId, String title, String body) {
+        return Map.of(
+                "app_id", appId,
+                "target_channel", "push",
+                "include_aliases", Map.of("external_id", List.of(externalUserId)),
+                "headings", Map.of("en", title, "vi", title),
+                "contents", Map.of("en", body, "vi", body)
+        );
+    }
+
     /** Gửi push tới toàn bộ thiết bị đã đăng ký. Fail-safe. */
     public void send(String title, String body) {
         if (!isConfigured()) {
