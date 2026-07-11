@@ -39,6 +39,9 @@ class NotificationServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private NotificationService notificationService;
 
@@ -135,6 +138,8 @@ class NotificationServiceTest {
                 creator, new CreateBroadcastRequest("  Bảo trì  ", "  Hệ thống bảo trì  "));
 
         verify(notificationRepository, times(2)).save(any(Notification.class));
+        verify(eventPublisher).publishEvent(
+                new BroadcastCreatedEvent("Bảo trì", "Hệ thống bảo trì"));
         assertThat(summary.title()).isEqualTo("Bảo trì");
         assertThat(summary.body()).isEqualTo("Hệ thống bảo trì");
         assertThat(summary.createdBy()).isEqualTo(creator);
