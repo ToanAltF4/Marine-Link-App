@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/chat.dart';
@@ -48,8 +49,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
               status: StaffChatStatus.failure,
               errorMessage: userFacingResponseMessage(
                 response.message,
-                fallback:
-                    'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch chat.',
+                fallback: AppStrings.staffChatLoadFailed,
               ),
             ),
           );
@@ -62,8 +62,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
             status: StaffChatStatus.failure,
             errorMessage: userFacingErrorMessage(
               error,
-              fallback:
-                  '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i danh s\u00e1ch chat.',
+              fallback: AppStrings.staffChatLoadUnexpected,
             ),
           ),
         );
@@ -101,8 +100,8 @@ class StaffChatCubit extends Cubit<StaffChatState> {
             rooms: rooms,
             clearUpdatingRoomId: true,
             actionMessage: isClosed
-                ? 'Ph\u00f2ng chat \u0111\u00e3 chuy\u1ec3n sang \u0111\u00e3 x\u1eed l\u00fd.'
-                : 'Ph\u00f2ng chat \u0111\u00e3 \u0111\u01b0\u1ee3c m\u1edf l\u1ea1i.',
+                ? AppStrings.chatRoomStatusUpdatedClosed
+                : AppStrings.chatRoomStatusUpdatedOpen,
           ),
         );
         await load();
@@ -112,8 +111,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
             clearUpdatingRoomId: true,
             actionErrorMessage: userFacingResponseMessage(
               response.message,
-              fallback:
-                  'Kh\u00f4ng c\u1eadp nh\u1eadt \u0111\u01b0\u1ee3c tr\u1ea1ng th\u00e1i chat.',
+              fallback: AppStrings.chatRoomStatusUpdateFailed,
             ),
           ),
         );
@@ -124,8 +122,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
           clearUpdatingRoomId: true,
           actionErrorMessage: userFacingErrorMessage(
             error,
-            fallback:
-                '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi c\u1eadp nh\u1eadt chat.',
+            fallback: AppStrings.chatRoomStatusUpdateUnexpected,
           ),
         ),
       );
@@ -143,8 +140,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
     if (trimmedTitle.isEmpty || trimmedDescription.isEmpty) {
       emit(
         state.copyWith(
-          actionErrorMessage:
-              'Vui l\u00f2ng nh\u1eadp ti\u00eau \u0111\u1ec1 v\u00e0 m\u00f4 t\u1ea3 khi\u1ebfu n\u1ea1i.',
+          actionErrorMessage: AppStrings.complaintTitleDescriptionRequired,
         ),
       );
       return;
@@ -161,8 +157,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
         emit(
           state.copyWith(
             clearUpdatingRoomId: true,
-            actionMessage:
-                'Khi\u1ebfu n\u1ea1i \u0111\u00e3 \u0111\u01b0\u1ee3c t\u1ea1o t\u1eeb chat.',
+            actionMessage: AppStrings.complaintCreatedFromChat,
           ),
         );
       } else {
@@ -171,8 +166,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
             clearUpdatingRoomId: true,
             actionErrorMessage: userFacingResponseMessage(
               response.message,
-              fallback:
-                  'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c khi\u1ebfu n\u1ea1i.',
+              fallback: AppStrings.complaintCreateFailed,
             ),
           ),
         );
@@ -183,8 +177,7 @@ class StaffChatCubit extends Cubit<StaffChatState> {
           clearUpdatingRoomId: true,
           actionErrorMessage: userFacingErrorMessage(
             error,
-            fallback:
-                '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea1o khi\u1ebfu n\u1ea1i.',
+            fallback: AppStrings.complaintCreateUnexpected,
           ),
         ),
       );

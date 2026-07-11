@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/admin_dashboard.dart';
@@ -30,7 +31,7 @@ class AdminDashboardCubit extends Cubit<AdminDashboardState> {
             status: AdminDashboardStatus.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không tải được dữ liệu tổng quan.',
+              fallback: AppStrings.adminDashboardLoadFailed,
             ),
           ),
         );
@@ -41,7 +42,7 @@ class AdminDashboardCubit extends Cubit<AdminDashboardState> {
           status: AdminDashboardStatus.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi tải tổng quan hệ thống.',
+            fallback: AppStrings.adminDashboardLoadUnexpected,
           ),
         ),
       );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/product.dart';
@@ -60,87 +61,86 @@ ProductVisualStyle productVisualStyle(Product product) {
 
 String displayCategoryName(Category? category) {
   if (category == null) {
-    return 'Kh\u00e1c';
+    return AppStrings.other;
   }
   return switch (category.id) {
-    'cat-001' => 'M\u1ef1c kh\u00f4',
-    'cat-002' => 'T\u00f4m kh\u00f4',
-    'cat-003' => 'C\u00e1 kh\u00f4',
-    'cat-004' => 'H\u1ea3i s\u1ea3n kh\u00f4 cao c\u1ea5p',
-    'cat-005' => 'N\u01b0\u1edbc m\u1eafm',
-    'cat-fish' => 'C\u00e1',
-    'cat-shrimp' => 'T\u00f4m',
-    'cat-squid' => 'M\u1ef1c',
-    'cat-seafood' => 'H\u1ea3i s\u1ea3n',
-    'cat-seasoning' => 'Gia v\u1ecb',
+    'cat-001' => AppStrings.driedSquid,
+    'cat-002' => AppStrings.driedShrimp,
+    'cat-003' => AppStrings.driedFish,
+    'cat-004' => AppStrings.premiumDriedSeafood,
+    'cat-005' => AppStrings.fishSauce,
+    'cat-fish' => AppStrings.fish,
+    'cat-shrimp' => AppStrings.shrimp,
+    'cat-squid' => AppStrings.squid,
+    'cat-seafood' => AppStrings.seafood,
+    'cat-seasoning' => AppStrings.seasoning,
     _ => _localizedCategoryName(category.name),
   };
 }
 
 String displayProductName(Product product) {
   return switch (product.id) {
-    'prod-001' => 'M\u1ef1c kh\u00f4 lo\u1ea1i 1',
-    'prod-002' => 'T\u00f4m kh\u00f4 \u0111\u1eb7c bi\u1ec7t',
-    'prod-003' => 'C\u00e1 ch\u1ec9 v\u00e0ng',
-    'prod-004' => 'M\u1ef1c m\u1ed9t n\u1eafng',
-    'prod-005' => 'M\u1ef1c kh\u00f4 x\u00e9 s\u1ee3i',
-    'prod-006' => 'M\u1ef1c kh\u00f4 lo\u1ea1i 2',
-    'prod-007' => 'N\u01b0\u1edbc m\u1eafm nh\u0129 Ph\u00fa Qu\u1ed1c',
+    'prod-001' => AppStrings.drySquidGrade1,
+    'prod-002' => AppStrings.specialDriedShrimp,
+    'prod-003' => AppStrings.yellowstripeScad,
+    'prod-004' => AppStrings.semiDriedSquid,
+    'prod-005' => AppStrings.shreddedDrySquid,
+    'prod-006' => AppStrings.drySquidGrade2,
+    'prod-007' => AppStrings.phuQuocFishSauce,
     _ => _localizedProductName(product.name),
   };
 }
 
 String displayOrigin(String? origin) {
   return switch (origin) {
-    'Phan Thiet' => 'Phan Thi\u1ebft',
-    'Ca Mau' => 'C\u00e0 Mau',
-    'Phu Quoc' => 'Ph\u00fa Qu\u1ed1c',
-    'Vung Tau' => 'V\u0169ng T\u00e0u',
-    'Bac Lieu' => 'B\u1ea1c Li\u00eau',
-    'Can Tho' => 'C\u1ea7n Th\u01a1',
-    'Khanh Hoa' => 'Kh\u00e1nh H\u00f2a',
-    'Binh Thuan' => 'B\u00ecnh Thu\u1eadn',
-    'Dong Thap' => '\u0110\u1ed3ng Th\u00e1p',
-    'Ben Tre' => 'B\u1ebfn Tre',
-    'Quang Ngai' => 'Qu\u1ea3ng Ng\u00e3i',
-    null => 'Ngu\u1ed3n h\u00e0ng',
+    'Phan Thiet' => AppStrings.originPhanThiet,
+    'Ca Mau' => AppStrings.originCaMau,
+    'Phu Quoc' => AppStrings.originPhuQuoc,
+    'Vung Tau' => AppStrings.originVungTau,
+    'Bac Lieu' => AppStrings.originBacLieu,
+    'Can Tho' => AppStrings.originCanTho,
+    'Khanh Hoa' => AppStrings.originKhanhHoa,
+    'Binh Thuan' => AppStrings.originBinhThuan,
+    'Dong Thap' => AppStrings.originDongThap,
+    'Ben Tre' => AppStrings.originBenTre,
+    'Quang Ngai' => AppStrings.originQuangNgai,
+    null => AppStrings.sourceFallback,
     _ => origin,
   };
 }
 
 String _localizedCategoryName(String name) {
   return switch (name.trim().toLowerCase()) {
-    'muc kho' => 'M\u1ef1c kh\u00f4',
-    'tom kho' => 'T\u00f4m kh\u00f4',
-    'ca kho' => 'C\u00e1 kh\u00f4',
-    'ca dong lanh' => 'C\u00e1 \u0111\u00f4ng l\u1ea1nh',
-    'muc mot nang' => 'M\u1ef1c m\u1ed9t n\u1eafng',
-    'muc dong lanh' => 'M\u1ef1c \u0111\u00f4ng l\u1ea1nh',
-    'tom dong lanh' => 'T\u00f4m \u0111\u00f4ng l\u1ea1nh',
-    'nuoc mam' => 'N\u01b0\u1edbc m\u1eafm',
-    'hai san kho cao cap' => 'H\u1ea3i s\u1ea3n kh\u00f4 cao c\u1ea5p',
-    'ca' => 'C\u00e1',
-    'tom' => 'T\u00f4m',
-    'muc' => 'M\u1ef1c',
-    'hai san' => 'H\u1ea3i s\u1ea3n',
-    'gia vi' => 'Gia v\u1ecb',
+    'muc kho' => AppStrings.driedSquid,
+    'tom kho' => AppStrings.driedShrimp,
+    'ca kho' => AppStrings.driedFish,
+    'ca dong lanh' => AppStrings.frozenFish,
+    'muc mot nang' => AppStrings.semiDriedSquid,
+    'muc dong lanh' => AppStrings.frozenSquid,
+    'tom dong lanh' => AppStrings.frozenShrimp,
+    'nuoc mam' => AppStrings.fishSauce,
+    'hai san kho cao cap' => AppStrings.premiumDriedSeafood,
+    'ca' => AppStrings.fish,
+    'tom' => AppStrings.shrimp,
+    'muc' => AppStrings.squid,
+    'hai san' => AppStrings.seafood,
+    'gia vi' => AppStrings.seasoning,
     _ => name,
   };
 }
 
 String _localizedProductName(String name) {
   return switch (name.trim().toLowerCase()) {
-    'muc kho loai 1' => 'M\u1ef1c kh\u00f4 lo\u1ea1i 1',
-    'muc kho loai 2' => 'M\u1ef1c kh\u00f4 lo\u1ea1i 2',
-    'muc kho xe soi' => 'M\u1ef1c kh\u00f4 x\u00e9 s\u1ee3i',
-    'tom kho dac biet' => 'T\u00f4m kh\u00f4 \u0111\u1eb7c bi\u1ec7t',
-    'tom kho size lon' => 'T\u00f4m kh\u00f4 size l\u1edbn',
-    'ca chi vang' => 'C\u00e1 ch\u1ec9 v\u00e0ng',
-    'ca basa phi le' => 'C\u00e1 basa phi l\u00ea',
-    'ghe dong lanh' => 'Gh\u1eb9 \u0111\u00f4ng l\u1ea1nh',
-    'muc mot nang' => 'M\u1ef1c m\u1ed9t n\u1eafng',
-    'nuoc mam nhi phu quoc' =>
-      'N\u01b0\u1edbc m\u1eafm nh\u0129 Ph\u00fa Qu\u1ed1c',
+    'muc kho loai 1' => AppStrings.drySquidGrade1,
+    'muc kho loai 2' => AppStrings.drySquidGrade2,
+    'muc kho xe soi' => AppStrings.shreddedDrySquid,
+    'tom kho dac biet' => AppStrings.specialDriedShrimp,
+    'tom kho size lon' => AppStrings.largeDriedShrimp,
+    'ca chi vang' => AppStrings.yellowstripeScad,
+    'ca basa phi le' => AppStrings.basaFillet,
+    'ghe dong lanh' => AppStrings.frozenCrab,
+    'muc mot nang' => AppStrings.semiDriedSquid,
+    'nuoc mam nhi phu quoc' => AppStrings.phuQuocFishSauce,
     _ => name,
   };
 }
@@ -220,20 +220,26 @@ Color productStockBgColor(Product product) {
 
 String productStockLabel(Product product) {
   if (!product.isAvailable) {
-    return 'H\u1ebft h\u00e0ng'; // Hết hàng
+    return AppStrings.outOfStock; // Hết hàng
   }
   if (product.stockQuantity <= product.minOrderQuantity * 6) {
-    return 'S\u1eafp h\u1ebft h\u00e0ng'; // Sắp hết hàng
+    return AppStrings.lowStockFull; // Sắp hết hàng
   }
-  return 'C\u00f2n h\u00e0ng'; // Còn hàng
+  return AppStrings.inStock; // Còn hàng
 }
 
 String productStockQuantityLabel(Product product) {
   if (!product.isAvailable) {
-    return 'H\u1ebft h\u00e0ng'; // Hết hàng
+    return AppStrings.outOfStock; // Hết hàng
   }
   if (product.stockQuantity <= product.minOrderQuantity * 6) {
-    return 'S\u1eafp h\u1ebft: ${product.stockQuantity}${product.unit}'; // Sắp hết: 60kg
+    return AppStrings.lowStockQuantity(
+      product.stockQuantity,
+      product.unit,
+    ); // Sắp hết: 60kg
   }
-  return 'C\u00f2n h\u00e0ng: ${product.stockQuantity}${product.unit}'; // Còn hàng: 300kg
+  return AppStrings.availableStockQuantity(
+    product.stockQuantity,
+    product.unit,
+  ); // Còn hàng: 300kg
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../bloc/notification_cubit.dart';
@@ -24,7 +25,7 @@ class NotificationSummary extends StatelessWidget {
         children: [
           Expanded(
             child: NotificationSummaryCard(
-              label: 'Chưa đọc',
+              label: AppStrings.notificationUnread,
               value: '${state.unreadNotifications.length}',
               icon: Icons.mark_chat_unread_outlined,
             ),
@@ -32,7 +33,7 @@ class NotificationSummary extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: NotificationSummaryCard(
-              label: 'Tổng cộng',
+              label: AppStrings.totalLabel,
               value: '${state.notifications.length}',
               icon: Icons.notifications_active_outlined,
             ),
@@ -100,17 +101,17 @@ class NotificationFilters extends StatelessWidget {
         segments: const [
           ButtonSegment(
             value: NotificationReadFilter.all,
-            label: Text('Tất cả'),
+            label: Text(AppStrings.all),
             icon: Icon(Icons.notifications_none_rounded),
           ),
           ButtonSegment(
             value: NotificationReadFilter.unread,
-            label: Text('Chưa đọc'),
+            label: Text(AppStrings.notificationUnread),
             icon: Icon(Icons.mark_email_unread_outlined),
           ),
           ButtonSegment(
             value: NotificationReadFilter.read,
-            label: Text('Đã đọc'),
+            label: Text(AppStrings.notificationRead),
             icon: Icon(Icons.drafts_outlined),
           ),
         ],

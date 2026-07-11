@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
@@ -36,7 +37,7 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
         _fail(
           userFacingResponseMessage(
             response.message,
-            fallback: 'Không tải được lịch sử chat.',
+            fallback: AppStrings.chatHistoryLoadFailed,
           ),
         );
       }
@@ -44,11 +45,11 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
       _fail(
         userFacingErrorMessage(
           error,
-          fallback: 'Không tải được lịch sử chat.',
+          fallback: AppStrings.chatHistoryLoadFailed,
         ),
       );
     } catch (_) {
-      _fail('Đã xảy ra lỗi khi tải lịch sử chat.');
+      _fail(AppStrings.chatHistoryLoadUnexpected);
     }
   }
 
@@ -66,7 +67,7 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
           creating: false,
           errorMessage: userFacingResponseMessage(
             response.message,
-            fallback: 'Không tạo được cuộc trò chuyện mới.',
+            fallback: AppStrings.newConversationCreateFailed,
           ),
         ),
       );
@@ -77,7 +78,7 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
           creating: false,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Không tạo được cuộc trò chuyện mới.',
+            fallback: AppStrings.newConversationCreateFailed,
           ),
         ),
       );
@@ -86,7 +87,7 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
       emit(
         state.copyWith(
           creating: false,
-          errorMessage: 'Đã xảy ra lỗi khi tạo cuộc trò chuyện mới.',
+          errorMessage: AppStrings.chatNewConversationCreateUnexpected,
         ),
       );
       return null;
@@ -94,6 +95,8 @@ class ChatRoomsCubit extends Cubit<ChatRoomsState> {
   }
 
   void _fail(String message) {
-    emit(state.copyWith(status: ChatRoomsStatus.failure, errorMessage: message));
+    emit(
+      state.copyWith(status: ChatRoomsStatus.failure, errorMessage: message),
+    );
   }
 }

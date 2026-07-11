@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -59,7 +60,7 @@ class _AdminDashboardView extends StatelessWidget {
                       return AdminDashboardError(
                         message:
                             state.errorMessage ??
-                            'Không tải được dữ liệu tổng quan.',
+                            AppStrings.adminDashboardLoadFailed,
                         onRetry: () =>
                             context.read<AdminDashboardCubit>().load(),
                       );

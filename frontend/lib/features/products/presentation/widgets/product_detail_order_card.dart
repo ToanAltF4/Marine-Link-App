@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/product.dart';
@@ -45,7 +46,7 @@ class OrderQuantityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '\u0110\u1eb7t h\u00e0ng',
+            AppStrings.placeOrder,
             style: theme.textTheme.titleMedium?.copyWith(
               color: AppColors.primaryDark,
               fontWeight: FontWeight.w800,
@@ -87,7 +88,7 @@ class OrderQuantityCard extends StatelessWidget {
                     style: theme.textTheme.bodyMedium,
                   )
                 : Text(
-                    'Giá: Đang xét duyệt',
+                    AppStrings.pricePending,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.orange.shade800,
                       fontWeight: FontWeight.w700,
@@ -105,10 +106,10 @@ class OrderQuantityCard extends StatelessWidget {
             ),
             label: Text(
               isPending
-                  ? 'Tài khoản chờ duyệt'
+                  ? AppStrings.accountPendingApproval
                   : (outOfStock
-                        ? 'T\u1ea1m h\u1ebft h\u00e0ng'
-                        : 'Th\u00eam v\u00e0o gi\u1ecf'),
+                        ? AppStrings.temporarilyOutOfStock
+                        : AppStrings.addToCart),
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(52),

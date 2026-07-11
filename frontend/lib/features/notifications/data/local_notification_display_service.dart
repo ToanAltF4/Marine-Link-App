@@ -2,15 +2,16 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../domain/notification.dart';
 import '../domain/notification_display_service.dart';
 
 class LocalNotificationDisplayService implements NotificationDisplayService {
   static const _channelId = 'marinelink_new_notifications';
-  static const _channelName = 'MarineLink thông báo mới';
+  static const _channelName = AppStrings.localNotificationChannelName;
   static const _channelDescription =
-      'Thông báo mới về đơn hàng, sản phẩm, chat và hệ thống.';
+      AppStrings.localNotificationChannelDescription;
 
   static const _channel = AndroidNotificationChannel(
     _channelId,

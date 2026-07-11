@@ -7,13 +7,18 @@ import '../../domain/product.dart';
 import 'product_visuals.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:marinelink/features/auth/presentation/bloc/auth_state.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 /// Thẻ sản phẩm trong danh sách, hiển thị ảnh, tên, xuất xứ, giá và nút mở chi tiết.
 class ProductListCard extends StatelessWidget {
   final Product product;
   final VoidCallback onTap;
 
-  const ProductListCard({super.key, required this.product, required this.onTap});
+  const ProductListCard({
+    super.key,
+    required this.product,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +27,8 @@ class ProductListCard extends StatelessWidget {
     final fallbackVisual = productVisualStyle(product);
 
     final authState = context.watch<AuthBloc>().state;
-    final isPending = authState is AuthAuthenticated &&
+    final isPending =
+        authState is AuthAuthenticated &&
         authState.user.status == 'PENDING_APPROVAL';
 
     return InkWell(
@@ -151,8 +157,11 @@ class ProductListCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     isPending
-                        ? 'Giá sản phẩm: Đang xét duyệt'
-                        : 'Giá từ (MOQ ${product.minOrderQuantity}${product.unit})',
+                        ? AppStrings.productPricePending
+                        : AppStrings.productMoqPriceLabel(
+                            product.minOrderQuantity,
+                            product.unit,
+                          ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: isPending
                           ? Colors.orange.shade800
@@ -173,16 +182,17 @@ class ProductListCard extends StatelessWidget {
                               ),
                               children: [
                                 TextSpan(
-                                  text:
-                                      MoneyFormatter.format(product.basePrice),
-                                  style:
-                                      theme.textTheme.headlineSmall?.copyWith(
-                                    color: AppColors.primaryDark,
-                                    fontWeight: FontWeight.w800,
+                                  text: MoneyFormatter.format(
+                                    product.basePrice,
                                   ),
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(
+                                        color: AppColors.primaryDark,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                 ),
                                 TextSpan(
-                                  text: ' đ/${product.unit}',
+                                  text: AppStrings.pricePerUnit(product.unit),
                                   style: theme.textTheme.bodyLarge?.copyWith(
                                     color: AppColors.textPrimary,
                                   ),

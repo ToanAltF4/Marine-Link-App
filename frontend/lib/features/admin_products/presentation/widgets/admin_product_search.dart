@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../cubit/admin_product_cubit.dart';
 
@@ -36,7 +37,7 @@ class _AdminProductSearchState extends State<AdminProductSearch> {
       textInputAction: TextInputAction.search,
       decoration: const InputDecoration(
         prefixIcon: Icon(Icons.search),
-        hintText: 'Tìm theo tên, slug, xuất xứ',
+        hintText: AppStrings.adminProductSearchHint,
       ),
       onChanged: context.read<AdminProductCubit>().setQuery,
     );

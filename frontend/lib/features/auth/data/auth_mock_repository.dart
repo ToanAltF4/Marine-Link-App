@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../domain/auth_repository.dart';
 import '../domain/user.dart';
 
@@ -35,7 +36,7 @@ class AuthMockRepository implements AuthRepository {
     status: 'ACTIVE',
     roles: ['USER'],
     storeName: 'Hải Sản A Cần Thơ',
-    businessAddress: 'Cần Thơ',
+    businessAddress: AppStrings.originCanTho,
     taxCode: '0312345678',
   );
 
@@ -60,7 +61,7 @@ class AuthMockRepository implements AuthRepository {
         _demoPasswords[emailOrPhone];
 
     if (expectedPassword == null || expectedPassword != password) {
-      throw Exception('Email/số điện thoại hoặc mật khẩu không đúng');
+      throw Exception(AppStrings.invalidCredentials);
     }
 
     final user = _userForCredential(emailOrPhone);
@@ -84,7 +85,7 @@ class AuthMockRepository implements AuthRepository {
 
     // Check for duplicates
     if (_demoPasswords.containsKey(email.toLowerCase())) {
-      throw Exception('Email đã được sử dụng');
+      throw Exception(AppStrings.emailAlreadyUsedNoPeriod);
     }
 
     return User(
@@ -144,7 +145,7 @@ class AuthMockRepository implements AuthRepository {
     await Future.delayed(const Duration(milliseconds: 500));
     // Mock: accept any 6-digit code
     if (otpCode.length != 6) {
-      throw Exception('Mã OTP không hợp lệ');
+      throw Exception(AppStrings.otpInvalidAlt);
     }
   }
 
@@ -160,7 +161,7 @@ class AuthMockRepository implements AuthRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (oldPassword == 'wrong') {
-      throw Exception('Mật khẩu hiện tại không chính xác');
+      throw Exception(AppStrings.currentPasswordIncorrect);
     }
   }
 

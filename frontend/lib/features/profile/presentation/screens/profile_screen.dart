@@ -97,10 +97,14 @@ class _ProfileViewState extends State<_ProfileView> {
           builder: (context, state) {
             final user = state is AuthAuthenticated ? state.user : null;
             if (user?.isStaff == true) {
-              return const StaffBottomNav(currentTab: StaffBottomNavTab.profile);
+              return const StaffBottomNav(
+                currentTab: StaffBottomNavTab.profile,
+              );
             }
             if (user?.isAdmin == true) {
-              return const AdminBottomNav(currentTab: AdminBottomNavTab.profile);
+              return const AdminBottomNav(
+                currentTab: AdminBottomNavTab.profile,
+              );
             }
             return const BuyerBottomNav(currentTab: BuyerBottomNavTab.profile);
           },

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
@@ -86,8 +87,7 @@ class ChatCubit extends Cubit<ChatState> {
           cachedThread: cachedThread,
           message: userFacingResponseMessage(
             response.message,
-            fallback:
-                'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
+            fallback: AppStrings.chatHistoryLoadFailed,
           ),
         );
       }
@@ -97,16 +97,14 @@ class ChatCubit extends Cubit<ChatState> {
         cachedThread: cachedThread,
         message: userFacingErrorMessage(
           error,
-          fallback:
-              'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
+          fallback: AppStrings.chatHistoryLoadFailed,
         ),
       );
     } catch (_) {
       _emitLoadFailure(
         roomId: roomId,
         cachedThread: cachedThread,
-        message:
-            '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i l\u1ecbch s\u1eed chat.',
+        message: AppStrings.chatHistoryLoadUnexpected,
       );
     }
   }
@@ -145,7 +143,7 @@ class ChatCubit extends Cubit<ChatState> {
           cachedThread: cachedThread,
           message: userFacingResponseMessage(
             response.message,
-            fallback: 'Không tải được phòng chat hỗ trợ.',
+            fallback: AppStrings.chatSupportRoomLoadFailed,
           ),
         );
       }
@@ -155,14 +153,14 @@ class ChatCubit extends Cubit<ChatState> {
         cachedThread: cachedThread,
         message: userFacingErrorMessage(
           error,
-          fallback: 'Không tải được phòng chat hỗ trợ.',
+          fallback: AppStrings.chatSupportRoomLoadFailed,
         ),
       );
     } catch (_) {
       _emitLoadFailure(
         roomId: state.roomId ?? '',
         cachedThread: cachedThread,
-        message: 'Đã xảy ra lỗi khi tải phòng chat hỗ trợ.',
+        message: AppStrings.chatSupportRoomLoadUnexpected,
       );
     }
   }
@@ -200,8 +198,7 @@ class ChatCubit extends Cubit<ChatState> {
           cachedThread: cachedThread,
           message: userFacingResponseMessage(
             response.message,
-            fallback:
-                'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+            fallback: AppStrings.complaintRoomCreateFailed,
           ),
         );
       }
@@ -211,16 +208,14 @@ class ChatCubit extends Cubit<ChatState> {
         cachedThread: cachedThread,
         message: userFacingErrorMessage(
           error,
-          fallback:
-              'Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+          fallback: AppStrings.complaintRoomCreateFailed,
         ),
       );
     } catch (_) {
       _emitLoadFailure(
         roomId: state.roomId ?? '',
         cachedThread: cachedThread,
-        message:
-            '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea1o ph\u00f2ng chat khi\u1ebfu n\u1ea1i.',
+        message: AppStrings.complaintRoomCreateUnexpected,
       );
     }
   }
@@ -239,8 +234,7 @@ class ChatCubit extends Cubit<ChatState> {
           roomId: roomId,
           thread: cachedThread,
           offlineFallback: true,
-          errorMessage:
-              '$message \u0110ang hi\u1ec3n th\u1ecb d\u1eef li\u1ec7u g\u1ea7n nh\u1ea5t.',
+          errorMessage: AppStrings.offlineFallbackWithMessage(message),
         ),
       );
       return;
@@ -261,8 +255,7 @@ class ChatCubit extends Cubit<ChatState> {
     if (trimmed.isEmpty) {
       emit(
         state.copyWith(
-          sendErrorMessage:
-              'Vui l\u00f2ng nh\u1eadp n\u1ed9i dung tin nh\u1eafn.',
+          sendErrorMessage: AppStrings.chatMessageRequired,
           canRetrySend: false,
         ),
       );
@@ -282,8 +275,7 @@ class ChatCubit extends Cubit<ChatState> {
           state.copyWith(
             sending: false,
             canRetrySend: true,
-            sendErrorMessage:
-                'Không chuẩn bị được phòng chat. Vui lòng thử gửi lại.',
+            sendErrorMessage: AppStrings.chatRoomPrepareRetry,
           ),
         );
         return;
@@ -301,8 +293,9 @@ class ChatCubit extends Cubit<ChatState> {
             ChatThread(roomId: roomId, isClosed: false, messages: const []);
         // The realtime echo can arrive before this REST response returns, so the
         // message may already be in the thread — dedupe by id to avoid a double.
-        final alreadyPresent =
-            currentThread.messages.any((m) => m.id == sent.id);
+        final alreadyPresent = currentThread.messages.any(
+          (m) => m.id == sent.id,
+        );
         final updatedThread = alreadyPresent
             ? currentThread
             : currentThread.copyWith(
@@ -324,8 +317,7 @@ class ChatCubit extends Cubit<ChatState> {
             canRetrySend: true,
             sendErrorMessage: userFacingResponseMessage(
               response.message,
-              fallback:
-                  'Kh\u00f4ng g\u1eedi \u0111\u01b0\u1ee3c tin nh\u1eafn.',
+              fallback: AppStrings.chatSendFailed,
             ),
           ),
         );
@@ -337,7 +329,7 @@ class ChatCubit extends Cubit<ChatState> {
           canRetrySend: true,
           sendErrorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Kh\u00f4ng g\u1eedi \u0111\u01b0\u1ee3c tin nh\u1eafn.',
+            fallback: AppStrings.chatSendFailed,
           ),
         ),
       );
@@ -346,8 +338,7 @@ class ChatCubit extends Cubit<ChatState> {
         state.copyWith(
           sending: false,
           canRetrySend: true,
-          sendErrorMessage:
-              '\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi g\u1eedi tin nh\u1eafn.',
+          sendErrorMessage: AppStrings.chatSendUnexpected,
         ),
       );
     }
@@ -365,9 +356,7 @@ class ChatCubit extends Cubit<ChatState> {
     final response = await repository.getMyRoom();
     if (!response.success || response.data == null) {
       throw ApiException(
-        message:
-            response.message ??
-            'Không chuẩn bị được phòng chat. Vui lòng thử lại.',
+        message: response.message ?? AppStrings.chatRoomPrepareFailed,
         type: ApiExceptionType.notFound,
       );
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -12,39 +13,39 @@ import 'admin_dashboard_common.dart';
   switch (status.toUpperCase()) {
     case 'PENDING':
       return (
-        label: 'Chờ duyệt',
+        label: AppStrings.orderPendingApproval,
         textColor: const Color(0xFFB45309),
         backgroundColor: const Color(0xFFFFF7E6),
       );
     case 'CONFIRMED':
     case 'PROCESSING':
       return (
-        label: 'Đang xử lý',
+        label: AppStrings.orderProcessing,
         textColor: AppColors.primary,
         backgroundColor: AppColors.surfaceSky,
       );
     case 'SHIPPING':
       return (
-        label: 'Đang giao',
+        label: AppStrings.orderShipping,
         textColor: AppColors.primary,
         backgroundColor: AppColors.surfaceSky,
       );
     case 'DELIVERED':
     case 'COMPLETED':
       return (
-        label: 'Đã giao',
+        label: AppStrings.orderDelivered,
         textColor: AppColors.success,
         backgroundColor: const Color(0xFFE8F8EF),
       );
     case 'CANCELLED':
       return (
-        label: 'Đã huỷ',
+        label: AppStrings.orderCancelled,
         textColor: AppColors.error,
         backgroundColor: const Color(0xFFFFEFEF),
       );
     default:
       return (
-        label: status.isEmpty ? 'Không rõ' : status,
+        label: status.isEmpty ? AppStrings.unknownStatus : status,
         textColor: AppColors.primary,
         backgroundColor: AppColors.surfaceSky,
       );
@@ -72,11 +73,14 @@ class RecentOrdersSection extends StatelessWidget {
           children: [
             const Expanded(
               child: SectionHeader(
-                title: 'Đơn hàng gần đây',
-                subtitle: 'Dành cho giám sát; nhân viên xử lý trực tiếp.',
+                title: AppStrings.recentOrdersTitle,
+                subtitle: AppStrings.recentOrdersSubtitle,
               ),
             ),
-            TextButton(onPressed: onViewAll, child: const Text('Xem tất cả')),
+            TextButton(
+              onPressed: onViewAll,
+              child: const Text(AppStrings.viewAll),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -85,7 +89,7 @@ class RecentOrdersSection extends StatelessWidget {
             key: const Key('adminRecentOrdersEmpty'),
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
-              'Chưa có đơn hàng gần đây.',
+              AppStrings.noRecentOrders,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           )

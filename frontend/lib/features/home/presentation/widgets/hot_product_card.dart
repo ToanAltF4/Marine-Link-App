@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -24,7 +25,8 @@ class HotProductCard extends StatelessWidget {
     final contentPadding = compact ? 9.0 : 14.0;
 
     final authState = context.watch<AuthBloc>().state;
-    final isPending = authState is AuthAuthenticated &&
+    final isPending =
+        authState is AuthAuthenticated &&
         authState.user.status == 'PENDING_APPROVAL';
 
     return InkWell(
@@ -138,17 +140,18 @@ class HotProductCard extends StatelessWidget {
                     const Spacer(),
                     isPending
                         ? Text(
-                            'Đang xét duyệt',
-                            style: (compact
-                                    ? theme.textTheme.titleMedium?.copyWith(
-                                      fontSize: 14,
-                                      height: 1.1,
-                                    )
-                                    : theme.textTheme.titleLarge)
-                                ?.copyWith(
-                              color: Colors.orange.shade800,
-                              fontWeight: FontWeight.w800,
-                            ),
+                            AppStrings.pendingApprovalShort,
+                            style:
+                                (compact
+                                        ? theme.textTheme.titleMedium?.copyWith(
+                                            fontSize: 14,
+                                            height: 1.1,
+                                          )
+                                        : theme.textTheme.titleLarge)
+                                    ?.copyWith(
+                                      color: Colors.orange.shade800,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                           )
                         : RichText(
                             text: TextSpan(
@@ -157,33 +160,35 @@ class HotProductCard extends StatelessWidget {
                               ),
                               children: [
                                 TextSpan(
-                                  text:
-                                      MoneyFormatter.format(product.basePrice),
+                                  text: MoneyFormatter.format(
+                                    product.basePrice,
+                                  ),
                                   style:
                                       (compact
                                               ? theme.textTheme.titleMedium
-                                                  ?.copyWith(
-                                                fontSize: 14,
-                                                height: 1.1,
-                                              )
+                                                    ?.copyWith(
+                                                      fontSize: 14,
+                                                      height: 1.1,
+                                                    )
                                               : theme.textTheme.titleLarge)
                                           ?.copyWith(
-                                    color: const Color(0xFF006A7C),
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                                            color: const Color(0xFF006A7C),
+                                            fontWeight: FontWeight.w800,
+                                          ),
                                 ),
                                 TextSpan(
                                   text: '/${product.unit}',
                                   style:
                                       (compact
                                               ? theme.textTheme.bodyMedium
-                                                  ?.copyWith(
-                                                fontSize: 11,
-                                                height: 1.1,
-                                              )
+                                                    ?.copyWith(
+                                                      fontSize: 11,
+                                                      height: 1.1,
+                                                    )
                                               : theme.textTheme.bodyLarge)
                                           ?.copyWith(
-                                              color: AppColors.textSecondary),
+                                            color: AppColors.textSecondary,
+                                          ),
                                 ),
                               ],
                             ),

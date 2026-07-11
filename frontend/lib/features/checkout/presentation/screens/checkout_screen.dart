@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -105,8 +106,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final cart = cartState.cart;
         if (!cartState.canCheckout) {
           return AppEmptyState(
-            message: 'Gi\u1ecf h\u00e0ng \u0111ang tr\u1ed1ng',
-            actionLabel: 'Ch\u1ecdn s\u1ea3n ph\u1ea9m',
+            message: AppStrings.cartEmpty,
+            actionLabel: AppStrings.chooseProduct,
             icon: Icons.shopping_cart_outlined,
             onAction: () => _goToProducts(context),
           );
@@ -142,7 +143,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Th\u00f4ng tin nh\u1eadn h\u00e0ng',
+              AppStrings.checkoutReceiverInfoTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: AppColors.primaryDark,
                 fontWeight: FontWeight.w800,
@@ -155,7 +156,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               key: const Key('checkoutAddressLabelField'),
               controller: _addressLabelController,
               decoration: const InputDecoration(
-                labelText: 'T\u00ean g\u1ee3i nh\u1edb',
+                labelText: AppStrings.addressLabelField,
                 prefixIcon: Icon(Icons.bookmark_border_rounded),
               ),
               textInputAction: TextInputAction.next,
@@ -165,13 +166,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               key: const Key('checkoutReceiverNameField'),
               controller: _receiverNameController,
               decoration: const InputDecoration(
-                labelText: 'Ng\u01b0\u1eddi nh\u1eadn',
+                labelText: AppStrings.receiverNameLabel,
                 prefixIcon: Icon(Icons.person_outline_rounded),
               ),
               textInputAction: TextInputAction.next,
               validator: (value) => Validators.required(
                 value,
-                fieldName: 'Ng\u01b0\u1eddi nh\u1eadn',
+                fieldName: AppStrings.receiverNameLabel,
               ),
             ),
             const SizedBox(height: 14),
@@ -180,7 +181,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               controller: _receiverPhoneController,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
-                labelText: 'S\u1ed1 \u0111i\u1ec7n tho\u1ea1i',
+                labelText: AppStrings.phoneLabel,
                 prefixIcon: Icon(Icons.phone_outlined),
               ),
               textInputAction: TextInputAction.next,
@@ -193,7 +194,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               minLines: 2,
               maxLines: 3,
               decoration: const InputDecoration(
-                labelText: '\u0110\u1ecba ch\u1ec9 giao h\u00e0ng',
+                labelText: AppStrings.shippingAddressLabel,
                 prefixIcon: Icon(Icons.location_on_outlined),
               ),
               textInputAction: TextInputAction.next,
@@ -209,8 +210,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     icon: const Icon(Icons.save_outlined),
                     label: Text(
                       _selectedAddress == null
-                          ? 'L\u01b0u \u0111\u1ecba ch\u1ec9'
-                          : 'C\u1eadp nh\u1eadt',
+                          ? AppStrings.saveAddress
+                          : AppStrings.update,
                     ),
                   ),
                 ),
@@ -220,14 +221,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     key: const Key('checkoutDeleteAddressButton'),
                     onPressed: isSubmitting ? null : _deleteSelectedAddress,
                     icon: const Icon(Icons.delete_outline_rounded),
-                    tooltip: 'X\u00f3a \u0111\u1ecba ch\u1ec9',
+                    tooltip: AppStrings.deleteAddress,
                   ),
                 ],
               ],
             ),
             const SizedBox(height: 18),
             Text(
-              'Ph\u01b0\u01a1ng th\u1ee9c thanh to\u00e1n',
+              AppStrings.paymentMethodTitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -240,17 +241,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ButtonSegment<PaymentMethod>(
                   value: PaymentMethod.cod,
                   icon: Icon(Icons.payments_outlined),
-                  label: Text('COD'),
+                  label: Text(AppStrings.paymentCod),
                 ),
                 ButtonSegment<PaymentMethod>(
                   value: PaymentMethod.bankTransfer,
                   icon: Icon(Icons.account_balance_outlined),
-                  label: Text('Chuy\u1ec3n kho\u1ea3n'),
+                  label: Text(AppStrings.paymentBankTransfer),
                 ),
                 ButtonSegment<PaymentMethod>(
                   value: PaymentMethod.vnpay,
                   icon: Icon(Icons.qr_code_rounded),
-                  label: Text('VNPAY'),
+                  label: Text(AppStrings.paymentVnpay),
                 ),
               ],
               selected: {_paymentMethod},
@@ -267,7 +268,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               minLines: 2,
               maxLines: 3,
               decoration: const InputDecoration(
-                labelText: 'Ghi ch\u00fa',
+                labelText: AppStrings.noteLabel,
                 prefixIcon: Icon(Icons.notes_outlined),
               ),
               textInputAction: TextInputAction.done,
@@ -283,9 +284,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     )
                   : const Icon(Icons.check_circle_outline_rounded),
               label: Text(
-                isSubmitting
-                    ? '\u0110ang t\u1ea1o \u0111\u01a1n'
-                    : '\u0110\u1eb7t h\u00e0ng',
+                isSubmitting ? AppStrings.creatingOrder : AppStrings.placeOrder,
               ),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
@@ -307,9 +306,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '\u0110\u00e3 t\u1ea1o \u0111\u01a1n ${state.result.order.orderCode}',
-          ),
+          content: Text(AppStrings.orderCreated(state.result.order.orderCode)),
         ),
       );
     }
@@ -369,7 +366,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           children: [
             Expanded(
               child: Text(
-                '\u0110\u1ecba ch\u1ec9 \u0111\u00e3 l\u01b0u',
+                AppStrings.savedAddresses,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -380,13 +377,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               key: const Key('checkoutNewAddressButton'),
               onPressed: isSubmitting ? null : _startNewAddress,
               icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-              label: const Text('Th\u00eam'),
+              label: const Text(AppStrings.add),
             ),
           ],
         ),
         if (_shippingAddresses.isEmpty)
           Text(
-            'Ch\u01b0a c\u00f3 \u0111\u1ecba ch\u1ec9. \u0110\u1eb7t h\u00e0ng l\u1ea7n \u0111\u1ea7u s\u1ebd t\u1ef1 l\u01b0u.',
+            AppStrings.noSavedAddress,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -448,8 +445,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _showMessage(
         userFacingErrorMessage(
           error,
-          fallback:
-              'Kh\u00f4ng th\u1ec3 t\u1ea3i \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+          fallback: AppStrings.shippingAddressLoadFailed,
         ),
       );
     }
@@ -490,24 +486,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _showMessage(
           userFacingResponseMessage(
             response.message,
-            fallback:
-                'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+            fallback: AppStrings.shippingAddressUpdateFailed,
           ),
         );
         return;
       }
       _replaceAddress(response.data!);
       _selectAddress(response.data!);
-      _showMessage(
-        '\u0110\u00e3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
-      );
+      _showMessage(AppStrings.shippingAddressSaved);
     } catch (error) {
       if (mounted) {
         _showMessage(
           userFacingErrorMessage(
             error,
-            fallback:
-                'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt \u0111\u1ecba ch\u1ec9',
+            fallback: AppStrings.shippingAddressUpdateFailed,
           ),
         );
       }
@@ -529,8 +521,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _showMessage(
           userFacingResponseMessage(
             response.message,
-            fallback:
-                'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+            fallback: AppStrings.shippingAddressSaveFailed,
           ),
         );
         return null;
@@ -545,8 +536,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _showMessage(
           userFacingErrorMessage(
             error,
-            fallback:
-                'Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
+            fallback: AppStrings.shippingAddressSaveFailed,
           ),
         );
       }
@@ -570,7 +560,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _showMessage(
           userFacingResponseMessage(
             response.message,
-            fallback: 'Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9',
+            fallback: AppStrings.shippingAddressDeleteFailed,
           ),
         );
         return;
@@ -584,15 +574,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       } else {
         _selectAddress(nextAddresses.first);
       }
-      _showMessage(
-        '\u0110\u00e3 x\u00f3a \u0111\u1ecba ch\u1ec9 giao h\u00e0ng',
-      );
+      _showMessage(AppStrings.shippingAddressDeleted);
     } catch (error) {
       if (mounted) {
         _showMessage(
           userFacingErrorMessage(
             error,
-            fallback: 'Kh\u00f4ng th\u1ec3 x\u00f3a \u0111\u1ecba ch\u1ec9',
+            fallback: AppStrings.shippingAddressDeleteFailed,
           ),
         );
       }

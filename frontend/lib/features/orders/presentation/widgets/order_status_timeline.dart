@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/order.dart';
@@ -13,7 +14,7 @@ class OrderStatusTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (history.isEmpty) {
-      return const Text('Chưa có lịch sử trạng thái.');
+      return const Text(AppStrings.noOrderStatusHistory);
     }
     return Column(
       children: history.map((step) {

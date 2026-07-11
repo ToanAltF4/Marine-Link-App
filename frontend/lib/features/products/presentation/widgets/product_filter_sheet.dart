@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/product.dart';
@@ -89,7 +90,7 @@ class ProductFilterSheet extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Lọc sản phẩm',
+                AppStrings.filterProductsTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w800,
@@ -98,7 +99,7 @@ class ProductFilterSheet extends StatelessWidget {
               if (categories.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
-                  'Danh mục',
+                  AppStrings.categoryLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
@@ -111,7 +112,7 @@ class ProductFilterSheet extends StatelessWidget {
                   children: [
                     SheetChoiceButton(
                       key: const Key('productFilterCategoryAll'),
-                      label: 'Tất cả',
+                      label: AppStrings.all,
                       selected: selectedCategoryId == null,
                       onTap: () => onCategoryChanged(null),
                     ),
@@ -131,8 +132,12 @@ class ProductFilterSheet extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       SheetChoiceButton(
-                        key: Key('productFilterCategoryAllParent-${selectedParent.id}'),
-                        label: 'Tất cả ${displayCategoryName(selectedParent).toLowerCase()}',
+                        key: Key(
+                          'productFilterCategoryAllParent-${selectedParent.id}',
+                        ),
+                        label: AppStrings.allCategory(
+                          displayCategoryName(selectedParent),
+                        ),
                         selected: selectedCategoryId == selectedParent.id,
                         onTap: () => onCategoryChanged(selectedParent.id),
                       ),
@@ -149,7 +154,7 @@ class ProductFilterSheet extends StatelessWidget {
               ],
               const SizedBox(height: 16),
               Text(
-                'Tồn kho',
+                AppStrings.stockLabel,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
@@ -162,20 +167,20 @@ class ProductFilterSheet extends StatelessWidget {
                 children: [
                   SheetChoiceButton(
                     key: const Key('productFilterStockAll'),
-                    label: 'Tất cả',
+                    label: AppStrings.all,
                     selected: stockFilter == ProductStockFilter.all,
                     onTap: () => onStockFilterChanged(ProductStockFilter.all),
                   ),
                   SheetChoiceButton(
                     key: const Key('productFilterStockAvailable'),
-                    label: 'Còn hàng',
+                    label: AppStrings.inStock,
                     selected: stockFilter == ProductStockFilter.available,
                     onTap: () =>
                         onStockFilterChanged(ProductStockFilter.available),
                   ),
                   SheetChoiceButton(
                     key: const Key('productFilterStockLow'),
-                    label: 'Sắp hết',
+                    label: AppStrings.lowStock,
                     selected: stockFilter == ProductStockFilter.low,
                     onTap: () => onStockFilterChanged(ProductStockFilter.low),
                   ),
@@ -183,7 +188,7 @@ class ProductFilterSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Giá',
+                AppStrings.priceLabel,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
@@ -196,13 +201,13 @@ class ProductFilterSheet extends StatelessWidget {
                 children: [
                   SheetChoiceButton(
                     key: const Key('productFilterPriceAll'),
-                    label: 'Tất cả',
+                    label: AppStrings.all,
                     selected: priceFilter == ProductPriceFilter.all,
                     onTap: () => onPriceFilterChanged(ProductPriceFilter.all),
                   ),
                   SheetChoiceButton(
                     key: const Key('productFilterPriceUnder300'),
-                    label: 'Dưới 300k',
+                    label: AppStrings.under300k,
                     selected: priceFilter == ProductPriceFilter.under300,
                     onTap: () =>
                         onPriceFilterChanged(ProductPriceFilter.under300),
@@ -216,7 +221,7 @@ class ProductFilterSheet extends StatelessWidget {
                   ),
                   SheetChoiceButton(
                     key: const Key('productFilterPriceOver500'),
-                    label: 'Trên 500k',
+                    label: AppStrings.over500k,
                     selected: priceFilter == ProductPriceFilter.over500,
                     onTap: () =>
                         onPriceFilterChanged(ProductPriceFilter.over500),
@@ -225,7 +230,7 @@ class ProductFilterSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Xuất xứ',
+                AppStrings.originLabel,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
@@ -238,7 +243,7 @@ class ProductFilterSheet extends StatelessWidget {
                 children: [
                   SheetChoiceButton(
                     key: const Key('productFilterOriginAll'),
-                    label: 'Tất cả',
+                    label: AppStrings.all,
                     selected: originFilter == null,
                     onTap: () => onOriginFilterChanged(null),
                   ),
@@ -253,7 +258,7 @@ class ProductFilterSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Sắp xếp',
+                AppStrings.sortLabel,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w800,
@@ -266,19 +271,19 @@ class ProductFilterSheet extends StatelessWidget {
                 children: [
                   SheetChoiceButton(
                     key: const Key('productFilterSortDefault'),
-                    label: 'Mặc định',
+                    label: AppStrings.defaultLabel,
                     selected: !hasCustomSort,
                     onTap: onSortReset,
                   ),
                   SheetChoiceButton(
                     key: const Key('productFilterSortPriceAsc'),
-                    label: 'Giá tăng dần',
+                    label: AppStrings.sortPriceAscending,
                     selected: hasCustomSort && sortAscending,
                     onTap: () => onSortChanged(true),
                   ),
                   SheetChoiceButton(
                     key: const Key('productFilterSortPriceDesc'),
-                    label: 'Giá giảm dần',
+                    label: AppStrings.sortPriceDescending,
                     selected: hasCustomSort && !sortAscending,
                     onTap: () => onSortChanged(false),
                   ),
@@ -291,7 +296,7 @@ class ProductFilterSheet extends StatelessWidget {
                     child: OutlinedButton(
                       key: const Key('productFilterResetButton'),
                       onPressed: onReset,
-                      child: const Text('Đặt lại'),
+                      child: const Text(AppStrings.reset),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -299,7 +304,7 @@ class ProductFilterSheet extends StatelessWidget {
                     child: FilledButton(
                       key: const Key('productFilterApplyButton'),
                       onPressed: onApply,
-                      child: const Text('Áp dụng'),
+                      child: const Text(AppStrings.apply),
                     ),
                   ),
                 ],

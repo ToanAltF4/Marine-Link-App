@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -80,7 +81,9 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  isVnpay ? 'Chờ thanh toán VNPAY' : 'Đặt hàng thành công',
+                  isVnpay
+                      ? AppStrings.waitingForVnpayPayment
+                      : AppStrings.orderSuccessTitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: AppColors.primaryDark,
@@ -89,7 +92,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Mã đơn ${result.order.orderCode}',
+                  AppStrings.checkoutOrderCode(result.order.orderCode),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: AppColors.textSecondary,
@@ -104,12 +107,12 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                   const SizedBox(height: 18),
                 ],
                 SuccessMetricRow(
-                  label: 'Số lượng',
-                  value: '${result.totalItemCount} mục',
+                  label: AppStrings.quantityLabel,
+                  value: AppStrings.quantityItemCount(result.totalItemCount),
                 ),
                 const Divider(height: 18, color: Color(0xFFEAF0F5)),
                 SuccessMetricRow(
-                  label: 'Tổng thanh toán',
+                  label: AppStrings.totalPaymentLabel,
                   value: MoneyFormatter.format(totalAmount),
                 ),
                 const SizedBox(height: 20),
@@ -118,7 +121,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                     key: const Key('checkoutOpenVnpayButton'),
                     onPressed: () => _openVnpay(context),
                     icon: const Icon(Icons.qr_code_2_rounded),
-                    label: const Text('Thanh toán qua VNPAY'),
+                    label: const Text(AppStrings.checkoutPayVnpay),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
@@ -131,7 +134,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                     key: const Key('checkoutBackToCartButton'),
                     onPressed: () => context.go(AppRoutes.cart),
                     icon: const Icon(Icons.shopping_cart_outlined),
-                    label: const Text('Quay lại giỏ hàng'),
+                    label: const Text(AppStrings.backToCart),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
@@ -151,7 +154,11 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.close_rounded),
-                    label: Text(_isCancelling ? 'Đang hủy' : 'Hủy thanh toán'),
+                    label: Text(
+                      _isCancelling
+                          ? AppStrings.cancellingPayment
+                          : AppStrings.cancelPayment,
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
                       side: const BorderSide(color: AppColors.error),
@@ -168,7 +175,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                     key: const Key('checkoutBackToCartButton'),
                     onPressed: () => context.go(AppRoutes.cart),
                     icon: const Icon(Icons.shopping_cart_outlined),
-                    label: const Text('Về giỏ hàng'),
+                    label: const Text(AppStrings.goToCart),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
@@ -183,7 +190,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                   onPressed: () =>
                       GoRouter.maybeOf(context)?.go(AppRoutes.orders),
                   icon: const Icon(Icons.receipt_long_outlined),
-                  label: const Text('Xem đơn hàng'),
+                  label: const Text(AppStrings.viewOrder),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
@@ -193,9 +200,10 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
-                  onPressed: () => BuyerNavigation.push(context, AppRoutes.home),
+                  onPressed: () =>
+                      BuyerNavigation.push(context, AppRoutes.home),
                   icon: const Icon(Icons.home_outlined),
-                  label: const Text('Về trang chủ'),
+                  label: const Text(AppStrings.goHome),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
@@ -240,7 +248,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
         )) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể mở VNPAY')),
+          const SnackBar(content: Text(AppStrings.cannotOpenVnpay)),
         );
       }
     }
@@ -262,9 +270,7 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            auto
-                ? 'Thanh toán VNPAY đã tự hủy do quá hạn'
-                : 'Đã hủy thanh toán VNPAY',
+            auto ? AppStrings.vnpayAutoCancelled : AppStrings.vnpayCancelled,
           ),
         ),
       );
@@ -275,8 +281,8 @@ class _CheckoutSuccessViewState extends State<CheckoutSuccessView> {
         SnackBar(
           content: Text(
             auto
-                ? 'Không thể tự hủy thanh toán'
-                : 'Không thể hủy thanh toán',
+                ? AppStrings.autoCancelPaymentFailed
+                : AppStrings.cancelPaymentFailed,
           ),
         ),
       );
@@ -298,8 +304,14 @@ class VnpayCountdownPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes = remaining.inMinutes
+        .remainder(60)
+        .toString()
+        .padLeft(2, '0');
+    final seconds = remaining.inSeconds
+        .remainder(60)
+        .toString()
+        .padLeft(2, '0');
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -321,8 +333,8 @@ class VnpayCountdownPanel extends StatelessWidget {
             Expanded(
               child: Text(
                 cancelled
-                    ? 'Thanh toán VNPAY đã hủy'
-                    : 'Hoàn tất thanh toán trong $minutes:$seconds',
+                    ? AppStrings.vnpayPaymentCancelled
+                    : AppStrings.vnpayCountdown(minutes, seconds),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w800,

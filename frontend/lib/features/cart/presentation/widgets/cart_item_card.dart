@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/cart.dart';
@@ -104,7 +105,7 @@ class CartItemCard extends StatelessWidget {
                         onPressed: () => cubit.removeItem(item.productId),
                         padding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
-                        tooltip: 'Xóa sản phẩm',
+                        tooltip: AppStrings.removeProduct,
                         icon: const Icon(Icons.delete_outline_rounded),
                         iconSize: 18,
                         color: AppColors.textSecondary,
@@ -424,18 +425,18 @@ class QuantityButton extends StatelessWidget {
 
 String _formatVnd(num amount) {
   final normalized = amount.round();
-  return '${NumberFormat.decimalPattern('vi_VN').format(normalized)}đ';
+  return '${NumberFormat.decimalPattern('vi_VN').format(normalized)}${AppStrings.currencySymbol}';
 }
 
 String _cartProductName(CartItem item) {
   return switch (item.productId) {
-    'prod-001' => 'Mực khô loại 1',
-    'prod-002' => 'Tôm khô đặc biệt',
-    'prod-003' => 'Cá chỉ vàng khô',
-    'prod-004' => 'Mực một nắng',
-    'prod-005' => 'Mực khô xé sợi',
-    'prod-006' => 'Mực khô loại 2',
-    'prod-007' => 'Nước mắm nhĩ Phú Quốc',
+    'prod-001' => AppStrings.drySquidGrade1,
+    'prod-002' => AppStrings.specialDriedShrimp,
+    'prod-003' => AppStrings.driedYellowstripeScad,
+    'prod-004' => AppStrings.semiDriedSquid,
+    'prod-005' => AppStrings.shreddedDrySquid,
+    'prod-006' => AppStrings.drySquidGrade2,
+    'prod-007' => AppStrings.phuQuocFishSauce,
     _ => item.productName,
   };
 }

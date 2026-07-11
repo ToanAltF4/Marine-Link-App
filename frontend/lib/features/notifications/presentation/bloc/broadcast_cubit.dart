@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
@@ -34,7 +35,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
           status: BroadcastStatus.failure,
           errorMessage: userFacingResponseMessage(
             response.message,
-            fallback: 'Không tải được lịch sử thông báo.',
+            fallback: AppStrings.broadcastHistoryLoadFailed,
           ),
         ),
       );
@@ -44,7 +45,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
           status: BroadcastStatus.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Không tải được lịch sử thông báo.',
+            fallback: AppStrings.broadcastHistoryLoadFailed,
           ),
         ),
       );
@@ -52,7 +53,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
       emit(
         state.copyWith(
           status: BroadcastStatus.failure,
-          errorMessage: 'Đã xảy ra lỗi khi tải lịch sử thông báo.',
+          errorMessage: AppStrings.broadcastLoadUnexpected,
         ),
       );
     }
@@ -71,16 +72,13 @@ class BroadcastCubit extends Cubit<BroadcastState> {
       );
       if (response.success) {
         final created = response.data;
-        final updated = <NotificationBroadcast>[
-          ?created,
-          ...state.broadcasts,
-        ];
+        final updated = <NotificationBroadcast>[?created, ...state.broadcasts];
         emit(
           state.copyWith(
             status: BroadcastStatus.ready,
             broadcasts: created != null ? updated : state.broadcasts,
             submitting: false,
-            infoMessage: 'Đã gửi thông báo đến các đại lý.',
+            infoMessage: AppStrings.broadcastSentInfo,
             clearError: true,
           ),
         );
@@ -91,7 +89,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
           submitting: false,
           errorMessage: userFacingResponseMessage(
             response.message,
-            fallback: 'Không gửi được thông báo.',
+            fallback: AppStrings.broadcastSendFailed,
           ),
         ),
       );
@@ -102,7 +100,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
           submitting: false,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Không gửi được thông báo.',
+            fallback: AppStrings.broadcastSendFailed,
           ),
         ),
       );
@@ -111,7 +109,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
       emit(
         state.copyWith(
           submitting: false,
-          errorMessage: 'Đã xảy ra lỗi khi gửi thông báo.',
+          errorMessage: AppStrings.broadcastSendUnexpected,
         ),
       );
       return false;
@@ -131,9 +129,11 @@ class BroadcastCubit extends Cubit<BroadcastState> {
       ),
     );
     try {
-      final response = await notificationRepository.deleteBroadcast(broadcastId);
+      final response = await notificationRepository.deleteBroadcast(
+        broadcastId,
+      );
       if (response.success) {
-        emit(state.copyWith(infoMessage: 'Đã xóa thông báo.'));
+        emit(state.copyWith(infoMessage: AppStrings.broadcastDeletedInfo));
         return;
       }
       emit(
@@ -141,7 +141,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
           broadcasts: previous,
           errorMessage: userFacingResponseMessage(
             response.message,
-            fallback: 'Không xóa được thông báo.',
+            fallback: AppStrings.broadcastDeleteFailed,
           ),
         ),
       );
@@ -151,7 +151,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
           broadcasts: previous,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Không xóa được thông báo.',
+            fallback: AppStrings.broadcastDeleteFailed,
           ),
         ),
       );
@@ -159,7 +159,7 @@ class BroadcastCubit extends Cubit<BroadcastState> {
       emit(
         state.copyWith(
           broadcasts: previous,
-          errorMessage: 'Đã xảy ra lỗi khi xóa thông báo.',
+          errorMessage: AppStrings.broadcastDeleteUnexpected,
         ),
       );
     }

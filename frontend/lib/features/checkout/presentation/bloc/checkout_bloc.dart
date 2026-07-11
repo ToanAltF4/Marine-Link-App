@@ -2,6 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/errors/user_facing_error.dart';
 import '../../../cart/domain/cart.dart';
@@ -24,11 +25,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     Emitter<CheckoutState> emit,
   ) async {
     if (event.activeCart.selectedItems.isEmpty) {
-      emit(
-        const CheckoutFailure(
-          '\u0110\u01a1n h\u00e0ng c\u1ea7n c\u00f3 \u00edt nh\u1ea5t m\u1ed9t s\u1ea3n ph\u1ea9m',
-        ),
-      );
+      emit(const CheckoutFailure(AppStrings.orderRequiresItem));
       return;
     }
 
@@ -44,7 +41,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
           CheckoutFailure(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
+              fallback: AppStrings.orderCreateFailed,
             ),
           ),
         );
@@ -55,10 +52,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     } catch (error) {
       emit(
         CheckoutFailure(
-          userFacingErrorMessage(
-            error,
-            fallback: 'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
-          ),
+          userFacingErrorMessage(error, fallback: AppStrings.orderCreateFailed),
         ),
       );
     }

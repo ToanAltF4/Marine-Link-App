@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/cart.dart';
@@ -30,7 +31,7 @@ class OrderSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Tổng đơn hàng',
+            AppStrings.orderTotalTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               color: AppColors.primaryDark,
               fontSize: 16,
@@ -41,32 +42,32 @@ class OrderSummaryCard extends StatelessWidget {
           const Divider(height: 1, color: Color(0xFFEAF0F5)),
           const SizedBox(height: 13),
           SummaryRow(
-            label: 'Tổng số lượng:',
+            label: AppStrings.totalQuantityLabel,
             value: _totalQuantityLabel(state.cart),
             valueColor: AppColors.primaryDark,
           ),
           const SizedBox(height: 12),
           SummaryRow(
-            label: 'Tạm tính:',
+            label: AppStrings.subtotalLabelWithColon,
             value: _formatVnd(pricing.subtotalAmount),
             valueColor: AppColors.primaryDark,
           ),
           const SizedBox(height: 12),
           SummaryRow(
             label: pricing.hasDiscount
-                ? 'Khuyến mãi mua nhiều (${pricing.discountPercent}%):'
-                : 'Khuyến mãi mua nhiều:',
+                ? AppStrings.bulkDiscount(pricing.discountPercent)
+                : AppStrings.bulkDiscountLabel,
             value: pricing.hasDiscount
                 ? '-${_formatVnd(pricing.discountAmount)}'
-                : 'Chưa áp dụng',
+                : AppStrings.discountNotApplied,
             valueColor: pricing.hasDiscount
                 ? AppColors.success
                 : AppColors.textSecondary,
           ),
           const SizedBox(height: 12),
           const SummaryRow(
-            label: 'Phí vận chuyển:',
-            value: 'Miễn phí',
+            label: AppStrings.shippingFeeLabelWithColon,
+            value: AppStrings.freeShipping,
             valueColor: AppColors.success,
           ),
           const SizedBox(height: 16),
@@ -76,7 +77,7 @@ class OrderSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Tổng cộng:',
+                  AppStrings.totalLabelWithColon,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: AppColors.primaryDark,
                     fontSize: 15,
@@ -118,7 +119,7 @@ class OrderSummaryCard extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            child: const Text('Tiến hành đặt hàng'),
+            child: const Text(AppStrings.proceedToCheckout),
           ),
         ],
       ),
@@ -170,7 +171,7 @@ class SummaryRow extends StatelessWidget {
 
 String _formatVnd(num amount) {
   final normalized = amount.round();
-  return '${NumberFormat.decimalPattern('vi_VN').format(normalized)}đ';
+  return '${NumberFormat.decimalPattern('vi_VN').format(normalized)}${AppStrings.currencySymbol}';
 }
 
 String _totalQuantityLabel(Cart cart) {
@@ -182,5 +183,7 @@ String _totalQuantityLabel(Cart cart) {
 
   final unit = selectedItems.first.unit;
   final sameUnit = selectedItems.every((item) => item.unit == unit);
-  return sameUnit ? '$quantity $unit' : '$quantity mục';
+  return sameUnit
+      ? AppStrings.quantityWithUnit(quantity, unit)
+      : AppStrings.quantityItemCount(quantity);
 }

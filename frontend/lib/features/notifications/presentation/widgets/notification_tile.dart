@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/notification.dart';
@@ -113,25 +114,25 @@ class NotificationTile extends StatelessWidget {
   }
 
   String _formatCategory(NotificationType type) => switch (type) {
-    NotificationType.order => 'Đơn hàng',
-    NotificationType.product => 'Sản phẩm',
-    NotificationType.chat => 'Tin nhắn',
-    NotificationType.system => 'Hệ thống',
-    NotificationType.promotion => 'Khuyến mãi',
+    NotificationType.order => AppStrings.orderContextFallback,
+    NotificationType.product => AppStrings.productsTitle,
+    NotificationType.chat => AppStrings.notificationTypeChat,
+    NotificationType.system => AppStrings.notificationTypeSystem,
+    NotificationType.promotion => AppStrings.notificationTypePromotion,
   };
 
   String _formatTime(DateTime date) {
     final diff = DateTime.now().difference(date);
     if (diff.inMinutes < 1) {
-      return 'Vừa xong';
+      return AppStrings.justNow;
     }
     if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} phút trước';
+      return AppStrings.minutesAgo(diff.inMinutes);
     }
     if (diff.inHours < 24) {
-      return '${diff.inHours} giờ trước';
+      return AppStrings.hoursAgo(diff.inHours);
     }
-    return '${diff.inDays} ngày trước';
+    return AppStrings.daysAgo(diff.inDays);
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -32,7 +33,7 @@ class _AdminUserView extends StatelessWidget {
       child: Scaffold(
         key: const Key('adminUsersScreen'),
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: const Text('Quản lý tài khoản')),
+        appBar: AppBar(title: const Text(AppStrings.adminUsersTitle)),
         bottomNavigationBar: const AdminBottomNav(
           currentTab: AdminBottomNavTab.users,
         ),
@@ -48,8 +49,7 @@ class _AdminUserView extends StatelessWidget {
               case AdminUserStatusView.failure:
                 return _AdminUsersError(
                   message:
-                      state.errorMessage ??
-                      'Không tải được danh sách tài khoản.',
+                      state.errorMessage ?? AppStrings.adminUsersLoadFailed,
                   onRetry: () => context.read<AdminUserCubit>().load(),
                 );
               case AdminUserStatusView.empty:
@@ -94,7 +94,7 @@ class _AdminUsersError extends StatelessWidget {
             FilledButton(
               key: const Key('adminUsersRetryButton'),
               onPressed: onRetry,
-              child: const Text('Thử lại'),
+              child: const Text(AppStrings.retry),
             ),
           ],
         ),
@@ -110,10 +110,7 @@ class _AdminUsersEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       key: Key('adminUsersEmpty'),
-      child: AppEmptyState(
-        message:
-            'Chưa có tài khoản. Danh sách người dùng sẽ hiển thị khi có dữ liệu.',
-      ),
+      child: AppEmptyState(message: AppStrings.noUsers),
     );
   }
 }
@@ -179,7 +176,7 @@ class _AdminUsersHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tài khoản hệ thống',
+                    AppStrings.systemAccounts,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w900,
@@ -187,7 +184,10 @@ class _AdminUsersHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${users.length} tài khoản • $pendingCount đang chờ duyệt',
+                    AppStrings.adminUserSummary(
+                      userCount: users.length,
+                      pendingCount: pendingCount,
+                    ),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -215,7 +215,7 @@ class _AdminUserFilters extends StatelessWidget {
           children: [
             _RoleFilterChip(
               key: const Key('adminUserRoleFilterAll'),
-              label: 'Tất cả',
+              label: AppStrings.all,
               selected: state.selectedRole == null,
               role: null,
             ),
@@ -227,13 +227,13 @@ class _AdminUserFilters extends StatelessWidget {
             ),
             _RoleFilterChip(
               key: const Key('adminUserRoleFilterStaff'),
-              label: 'Nhân viên',
+              label: AppStrings.staff,
               selected: state.selectedRole == AdminUserRole.staff,
               role: AdminUserRole.staff,
             ),
             _RoleFilterChip(
               key: const Key('adminUserRoleFilterUser'),
-              label: 'Đại lý',
+              label: AppStrings.dealer,
               selected: state.selectedRole == AdminUserRole.user,
               role: AdminUserRole.user,
             ),
@@ -244,26 +244,26 @@ class _AdminUserFilters extends StatelessWidget {
           children: [
             _StatusFilterChip(
               key: const Key('adminUserStatusFilterAll'),
-              label: 'Tất cả trạng thái',
+              label: AppStrings.allStatuses,
               selected: state.selectedUserStatus == null,
               status: null,
             ),
             _StatusFilterChip(
               key: const Key('adminUserStatusFilterPending'),
-              label: 'Chờ duyệt',
+              label: AppStrings.orderPendingApproval,
               selected:
                   state.selectedUserStatus == AdminUserStatus.pendingApproval,
               status: AdminUserStatus.pendingApproval,
             ),
             _StatusFilterChip(
               key: const Key('adminUserStatusFilterActive'),
-              label: 'Đang hoạt động',
+              label: AppStrings.userActive,
               selected: state.selectedUserStatus == AdminUserStatus.active,
               status: AdminUserStatus.active,
             ),
             _StatusFilterChip(
               key: const Key('adminUserStatusFilterDisabled'),
-              label: 'Tạm khóa',
+              label: AppStrings.userLocked,
               selected: state.selectedUserStatus == AdminUserStatus.disabled,
               status: AdminUserStatus.disabled,
             ),
@@ -348,7 +348,7 @@ class _FilteredEmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Text(
-          'Không có tài khoản phù hợp với bộ lọc.',
+          AppStrings.noFilteredUsers,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
@@ -437,7 +437,7 @@ class _AdminUserCard extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.verified_user_outlined),
-                  label: const Text('Duyệt đại lý'),
+                  label: const Text(AppStrings.approveDealer),
                 ),
               ),
             ],
@@ -600,17 +600,17 @@ String _roleLabel(AdminUserRole role) {
 ) {
   return switch (status) {
     AdminUserStatus.pendingApproval => (
-      label: 'Chờ duyệt',
+      label: AppStrings.orderPendingApproval,
       textColor: AppColors.warning,
       backgroundColor: const Color(0xFFFFF7E6),
     ),
     AdminUserStatus.active => (
-      label: 'Đang hoạt động',
+      label: AppStrings.userActive,
       textColor: AppColors.success,
       backgroundColor: const Color(0xFFE8F8EF),
     ),
     AdminUserStatus.disabled => (
-      label: 'Tạm khóa',
+      label: AppStrings.userLocked,
       textColor: AppColors.error,
       backgroundColor: const Color(0xFFFFEFEF),
     ),

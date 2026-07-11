@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -43,7 +44,7 @@ class WholesalePolicyCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Chính sách giá sỉ',
+                      AppStrings.wholesalePolicy,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w800,
@@ -51,8 +52,8 @@ class WholesalePolicyCard extends StatelessWidget {
                     ),
                     Text(
                       categoryName == null
-                          ? 'Áp dụng cho toàn bộ danh mục hải sản khô'
-                          : 'Áp dụng cho các mặt hàng $categoryName',
+                          ? AppStrings.wholesaleAllCategories
+                          : AppStrings.wholesaleCategory(categoryName!),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -68,21 +69,21 @@ class WholesalePolicyCard extends StatelessWidget {
               Expanded(
                 child: TierMiniCard(
                   lineOne: '10-49kg',
-                  lineTwo: 'Giá gốc',
+                  lineTwo: AppStrings.basePriceLabel,
                 ),
               ),
               SizedBox(width: 10),
               Expanded(
                 child: TierMiniCard(
                   lineOne: '50-99kg',
-                  lineTwo: 'Giảm 5%',
+                  lineTwo: AppStrings.discount5Percent,
                 ),
               ),
               SizedBox(width: 10),
               Expanded(
                 child: TierMiniCard(
                   lineOne: '100kg+',
-                  lineTwo: 'Giảm 10%',
+                  lineTwo: AppStrings.discount10Percent,
                 ),
               ),
             ],

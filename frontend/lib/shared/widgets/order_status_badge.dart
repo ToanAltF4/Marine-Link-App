@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../app/theme/app_theme.dart';
 
@@ -41,16 +42,23 @@ class OrderStatusBadge extends StatelessWidget {
     String? paymentStatus,
   ) {
     if (status == 'PENDING' &&
-        (paymentMethod == 'BANK_TRANSFER' || paymentMethod == 'VNPAY') &&
+        (paymentMethod == 'BANK_TRANSFER' ||
+            paymentMethod == AppStrings.paymentVnpay) &&
         paymentStatus != 'PAID') {
-      return (AppColors.orderPending, 'Chờ thanh toán');
+      return (AppColors.orderPending, AppStrings.waitingForPayment);
     }
     return switch (status) {
-      'PENDING' => (AppColors.orderPending, 'Chờ duyệt'),
-      'CONFIRMED' => (AppColors.orderConfirmed, 'Đã xác nhận'),
-      'SHIPPING' => (AppColors.orderShipping, 'Đang giao'),
-      'COMPLETED' => (AppColors.orderCompleted, 'Hoàn tất'),
-      'CANCELLED' => (AppColors.orderCancelled, 'Đã hủy'),
+      'PENDING' => (AppColors.orderPending, AppStrings.orderPendingApproval),
+      'CONFIRMED' => (
+        AppColors.orderConfirmed,
+        AppStrings.orderStatusConfirmed,
+      ),
+      'SHIPPING' => (AppColors.orderShipping, AppStrings.orderShipping),
+      'COMPLETED' => (
+        AppColors.orderCompleted,
+        AppStrings.orderStatusCompleted,
+      ),
+      'CANCELLED' => (AppColors.orderCancelled, AppStrings.orderCancelledAlt),
       _ => (Colors.grey, status),
     };
   }

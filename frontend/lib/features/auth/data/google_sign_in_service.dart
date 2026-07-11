@@ -1,4 +1,5 @@
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../domain/auth_exceptions.dart';
 
@@ -42,9 +43,7 @@ class GoogleSignInAuthService implements GoogleAuthService {
     final auth = await account.authentication;
     final idToken = auth.idToken;
     if (idToken == null || idToken.isEmpty) {
-      throw Exception(
-        'Không lấy được Google ID token. Kiểm tra cấu hình OAuth (serverClientId).',
-      );
+      throw Exception(AppStrings.googleIdTokenMissing);
     }
     return idToken;
   }

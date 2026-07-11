@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -71,8 +72,8 @@ class _WorkOverviewSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionHeader(
-          title: 'Quản lý công việc',
-          subtitle: 'Ưu tiên chat đang chờ, đơn cần xử lý và kho cần kiểm.',
+          title: AppStrings.staffWorkManagementTitle,
+          subtitle: AppStrings.staffWorkManagementSubtitle,
         ),
         const SizedBox(height: 12),
         _WaitingChatCard(onTap: onOpenChats),
@@ -83,7 +84,7 @@ class _WorkOverviewSection extends StatelessWidget {
               child: _MetricCard(
                 key: const Key('staffOrdersShortcut'),
                 icon: Icons.fact_check_outlined,
-                label: 'Đơn cần xử lý',
+                label: AppStrings.ordersNeedProcessing,
                 value: '08',
                 tone: _MetricTone.primary,
                 onTap: onOpenOrders,
@@ -93,7 +94,7 @@ class _WorkOverviewSection extends StatelessWidget {
             Expanded(
               child: _MetricCard(
                 icon: Icons.warehouse_outlined,
-                label: 'Kho cần kiểm',
+                label: AppStrings.warehouseNeedsCheck,
                 value: '03',
                 tone: _MetricTone.teal,
                 onTap: onOpenWarehouses,
@@ -134,14 +135,14 @@ class _WaitingChatCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Chat đang chờ',
+                      AppStrings.pendingChat,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '12 cuộc hội thoại',
+                      AppStrings.twelveConversations,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -247,8 +248,8 @@ class _QuickActionsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionHeader(
-          title: 'Thao tác nhanh',
-          subtitle: 'Các công việc nhân viên xử lý thường xuyên trong ca.',
+          title: AppStrings.quickActions,
+          subtitle: AppStrings.quickActionsSubtitle,
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(
@@ -257,12 +258,12 @@ class _QuickActionsSection extends StatelessWidget {
             children: [
               _QuickActionTile(
                 icon: Icons.edit_square,
-                label: 'Cập nhật tồn',
+                label: AppStrings.updateInventory,
                 onTap: onOpenProducts,
               ),
               _QuickActionTile(
                 icon: Icons.add_box_outlined,
-                label: 'Thêm sản phẩm',
+                label: AppStrings.addProduct,
                 onTap: onOpenProducts,
               ),
             ],
@@ -338,13 +339,13 @@ class _SupportChatSection extends StatelessWidget {
           children: [
             const Expanded(
               child: _SectionHeader(
-                title: 'Chat hỗ trợ',
-                subtitle: 'Theo dõi tin nhắn cần phản hồi trong ngày.',
+                title: AppStrings.chatSupportTitle,
+                subtitle: AppStrings.dailyMessageTracking,
               ),
             ),
             TextButton(
               onPressed: () => context.push(AppRoutes.staffChat),
-              child: const Text('Tất cả'),
+              child: const Text(AppStrings.all),
             ),
           ],
         ),
@@ -352,17 +353,17 @@ class _SupportChatSection extends StatelessWidget {
         const _ChatPreviewCard(
           avatarText: 'SB',
           avatarColor: AppColors.primary,
-          title: 'Nhà hàng Sóng Biển',
-          message: 'Sản phẩm tôm hùm xanh đợt này cần xác nhận tồn.',
+          title: AppStrings.restaurantSongBien,
+          message: AppStrings.staffInventoryConfirmMessage,
           time: '10:45',
           online: true,
         ),
         const SizedBox(height: 10),
         const _ChatPreviewCard(
-          avatarText: 'ĐL',
+          avatarText: AppStrings.dealerAvatar,
           avatarColor: AppColors.secondary,
-          title: 'Đại lý Long Hải',
-          message: 'Đã nhận được 200kg cá thu, chờ lịch giao tiếp.',
+          title: AppStrings.dealerLongHai,
+          message: AppStrings.staffInboundShipmentMessage,
           time: '09:12',
           online: false,
         ),
@@ -458,7 +459,6 @@ class _ChatPreviewCard extends StatelessWidget {
     );
   }
 }
-
 
 class _SectionHeader extends StatelessWidget {
   final String title;

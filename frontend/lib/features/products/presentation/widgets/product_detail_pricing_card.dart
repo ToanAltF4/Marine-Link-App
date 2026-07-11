@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../cart/domain/cart_pricing.dart';
@@ -21,7 +22,8 @@ class WholesalePricingCard extends StatelessWidget {
     final rows = _buildWholesaleRows(detail);
 
     final authState = context.watch<AuthBloc>().state;
-    final isPending = authState is AuthAuthenticated &&
+    final isPending =
+        authState is AuthAuthenticated &&
         authState.user.status == 'PENDING_APPROVAL';
 
     return ProductDetailCard(
@@ -66,11 +68,14 @@ class WholesalePricingCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.lock_clock_outlined, color: Colors.orange.shade800),
+                  Icon(
+                    Icons.lock_clock_outlined,
+                    color: Colors.orange.shade800,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Giá sản phẩm: Đang xét duyệt',
+                      AppStrings.productPricePending,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.orange.shade900,
                         fontWeight: FontWeight.w700,
@@ -82,7 +87,7 @@ class WholesalePricingCard extends StatelessWidget {
             ),
           ] else ...[
             Text(
-              'Gi\u00e1 s\u1ec9 t\u1eeb:',
+              AppStrings.wholesalePriceFrom,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.textPrimary,
               ),
@@ -117,7 +122,10 @@ class WholesalePricingCard extends StatelessWidget {
                       vertical: 7,
                     ),
                     child: Text(
-                      'D\u1eb7t t\u1ed1i thi\u1ec3u ${detail.minOrderQuantity}${detail.unit}',
+                      AppStrings.minOrderQuantity(
+                        detail.minOrderQuantity,
+                        detail.unit,
+                      ),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: const Color(0xFF007C89),
                         fontWeight: FontWeight.w800,
@@ -131,7 +139,7 @@ class WholesalePricingCard extends StatelessWidget {
             const Divider(height: 1, color: Color(0xFFEAF0F5)),
             const SizedBox(height: 14),
             Text(
-              'B\u1ea3ng gi\u00e1 s\u1ec9',
+              AppStrings.wholesalePriceTable,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: AppColors.primaryDark,
                 fontWeight: FontWeight.w800,
@@ -262,7 +270,7 @@ List<_WholesaleRow> _buildWholesaleRows(ProductDetail detail) {
     rows.add(
       _WholesaleRow(
         rangeLabel: '500 ${detail.unit}+',
-        priceLabel: 'Li\u00ean h\u1ec7',
+        priceLabel: AppStrings.contact,
         isContact: true,
       ),
     );
@@ -271,7 +279,10 @@ List<_WholesaleRow> _buildWholesaleRows(ProductDetail detail) {
   if (rows.isEmpty) {
     rows.add(
       _WholesaleRow(
-        rangeLabel: 'T\u1eeb ${detail.minOrderQuantity} ${detail.unit}',
+        rangeLabel: AppStrings.quantityFrom(
+          detail.minOrderQuantity,
+          detail.unit,
+        ),
         priceLabel: productDetailUnitPrice(detail.basePrice, detail.unit),
       ),
     );

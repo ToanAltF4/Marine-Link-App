@@ -339,7 +339,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _formCubit.registerEmailServerInvalid(message);
       return;
     }
-    if (message.contains('Số điện thoại')) {
+    if (message.contains(AppStrings.phoneLabel)) {
       _formCubit.registerPhoneServerInvalid(message);
     }
   }

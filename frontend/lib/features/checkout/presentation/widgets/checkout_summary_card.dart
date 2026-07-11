@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -26,7 +27,7 @@ class CheckoutSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Tóm tắt đơn hàng',
+                  AppStrings.orderSummaryTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: AppColors.primaryDark,
                     fontWeight: FontWeight.w800,
@@ -50,25 +51,27 @@ class CheckoutSummaryCard extends StatelessWidget {
           ],
           const Divider(height: 22, color: Color(0xFFEAF0F5)),
           CheckoutMetricRow(
-            label: 'Tạm tính',
+            label: AppStrings.subtotalLabel,
             value: MoneyFormatter.format(pricing.subtotalAmount),
           ),
           const SizedBox(height: 8),
           CheckoutMetricRow(
             label: pricing.hasDiscount
-                ? 'Khuyến mãi mua nhiều (${pricing.discountPercent}%)'
-                : 'Khuyến mãi mua nhiều',
+                ? AppStrings.bulkDiscountNoColonWithPercent(
+                    pricing.discountPercent,
+                  )
+                : AppStrings.bulkDiscountNoColon,
             value: pricing.hasDiscount
                 ? '-${MoneyFormatter.format(pricing.discountAmount)}'
-                : 'Chưa áp dụng',
+                : AppStrings.discountNotApplied,
             valueColor: pricing.hasDiscount
                 ? AppColors.success
                 : AppColors.textSecondary,
           ),
           const SizedBox(height: 8),
           const CheckoutMetricRow(
-            label: 'Phí vận chuyển',
-            value: 'Miễn phí',
+            label: AppStrings.shippingFeeLabel,
+            value: AppStrings.freeShipping,
             valueColor: AppColors.success,
           ),
           const Divider(height: 22, color: Color(0xFFEAF0F5)),
@@ -76,7 +79,7 @@ class CheckoutSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Tổng cộng',
+                  AppStrings.totalLabel,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: AppColors.primaryDark,
                     fontWeight: FontWeight.w800,
@@ -113,7 +116,9 @@ String _checkoutTotalQuantityLabel(Cart cart) {
 
   final unit = selectedItems.first.unit;
   final sameUnit = selectedItems.every((item) => item.unit == unit);
-  return sameUnit ? '$quantity $unit' : '$quantity mục';
+  return sameUnit
+      ? AppStrings.quantityWithUnit(quantity, unit)
+      : AppStrings.quantityItemCount(quantity);
 }
 
 /// Một dòng sản phẩm trong thẻ tóm tắt đơn hàng.

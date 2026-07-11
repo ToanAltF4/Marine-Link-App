@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../domain/admin_user.dart';
 import '../domain/admin_user_repository.dart';
@@ -21,7 +22,7 @@ class AdminUserMockRepository implements AdminUserRepository {
     if (index == -1) {
       return const ApiResponse(
         success: false,
-        message: 'Không tìm thấy tài khoản cần duyệt.',
+        message: AppStrings.adminUserApproveFailed,
       );
     }
 

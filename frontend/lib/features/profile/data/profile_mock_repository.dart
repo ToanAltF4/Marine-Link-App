@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../domain/profile.dart';
@@ -70,7 +71,7 @@ class ProfileMockRepository implements ProfileRepository {
     );
     return ApiResponse(
       success: true,
-      message: 'Cập nhật thành công',
+      message: AppStrings.profileUpdateSuccess,
       data: _updatedProfile,
     );
   }

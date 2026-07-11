@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../domain/warehouse_location_service.dart';
 import '../../domain/warehouse_user_location.dart';
@@ -27,7 +28,7 @@ class WarehouseLocationCubit extends Cubit<WarehouseLocationState> {
       emit(
         state.copyWith(
           status: WarehouseLocationStatus.failure,
-          errorMessage: 'Không kiểm tra được quyền vị trí.',
+          errorMessage: AppStrings.locationPermissionCheckFailed,
         ),
       );
     }
@@ -52,7 +53,7 @@ class WarehouseLocationCubit extends Cubit<WarehouseLocationState> {
       emit(
         state.copyWith(
           status: WarehouseLocationStatus.failure,
-          errorMessage: 'Không lấy được vị trí hiện tại.',
+          errorMessage: AppStrings.currentLocationFailed,
         ),
       );
     }

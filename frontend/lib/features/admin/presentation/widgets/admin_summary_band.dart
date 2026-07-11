@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -21,8 +22,8 @@ class SystemSummaryBand extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(
-          title: 'Tổng quan vận hành',
-          subtitle: 'Theo dõi sức khỏe hệ thống, doanh thu và tồn kho hôm nay.',
+          title: AppStrings.operationsOverviewTitle,
+          subtitle: AppStrings.operationsOverviewSubtitle,
         ),
         const SizedBox(height: 12),
         RevenueSummaryCard(amount: data.monthlyRevenue),
@@ -33,8 +34,8 @@ class SystemSummaryBand extends StatelessWidget {
               child: MetricCard(
                 key: const Key('adminPendingOrdersCard'),
                 icon: Icons.pending_actions_outlined,
-                label: 'Đơn chờ nhân viên xử lý',
-                value: '${data.pendingOrders} đơn',
+                label: AppStrings.pendingOrdersMetricLabel,
+                value: AppStrings.orderCount(data.pendingOrders),
                 tone: MetricTone.warning,
               ),
             ),
@@ -43,8 +44,8 @@ class SystemSummaryBand extends StatelessWidget {
               child: MetricCard(
                 key: const Key('adminLowStockCard'),
                 icon: Icons.inventory_2_outlined,
-                label: 'Sắp hết hàng',
-                value: '${data.lowStockProducts} mã',
+                label: AppStrings.lowStockFull,
+                value: AppStrings.codeCount(data.lowStockProducts),
                 tone: MetricTone.danger,
               ),
             ),
@@ -83,7 +84,7 @@ class RevenueSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Doanh thu tháng này',
+                    AppStrings.monthlyRevenue,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -200,12 +201,12 @@ class NewDealersSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Đại lý đang hoạt động',
+                    AppStrings.activeDealers,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$activeUsers đại lý',
+                    AppStrings.activeDealerCount(activeUsers),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w900,

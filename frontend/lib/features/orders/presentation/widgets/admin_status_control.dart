@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -51,7 +52,7 @@ class _AdminStatusControlState extends State<AdminStatusControl> {
     final transitions = widget.order.status.allowedTransitions;
     if (transitions.isEmpty) {
       return Text(
-        'Đơn hàng đã ở trạng thái kết thúc.',
+        AppStrings.finalOrderStatusMessage,
         style: Theme.of(context).textTheme.bodyMedium,
       );
     }
@@ -65,7 +66,7 @@ class _AdminStatusControlState extends State<AdminStatusControl> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'Đã cập nhật trạng thái đơn hàng',
+                  AppStrings.orderStatusUpdateSuccess,
                   key: Key('adminOrderStatusSuccessSnack'),
                 ),
               ),
@@ -84,7 +85,7 @@ class _AdminStatusControlState extends State<AdminStatusControl> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Trạng thái hiện tại: ${widget.order.displayStatusLabel}',
+                AppStrings.currentOrderStatus(widget.order.displayStatusLabel),
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
@@ -118,8 +119,8 @@ class _AdminStatusControlState extends State<AdminStatusControl> {
                 minLines: 2,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  labelText: 'Ghi chú nội bộ',
-                  hintText: 'VD: Đã xác nhận tồn kho và chuẩn bị giao',
+                  labelText: AppStrings.internalNoteLabel,
+                  hintText: AppStrings.internalNoteHint,
                   prefixIcon: Icon(Icons.sticky_note_2_outlined),
                 ),
               ),
@@ -146,7 +147,9 @@ class _AdminStatusControlState extends State<AdminStatusControl> {
                           ),
                         )
                       : const Icon(Icons.save_outlined),
-                  label: Text(isLoading ? 'Đang lưu' : 'Lưu trạng thái'),
+                  label: Text(
+                    isLoading ? AppStrings.saving : AppStrings.saveStatus,
+                  ),
                 ),
               ),
             ],

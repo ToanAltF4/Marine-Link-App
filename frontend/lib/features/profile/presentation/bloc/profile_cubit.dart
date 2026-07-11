@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/profile.dart';
@@ -31,7 +32,7 @@ class ProfileCubit extends Cubit<ProfileState> {
             status: ProfileStatus.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không tải được hồ sơ.',
+              fallback: AppStrings.profileLoadFailed,
             ),
           ),
         );
@@ -42,7 +43,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           status: ProfileStatus.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Không tải được hồ sơ.',
+            fallback: AppStrings.profileLoadFailed,
           ),
         ),
       );
@@ -50,7 +51,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(
         state.copyWith(
           status: ProfileStatus.failure,
-          errorMessage: 'Đã xảy ra lỗi khi tải hồ sơ.',
+          errorMessage: AppStrings.profileLoadUnexpected,
         ),
       );
     }
@@ -85,7 +86,7 @@ class ProfileCubit extends Cubit<ProfileState> {
             status: ProfileStatus.updateFailure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không cập nhật được hồ sơ.',
+              fallback: AppStrings.profileUpdateFailedFallback,
             ),
           ),
         );
@@ -96,7 +97,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           status: ProfileStatus.updateFailure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Không cập nhật được hồ sơ.',
+            fallback: AppStrings.profileUpdateFailedFallback,
           ),
         ),
       );
@@ -104,7 +105,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(
         state.copyWith(
           status: ProfileStatus.updateFailure,
-          errorMessage: 'Đã xảy ra lỗi khi cập nhật hồ sơ.',
+          errorMessage: AppStrings.profileUpdateUnexpected,
         ),
       );
     }

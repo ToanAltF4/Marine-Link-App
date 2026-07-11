@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../domain/product.dart';
 import '../domain/product_repository.dart';
@@ -12,75 +13,75 @@ class ProductMockRepository implements ProductRepository {
     id: 'cat-003',
     name: 'Ca kho',
     parentId: 'cat-fish',
-    parentName: 'Cá',
+    parentName: AppStrings.fish,
   );
   static const _frozenFishCategory = Category(
     id: 'cat-006',
     name: 'Ca dong lanh',
     parentId: 'cat-fish',
-    parentName: 'Cá',
+    parentName: AppStrings.fish,
   );
   static const _driedShrimpCategory = Category(
     id: 'cat-002',
     name: 'Tom kho',
     parentId: 'cat-shrimp',
-    parentName: 'Tôm',
+    parentName: AppStrings.shrimp,
   );
   static const _frozenShrimpCategory = Category(
     id: 'cat-007',
     name: 'Tom dong lanh',
     parentId: 'cat-shrimp',
-    parentName: 'Tôm',
+    parentName: AppStrings.shrimp,
   );
   static const _driedSquidCategory = Category(
     id: 'cat-001',
     name: 'Muc kho',
     parentId: 'cat-squid',
-    parentName: 'Mực',
+    parentName: AppStrings.squid,
   );
   static const _frozenSquidCategory = Category(
     id: 'cat-008',
     name: 'Muc dong lanh',
     parentId: 'cat-squid',
-    parentName: 'Mực',
+    parentName: AppStrings.squid,
   );
   static const _premiumSeafoodCategory = Category(
     id: 'cat-004',
     name: 'Hai san kho cao cap',
     parentId: 'cat-seafood',
-    parentName: 'Hải sản',
+    parentName: AppStrings.seafood,
   );
   static const _fishSauceCategory = Category(
     id: 'cat-005',
     name: 'Nuoc mam',
     parentId: 'cat-seasoning',
-    parentName: 'Gia vị',
+    parentName: AppStrings.seasoning,
   );
 
   static const List<Category> _categories = [
     Category(
       id: 'cat-fish',
-      name: 'Cá',
+      name: AppStrings.fish,
       children: [_driedFishCategory, _frozenFishCategory],
     ),
     Category(
       id: 'cat-shrimp',
-      name: 'Tôm',
+      name: AppStrings.shrimp,
       children: [_driedShrimpCategory, _frozenShrimpCategory],
     ),
     Category(
       id: 'cat-squid',
-      name: 'Mực',
+      name: AppStrings.squid,
       children: [_driedSquidCategory, _frozenSquidCategory],
     ),
     Category(
       id: 'cat-seafood',
-      name: 'Hải sản',
+      name: AppStrings.seafood,
       children: [_premiumSeafoodCategory],
     ),
     Category(
       id: 'cat-seasoning',
-      name: 'Gia vị',
+      name: AppStrings.seasoning,
       children: [_fishSauceCategory],
     ),
   ];
@@ -217,7 +218,7 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: true,
       category: _driedSquidCategory,
       description:
-          'M\u1ef1c kh\u00f4 lo\u1ea1i 1, size l\u1edbn (6-8 con/kg), ph\u01a1i \u0111\u1ee7 n\u1eafng, th\u1ecbt ng\u1ecdt v\u00e0 th\u01a1m. \u0110\u00f3ng g\u00f3i h\u00fat ch\u00e2n kh\u00f4ng 1kg/t\u00fai.',
+          'Mực khô loại 1, size lớn (6-8 con/kg), phơi đủ nắng, thịt ngọt và thơm. Đóng gói hút chân không 1kg/túi.',
       images: const [
         ProductImage(
           id: 'img-001-a',
@@ -263,9 +264,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: true,
       category: _driedShrimpCategory,
       description:
-          'T\u00f4m kh\u00f4 \u0111\u1eb7c bi\u1ec7t m\u00e0u s\u1eafc '
-          '\u0111\u1ed3ng \u0111\u1ec1u, ph\u00f9 h\u1ee3p \u0111\u01a1n '
-          '\u0111\u1ea1i l\u00fd v\u00e0 k\u1ec7 combo qu\u00e0 bi\u1ebfu.',
+          'Tôm khô đặc biệt màu sắc '
+          'đồng đều, phù hợp đơn '
+          'đại lý và kệ combo quà biếu.',
       images: const [
         ProductImage(
           id: 'img-002-a',
@@ -357,9 +358,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: true,
       category: _driedSquidCategory,
       description:
-          'M\u1ef1c m\u1ed9t n\u1eafng th\u1ecbt d\u00e0y, ph\u00f9 '
-          'h\u1ee3p k\u00eanh nh\u00e0 h\u00e0ng v\u00e0 kh\u00e1ch '
-          's\u1ea1n c\u1ea7n lo\u1ea1i premium.',
+          'Mực một nắng thịt dày, phù '
+          'hợp kênh nhà hàng và khách '
+          'sạn cần loại premium.',
       images: const [
         ProductImage(
           id: 'img-004-a',
@@ -405,9 +406,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: false,
       category: _driedSquidCategory,
       description:
-          'M\u1ef1c kh\u00f4 x\u00e9 s\u1ee3i ph\u00f9 h\u1ee3p k\u00eanh '
-          'qu\u00e0 t\u1eb7ng v\u00e0 c\u1eeda h\u00e0ng \u0111\u1eb7c '
-          's\u1ea3n cao c\u1ea5p.',
+          'Mực khô xé sợi phù hợp kênh '
+          'quà tặng và cửa hàng đặc '
+          'sản cao cấp.',
       images: const [
         ProductImage(
           id: 'img-005-a',
@@ -453,9 +454,9 @@ class ProductMockRepository implements ProductRepository {
       isFeatured: false,
       category: _driedSquidCategory,
       description:
-          'M\u1ef1c kh\u00f4 lo\u1ea1i 2 cho k\u00eanh ph\u00e2n '
-          'ph\u1ed1i gi\u00e1 t\u1ed1t, v\u1eabn gi\u1eef \u0111\u01b0\u1ee3c '
-          '\u0111\u1ed9 \u0111\u1ed3ng \u0111\u1ec1u khi tr\u01b0ng b\u00e0y.',
+          'Mực khô loại 2 cho kênh phân '
+          'phối giá tốt, vẫn giữ được '
+          'độ đồng đều khi trưng bày.',
       images: const [
         ProductImage(
           id: 'img-006-a',
@@ -605,7 +606,7 @@ class ProductMockRepository implements ProductRepository {
     if (detail == null) {
       return const ApiResponse<ProductDetail>(
         success: false,
-        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y s\u1ea3n ph\u1ea9m',
+        message: AppStrings.productNotFound,
         data: null,
       );
     }

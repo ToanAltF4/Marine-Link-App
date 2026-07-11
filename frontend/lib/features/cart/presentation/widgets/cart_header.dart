@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -19,7 +20,7 @@ class CartHeader extends StatelessWidget {
           children: [
             Center(
               child: Text(
-                'Giỏ hàng của bạn',
+                AppStrings.cartHeaderTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: AppColors.primaryDark,
                   fontFamily: 'serif',
@@ -36,7 +37,7 @@ class CartHeader extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 21),
                 color: AppColors.primaryDark,
-                tooltip: 'Quay lại',
+                tooltip: AppStrings.back,
               ),
             ),
           ],

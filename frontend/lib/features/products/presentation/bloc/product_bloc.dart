@@ -2,6 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
@@ -45,7 +46,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
           ProductListError(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Lỗi tải danh sách sản phẩm.',
+              fallback: AppStrings.productListLoadError,
             ),
           ),
         );
@@ -71,7 +72,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     } catch (e) {
       emit(
         ProductListError(
-          userFacingErrorMessage(e, fallback: 'Lỗi tải danh sách sản phẩm.'),
+          userFacingErrorMessage(e, fallback: AppStrings.productListLoadError),
         ),
       );
     }
@@ -92,7 +93,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
           ProductDetailError(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Không tìm thấy sản phẩm.',
+              fallback: AppStrings.productDetailNotFound,
             ),
           ),
         );
@@ -103,7 +104,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     } catch (e) {
       emit(
         ProductDetailError(
-          userFacingErrorMessage(e, fallback: 'Không tìm thấy sản phẩm.'),
+          userFacingErrorMessage(e, fallback: AppStrings.productDetailNotFound),
         ),
       );
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -16,13 +17,13 @@ class CompletedOrderActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return OrderDetailPanel(
       key: const Key('buyerCompletedOrderActionsPanel'),
-      title: 'Hỗ trợ sau giao hàng',
+      title: AppStrings.afterDeliverySupport,
       icon: Icons.support_agent_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Nếu đơn hàng có vấn đề về chất lượng, số lượng hoặc giao nhận, hãy mở kênh chat khiếu nại để staff xử lý theo mã đơn.',
+            AppStrings.afterDeliverySupportMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
@@ -36,7 +37,7 @@ class CompletedOrderActions extends StatelessWidget {
               onPressed: () =>
                   context.push(AppRoutes.chatOrderRoomPath(order.id)),
               icon: const Icon(Icons.report_problem_outlined),
-              label: const Text('Khiếu nại đơn hàng'),
+              label: const Text(AppStrings.complaintOrder),
             ),
           ),
         ],

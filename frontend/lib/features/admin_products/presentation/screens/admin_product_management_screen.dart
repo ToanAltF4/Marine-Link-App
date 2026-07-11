@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -39,16 +40,18 @@ class _AdminProductView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RoleBackToDashboardScope(
-      dashboardLocation: staffMode ? AppRoutes.staffDashboard : AppRoutes.adminDashboard,
+      dashboardLocation: staffMode
+          ? AppRoutes.staffDashboard
+          : AppRoutes.adminDashboard,
       child: Scaffold(
         key: const Key('adminProductsScreen'),
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Quản lý sản phẩm'),
+          title: const Text(AppStrings.adminProductsTitle),
           actions: [
             IconButton(
               key: const Key('adminProductAddButton'),
-              tooltip: 'Thêm sản phẩm',
+              tooltip: AppStrings.addProduct,
               icon: const Icon(Icons.add_box_outlined),
               onPressed: () => _showProductForm(context),
             ),
@@ -69,8 +72,7 @@ class _AdminProductView extends StatelessWidget {
               case AdminProductStatusView.failure:
                 return AdminProductsError(
                   message:
-                      state.errorMessage ??
-                      'Không tải được danh sách sản phẩm.',
+                      state.errorMessage ?? AppStrings.adminProductsLoadFailed,
                   onRetry: () => context.read<AdminProductCubit>().load(),
                 );
               case AdminProductStatusView.empty:
@@ -214,7 +216,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.product == null ? 'Thêm sản phẩm' : 'Sửa sản phẩm';
+    final title = widget.product == null
+        ? AppStrings.addProduct
+        : AppStrings.editProduct;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -242,7 +246,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 _TextField(
                   key: const Key('adminProductNameField'),
                   controller: _nameController,
-                  label: 'Tên sản phẩm',
+                  label: AppStrings.productNameLabel,
                   validator: _required,
                 ),
                 _TextField(
@@ -263,7 +267,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductBasePriceField'),
                         controller: _basePriceController,
-                        label: 'Giá gốc',
+                        label: AppStrings.basePriceLabel,
                         keyboardType: TextInputType.number,
                         validator: _positiveNumber,
                       ),
@@ -273,7 +277,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductUnitField'),
                         controller: _unitController,
-                        label: 'Đơn vị',
+                        label: AppStrings.unitLabel,
                         validator: _required,
                       ),
                     ),
@@ -285,7 +289,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductMinOrderField'),
                         controller: _minOrderController,
-                        label: 'Tối thiểu',
+                        label: AppStrings.minimumLabel,
                         keyboardType: TextInputType.number,
                         validator: _positiveInt,
                       ),
@@ -295,7 +299,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductStockField'),
                         controller: _stockController,
-                        label: 'Tồn kho',
+                        label: AppStrings.stockLabel,
                         keyboardType: TextInputType.number,
                         validator: _nonNegativeInt,
                       ),
@@ -305,24 +309,26 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 _TextField(
                   key: const Key('adminProductOriginField'),
                   controller: _originController,
-                  label: 'Xuất xứ',
+                  label: AppStrings.originLabel,
                 ),
                 _TextField(
                   key: const Key('adminProductShortDescriptionField'),
                   controller: _shortDescriptionController,
-                  label: 'Mô tả tóm tắt',
+                  label: AppStrings.shortDescriptionLabel,
                   maxLines: 2,
                 ),
                 _TextField(
                   key: const Key('adminProductDescriptionField'),
                   controller: _descriptionController,
-                  label: 'Mô tả',
+                  label: AppStrings.descriptionLabel,
                   maxLines: 2,
                 ),
                 DropdownButtonFormField<AdminProductStatus>(
                   key: const Key('adminProductStatusField'),
                   initialValue: _status,
-                  decoration: const InputDecoration(labelText: 'Trạng thái'),
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.productStatusLabel,
+                  ),
                   items: AdminProductStatus.values
                       .map(
                         (status) => DropdownMenuItem(
@@ -340,12 +346,12 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                   key: const Key('adminProductFeaturedField'),
                   value: _featured,
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Sản phẩm nổi bật'),
+                  title: const Text(AppStrings.featuredProduct),
                   onChanged: (value) => setState(() => _featured = value),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Giá sỉ đầu tiên',
+                  AppStrings.firstWholesalePrice,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -355,7 +361,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductTierMinField'),
                         controller: _tierMinController,
-                        label: 'Từ',
+                        label: AppStrings.fromLabel,
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -364,7 +370,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductTierMaxField'),
                         controller: _tierMaxController,
-                        label: 'Đến',
+                        label: AppStrings.toLabel,
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -373,7 +379,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                       child: _TextField(
                         key: const Key('adminProductTierPriceField'),
                         controller: _tierPriceController,
-                        label: 'Đơn giá',
+                        label: AppStrings.unitPriceLabel,
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -386,7 +392,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                     key: const Key('adminProductSaveButton'),
                     onPressed: _submit,
                     icon: const Icon(Icons.save_outlined),
-                    label: const Text('Lưu sản phẩm'),
+                    label: const Text(AppStrings.saveProduct),
                   ),
                 ),
               ],
@@ -499,25 +505,25 @@ void _showProductForm(BuildContext context, {AdminProduct? product}) {
 }
 
 String? _required(String? value) {
-  if (value == null || value.trim().isEmpty) return 'Không được để trống';
+  if (value == null || value.trim().isEmpty) return AppStrings.notEmpty;
   return null;
 }
 
 String? _positiveNumber(String? value) {
   final parsed = _toDouble(value ?? '');
-  if (parsed <= 0) return 'Phải lớn hơn 0';
+  if (parsed <= 0) return AppStrings.mustBeGreaterThanZero;
   return null;
 }
 
 String? _positiveInt(String? value) {
   final parsed = _toInt(value ?? '');
-  if (parsed <= 0) return 'Phải lớn hơn 0';
+  if (parsed <= 0) return AppStrings.mustBeGreaterThanZero;
   return null;
 }
 
 String? _nonNegativeInt(String? value) {
   final parsed = _toInt(value ?? '');
-  if (parsed < 0) return 'Không được âm';
+  if (parsed < 0) return AppStrings.mustNotBeNegative;
   return null;
 }
 
@@ -536,8 +542,8 @@ int _toInt(String value, {int fallback = 0}) {
 
 String _statusLabel(AdminProductStatus status) {
   return switch (status) {
-    AdminProductStatus.active => 'Đang bán',
-    AdminProductStatus.outOfStock => 'Hết hàng',
-    AdminProductStatus.disabled => 'Tạm ẩn',
+    AdminProductStatus.active => AppStrings.productActive,
+    AdminProductStatus.outOfStock => AppStrings.outOfStock,
+    AdminProductStatus.disabled => AppStrings.productDisabled,
   };
 }

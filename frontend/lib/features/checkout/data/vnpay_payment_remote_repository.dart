@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../domain/vnpay_payment.dart';
@@ -17,7 +18,7 @@ class VnpayPaymentRemoteRepository implements VnpayPaymentRepository {
     final data = response.data;
     if (!response.success || data == null) {
       throw ApiException(
-        message: response.message ?? 'Không thể tạo liên kết thanh toán VNPAY',
+        message: response.message ?? AppStrings.vnpayCreateLinkFailed,
         type: ApiExceptionType.server,
       );
     }
@@ -34,7 +35,7 @@ class VnpayPaymentRemoteRepository implements VnpayPaymentRepository {
     final data = response.data;
     if (!response.success || data == null) {
       throw ApiException(
-        message: response.message ?? 'Không thể hủy thanh toán VNPAY',
+        message: response.message ?? AppStrings.vnpayCancelFailed,
         type: ApiExceptionType.server,
       );
     }

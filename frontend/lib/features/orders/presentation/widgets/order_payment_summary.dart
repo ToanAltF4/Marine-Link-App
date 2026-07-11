@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/order.dart';
@@ -15,21 +16,21 @@ class OrderPaymentSummary extends StatelessWidget {
     return Column(
       children: [
         OrderSummaryRow(
-          label: 'Tạm tính',
+          label: AppStrings.subtotalLabel,
           value: _currency(order.subtotalAmount),
         ),
         OrderSummaryRow(
-          label: 'Phí vận chuyển',
+          label: AppStrings.shippingFeeLabel,
           value: _currency(order.shippingFee),
         ),
         OrderSummaryRow(
-          label: 'Giảm giá',
+          label: AppStrings.discountLabel,
           value: '-${_currency(order.discountAmount)}',
           valueColor: AppColors.success,
         ),
         const Divider(height: 24),
         OrderSummaryRow(
-          label: 'Tổng cộng',
+          label: AppStrings.totalLabel,
           value: _currency(order.totalAmount),
           emphasized: true,
         ),
@@ -83,7 +84,7 @@ class OrderSummaryRow extends StatelessWidget {
 String _currency(double value) {
   return NumberFormat.currency(
     locale: 'vi_VN',
-    symbol: 'đ',
+    symbol: AppStrings.currencySymbol,
     decimalDigits: 0,
   ).format(value);
 }
