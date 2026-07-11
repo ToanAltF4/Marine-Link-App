@@ -67,6 +67,10 @@ import '../../features/admin/domain/admin_dashboard_repository.dart';
 import '../../features/admin/data/admin_dashboard_mock_repository.dart';
 import '../../features/admin/data/admin_dashboard_remote_repository.dart';
 import '../../features/admin/presentation/cubit/admin_dashboard_cubit.dart';
+import '../../features/admin/domain/admin_revenue_repository.dart';
+import '../../features/admin/data/admin_revenue_mock_repository.dart';
+import '../../features/admin/data/admin_revenue_remote_repository.dart';
+import '../../features/admin/presentation/cubit/admin_revenue_cubit.dart';
 
 // Admin Products
 import '../../features/admin_products/domain/admin_product_repository.dart';
@@ -286,6 +290,16 @@ Future<void> setupServiceLocator({
   );
   sl.registerFactory<AdminDashboardCubit>(
     () => AdminDashboardCubit(repository: sl<AdminDashboardRepository>()),
+  );
+
+  // Sprint 6: revenue analytics. Swap Mock → Remote via the same flag.
+  sl.registerLazySingleton<AdminRevenueRepository>(
+    () => useRemoteRepositories
+        ? AdminRevenueRemoteRepository(apiClient: sl<ApiClient>())
+        : const AdminRevenueMockRepository(),
+  );
+  sl.registerFactory<AdminRevenueCubit>(
+    () => AdminRevenueCubit(repository: sl<AdminRevenueRepository>()),
   );
 
   // ── Admin Users ─────────────────────────────────────────────────────────────

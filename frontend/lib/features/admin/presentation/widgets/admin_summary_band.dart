@@ -13,7 +13,10 @@ enum MetricTone { neutral, warning, danger }
 class SystemSummaryBand extends StatelessWidget {
   final AdminDashboard data;
 
-  const SystemSummaryBand({super.key, required this.data});
+  /// Tapping the revenue card opens the dedicated revenue screen.
+  final VoidCallback? onViewRevenue;
+
+  const SystemSummaryBand({super.key, required this.data, this.onViewRevenue});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +29,10 @@ class SystemSummaryBand extends StatelessWidget {
           subtitle: AppStrings.operationsOverviewSubtitle,
         ),
         const SizedBox(height: 12),
-        RevenueSummaryCard(amount: data.monthlyRevenue),
+        RevenueSummaryCard(
+          amount: data.monthlyRevenue,
+          onViewRevenue: onViewRevenue,
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -58,49 +64,80 @@ class SystemSummaryBand extends StatelessWidget {
   }
 }
 
-/// Thẻ hiển thị doanh thu tháng hiện tại.
+/// Thẻ hiển thị doanh thu tháng hiện tại. Chạm để mở trang doanh thu chi tiết.
 class RevenueSummaryCard extends StatelessWidget {
   final num amount;
+  final VoidCallback? onViewRevenue;
 
-  const RevenueSummaryCard({super.key, required this.amount});
+  const RevenueSummaryCard({
+    super.key,
+    required this.amount,
+    this.onViewRevenue,
+  });
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       key: const Key('adminMonthlyRevenueCard'),
       decoration: adminCardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const IconTile(
-              icon: Icons.payments_outlined,
-              color: AppColors.primary,
-              backgroundColor: AppColors.surfaceSky,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppStrings.monthlyRevenue,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: const Key('adminViewRevenueButton'),
+          onTap: onViewRevenue,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const IconTile(
+                  icon: Icons.payments_outlined,
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.surfaceSky,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppStrings.monthlyRevenue,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        MoneyFormatter.format(amount),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Text(
+                            AppStrings.viewRevenue,
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    MoneyFormatter.format(amount),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

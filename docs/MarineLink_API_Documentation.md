@@ -193,6 +193,7 @@ Orders:
 | DELETE | `/api/notifications/broadcasts/{broadcastId}` | STAFF, ADMIN |
 | GET | `/api/warehouses` | All roles |
 | GET | `/api/admin/dashboard` | ADMIN |
+| GET | `/api/admin/revenue` | ADMIN |
 | GET | `/api/admin/products` | STAFF, ADMIN |
 | POST | `/api/admin/products` | STAFF, ADMIN |
 | GET | `/api/admin/products/{id}` | STAFF, ADMIN |
@@ -1476,6 +1477,50 @@ Response `200`:
   }
 }
 ```
+
+### GET `/api/admin/revenue`
+
+Báo cáo doanh thu (ADMIN). Doanh thu = tổng `totalAmount` của các đơn `COMPLETED`,
+gom nhóm theo ngày **giờ Việt Nam (GMT+7)**.
+
+Query params (đều tùy chọn):
+
+| Param | Kiểu | Ghi chú |
+| --- | --- | --- |
+| `from` | LocalDate (`yyyy-MM-dd`) | Ngày bắt đầu, bao gồm. |
+| `to` | LocalDate (`yyyy-MM-dd`) | Ngày kết thúc, bao gồm. |
+
+Nếu thiếu `from` hoặc `to`, mặc định lấy **tháng hiện tại** (ngày 1 → ngày cuối tháng).
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "from": "2026-06-01",
+    "to": "2026-06-03",
+    "totalRevenue": 1750000,
+    "dailySeries": [
+      { "date": "2026-06-01", "revenue": 0 },
+      { "date": "2026-06-02", "revenue": 1500000 },
+      { "date": "2026-06-03", "revenue": 250000 }
+    ],
+    "topProducts": [
+      {
+        "productId": "550e8400-e29b-41d4-a716-446655440777",
+        "productName": "Mực khô loại 1",
+        "quantitySold": 42,
+        "revenue": 8400000
+      }
+    ]
+  }
+}
+```
+
+- `dailySeries`: mỗi ngày trong khoảng (kể cả ngày doanh thu 0), sắp xếp tăng dần.
+- `topProducts`: tối đa 10 sản phẩm bán chạy nhất theo số lượng, giảm dần.
 
 ### Product management
 

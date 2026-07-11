@@ -203,6 +203,25 @@ abstract final class AppStrings {
   static const adminDashboardLoadFailed = 'Không tải được dữ liệu tổng quan.';
   static const adminDashboardLoadUnexpected =
       'Đã xảy ra lỗi khi tải tổng quan hệ thống.';
+
+  // ── Admin revenue ──────────────────────────────────────────────────────────
+  static const adminRevenueTitle = 'Doanh thu';
+  static const viewRevenue = 'Xem doanh thu';
+  static const adminRevenueTotalLabel = 'Tổng doanh thu';
+  static const adminRevenueSelectMonth = 'Chọn tháng';
+  static const adminRevenueDailyTitle = 'Doanh thu theo ngày';
+  static const adminRevenueTopProductsTitle = 'Sản phẩm bán chạy';
+  static const adminRevenueFilterRange = 'Lọc theo khoảng ngày';
+  static const adminRevenueClearRange = 'Xoá bộ lọc ngày';
+  static const adminRevenueFromLabel = 'Từ ngày';
+  static const adminRevenueToLabel = 'Đến ngày';
+  static const adminRevenueEmpty = 'Chưa có doanh thu trong khoảng này.';
+  static const adminRevenueDailyEmpty = 'Không có dữ liệu theo ngày.';
+  static const adminRevenueTopEmpty = 'Chưa có sản phẩm bán ra.';
+  static const adminRevenueLoadFailed = 'Không tải được dữ liệu doanh thu.';
+  static const adminRevenueLoadUnexpected =
+      'Đã xảy ra lỗi khi tải doanh thu.';
+  static String adminRevenueSoldQuantity(int qty) => 'Đã bán: $qty';
   static const adminUsersTitle = 'Quản lý tài khoản';
   static const approveDealer = 'Duyệt đại lý';
   static const adminUsersLoadFailed = 'Không tải được danh sách tài khoản.';
