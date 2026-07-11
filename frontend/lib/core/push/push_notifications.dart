@@ -17,8 +17,15 @@ const String kOneSignalAppId = String.fromEnvironment(
 class PushNotifications {
   const PushNotifications._();
 
+  /// Cầu dao bật/tắt push khi build: `--dart-define=ENABLE_PUSH=false` để tắt
+  /// (dùng cho thiết bị không có Google Play Services, tránh crash native).
+  static const bool _enabled = bool.fromEnvironment(
+    'ENABLE_PUSH',
+    defaultValue: true,
+  );
+
   static Future<void> initialize() async {
-    if (kIsWeb || kOneSignalAppId.isEmpty) {
+    if (!_enabled || kIsWeb || kOneSignalAppId.isEmpty) {
       return;
     }
     try {
