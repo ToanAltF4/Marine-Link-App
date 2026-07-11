@@ -1,5 +1,6 @@
 package com.marinelink.orders;
 
+import com.marinelink.common.AsyncEmailSender;
 import com.marinelink.notifications.NotificationService;
 import com.marinelink.users.User;
 import jakarta.mail.Message;
@@ -23,8 +24,9 @@ class OrderPaymentNotificationServiceTest {
 
     private final NotificationService notificationService = mock(NotificationService.class);
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
+    private final AsyncEmailSender asyncEmailSender = mock(AsyncEmailSender.class);
     private final OrderPaymentNotificationService service =
-            new OrderPaymentNotificationService(notificationService, mailSender);
+            new OrderPaymentNotificationService(notificationService, mailSender, asyncEmailSender);
 
     @Test
     void notifiesAndEmailsUserThatPaidOrderIsWaitingForApproval() {
@@ -50,7 +52,7 @@ class OrderPaymentNotificationServiceTest {
                 eq("Đơn hàng đang chờ duyệt"),
                 eq("Đơn hàng ML-20260615-0001 đã ghi nhận thanh toán và sẽ được duyệt trong thời gian sớm nhất."),
                 eq(order));
-        verify(mailSender).send(any(MimeMessage.class));
+        verify(asyncEmailSender).send(any(MimeMessage.class));
     }
 
     @Test
@@ -74,6 +76,6 @@ class OrderPaymentNotificationServiceTest {
         assertThat(message.getSubject()).isEqualTo("MarineLink - Đơn hàng ML-20260615-0001 đã được duyệt");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("daily-a@example.com");
-        verify(mailSender).send(message);
+        verify(asyncEmailSender).send(message);
     }
 }
