@@ -1,6 +1,9 @@
+import 'package:dio/dio.dart';
+
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_response.dart';
+import '../../../core/constants/app_strings.dart';
 import '../domain/admin_product.dart';
 import '../domain/admin_product_repository.dart';
 import 'admin_product_dto.dart';
@@ -27,6 +30,37 @@ class AdminProductRemoteRepository implements AdminProductRepository {
       },
       fromJson: adminProductsFromJson,
     );
+  }
+
+  @override
+  Future<ApiResponse<List<AdminProductCategory>>> getCategories() {
+    return apiClient.get<List<AdminProductCategory>>(
+      ApiEndpoints.productCategories,
+      fromJson: adminCategoriesFromJson,
+    );
+  }
+
+  @override
+  Future<String> uploadProductImage({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: fileName),
+    });
+    final response = await apiClient.postMultipart<String>(
+      ApiEndpoints.storageUpload,
+      formData: formData,
+      fromJson: uploadedImageUrlFromJson,
+    );
+    final url = response.data;
+    if (!response.success || url == null || url.isEmpty) {
+      throw const ApiException(
+        message: AppStrings.imageUploadFailed,
+        type: ApiExceptionType.server,
+      );
+    }
+    return url;
   }
 
   @override

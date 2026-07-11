@@ -31,6 +31,9 @@ abstract class ApiEndpoints {
   static const String productCategories = '/api/products/categories';
   static String productDetail(String id) => '/api/products/$id';
 
+  // ── Storage ───────────────────────────────────────────────────────────────
+  static const String storageUpload = '/api/storage/upload';
+
   // ── Cart ──────────────────────────────────────────────────────────────────
   static const String cart = '/api/cart';
   static const String cartItems = '/api/cart/items';

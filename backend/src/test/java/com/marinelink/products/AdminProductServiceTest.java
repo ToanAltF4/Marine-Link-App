@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +78,43 @@ class AdminProductServiceTest {
     }
 
     @Test
+    void createProductAssignsDefaultCategoryWhenCategoryIdNull() {
+        Category defaultCategory = demoCategory();
+        AdminProductRequest request = requestWithoutCategory("muc-kho-loai-1");
+        when(productRepository.existsBySlugIgnoreCaseAndDeletedAtIsNull("muc-kho-loai-1")).thenReturn(false);
+        when(categoryRepository.findFirstByActiveTrueOrderByDisplayOrderAscNameAsc())
+                .thenReturn(Optional.of(defaultCategory));
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProductDetailResponse result = adminProductService.createProduct(request);
+
+        assertNotNull(result.id());
+        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(productRepository).save(productCaptor.capture());
+        assertEquals(defaultCategory, productCaptor.getValue().getCategory());
+        verify(categoryRepository).findFirstByActiveTrueOrderByDisplayOrderAscNameAsc();
+        verify(categoryRepository, never()).findActiveByPublicId(any());
+    }
+
+    @Test
+    void updateProductKeepsExistingCategoryWhenCategoryIdNull() {
+        Product product = demoProduct();
+        Category originalCategory = product.getCategory();
+        AdminProductRequest request = requestWithoutCategory("muc-kho-cap-nhat");
+        when(productRepository.findDetailByPublicId(product.getPublicId())).thenReturn(Optional.of(product));
+        when(productRepository.existsActiveSlugExcluding("muc-kho-cap-nhat", product.getPublicId()))
+                .thenReturn(false);
+        when(productRepository.save(product)).thenReturn(product);
+
+        ProductDetailResponse result = adminProductService.updateProduct(product.getPublicId(), request);
+
+        assertEquals("muc-kho-cap-nhat", result.slug());
+        assertEquals(originalCategory, product.getCategory());
+        verify(categoryRepository, never()).findActiveByPublicId(any());
+        verify(categoryRepository, never()).findFirstByActiveTrueOrderByDisplayOrderAscNameAsc();
+    }
+
+    @Test
     void updateProductReplacesEditableFieldsAndPriceTiers() {
         Product product = demoProduct();
         AdminProductRequest request = request(product.getCategory().getPublicId(), "muc-kho-cap-nhat");
@@ -114,6 +152,7 @@ class AdminProductServiceTest {
                 "Muc kho size lon cho don si",
                 "Muc kho phuc vu don si",
                 "Ca Mau",
+                null,
                 new BigDecimal("450000"),
                 "kg",
                 2,
@@ -168,6 +207,27 @@ class AdminProductServiceTest {
                 "Muc kho size lon cho don si",
                 "Muc kho phuc vu don si",
                 "Ca Mau",
+                null,
+                new BigDecimal("450000"),
+                "kg",
+                2,
+                120,
+                ProductStatus.ACTIVE,
+                true,
+                List.of(
+                        new AdminPriceTierRequest(2, 9, new BigDecimal("450000")),
+                        new AdminPriceTierRequest(10, null, new BigDecimal("420000"))));
+    }
+
+    private AdminProductRequest requestWithoutCategory(String slug) {
+        return new AdminProductRequest(
+                null,
+                "Muc kho loai 1",
+                slug,
+                "Muc kho size lon cho don si",
+                "Muc kho phuc vu don si",
+                "Ca Mau",
+                null,
                 new BigDecimal("450000"),
                 "kg",
                 2,

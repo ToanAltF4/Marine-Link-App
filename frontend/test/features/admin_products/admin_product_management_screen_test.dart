@@ -56,6 +56,16 @@ class _FakeRepo implements AdminProductRepository {
   }) => listResponder();
 
   @override
+  Future<ApiResponse<List<AdminProductCategory>>> getCategories() async =>
+      const ApiResponse(success: true, message: 'OK', data: [_category]);
+
+  @override
+  Future<String> uploadProductImage({
+    required List<int> bytes,
+    required String fileName,
+  }) async => 'https://cdn.test/$fileName';
+
+  @override
   Future<ApiResponse<AdminProduct>> createProduct(AdminProductDraft draft) =>
       createResponder(draft);
 
@@ -206,6 +216,97 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('adminProductCard_created-001')), findsNothing);
+  });
+
+  testWidgets('submits the selected category from the dropdown', (
+    tester,
+  ) async {
+    AdminProductDraft? capturedDraft;
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: []),
+        createResponder: (draft) async {
+          capturedDraft = draft;
+          return ApiResponse(
+            success: true,
+            message: 'OK',
+            data: _productFromDraft('created-002', draft),
+          );
+        },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductAddButton')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('adminProductCategoryDropdown')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('adminProductNameField')),
+      'Mực khô mới',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductSlugField')),
+      'muc-kho-moi',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductBasePriceField')),
+      '450000',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductStockField')),
+      '20',
+    );
+
+    // Select the category from the dropdown.
+    await tester.tap(find.byKey(const Key('adminProductCategoryDropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mực khô').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductSaveButton')));
+    await tester.pumpAndSettle();
+
+    expect(capturedDraft, isNotNull);
+    expect(capturedDraft!.categoryId, 'category-001');
+  });
+
+  testWidgets('shows image url field and preview when a url is entered', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: []),
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductAddButton')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('adminProductPickImageButton')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('adminProductImagePreview')), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const Key('adminProductImageUrlField')),
+      'https://cdn.test/muc.png',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminProductImagePreview')), findsOneWidget);
   });
 
   testWidgets('shows empty state when there are no products', (tester) async {

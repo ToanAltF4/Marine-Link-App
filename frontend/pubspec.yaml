@@ -34,6 +34,9 @@ dependencies:
   # Formatting
   intl: ^0.20.1
 
+  # Pick product images from the device gallery/camera
+  image_picker: ^1.1.2
+
   # Realtime chat over STOMP/WebSocket (ML-63)
   stomp_dart_client: ^2.0.0
 

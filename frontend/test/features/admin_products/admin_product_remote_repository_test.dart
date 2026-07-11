@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/core/api/api_client.dart';
 import 'package:marinelink/core/api/api_endpoints.dart';
@@ -7,6 +8,8 @@ import 'package:marinelink/features/admin_products/domain/admin_product.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockApiClient extends Mock implements ApiClient {}
+
+class _FakeFormData extends Fake implements FormData {}
 
 const _product = AdminProduct(
   id: 'product-001',
@@ -34,6 +37,65 @@ const _draft = AdminProductDraft(
 );
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeFormData());
+  });
+
+  test('getCategories flattens categories from products endpoint', () async {
+    final apiClient = _MockApiClient();
+    when(
+      () => apiClient.get<List<AdminProductCategory>>(
+        ApiEndpoints.productCategories,
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).thenAnswer(
+      (_) async => const ApiResponse(
+        success: true,
+        data: [AdminProductCategory(id: 'category-001', name: 'Mực khô')],
+      ),
+    );
+
+    final repository = AdminProductRemoteRepository(apiClient: apiClient);
+    final response = await repository.getCategories();
+
+    expect(response.data?.single.name, 'Mực khô');
+    verify(
+      () => apiClient.get<List<AdminProductCategory>>(
+        ApiEndpoints.productCategories,
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).called(1);
+  });
+
+  test('uploadProductImage posts multipart and returns url', () async {
+    final apiClient = _MockApiClient();
+    when(
+      () => apiClient.postMultipart<String>(
+        ApiEndpoints.storageUpload,
+        formData: any(named: 'formData'),
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const ApiResponse(success: true, data: 'https://cdn/muc.png'),
+    );
+
+    final repository = AdminProductRemoteRepository(apiClient: apiClient);
+    final url = await repository.uploadProductImage(
+      bytes: const [1, 2, 3],
+      fileName: 'muc.png',
+    );
+
+    expect(url, 'https://cdn/muc.png');
+    verify(
+      () => apiClient.postMultipart<String>(
+        ApiEndpoints.storageUpload,
+        formData: any(named: 'formData'),
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).called(1);
+  });
+
   test(
     'getProducts sends normalized filters to admin products endpoint',
     () async {

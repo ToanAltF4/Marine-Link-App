@@ -88,7 +88,7 @@ public class AdminProductService {
         ensureSlugAvailable(request.slug(), null);
         Product product = Product.builder()
                 .publicId(UUID.randomUUID())
-                .category(findCategory(request.categoryId()))
+                .category(resolveCategoryForCreate(request.categoryId()))
                 .build();
         applyRequest(product, request);
         return ProductDetailResponse.from(productRepository.save(product));
@@ -118,7 +118,11 @@ public class AdminProductService {
     private void applyRequest(Product product, AdminProductRequest request) {
         validatePriceTiers(request.priceTiers());
 
-        product.setCategory(findCategory(request.categoryId()));
+        // Chỉ cập nhật danh mục khi client gửi categoryId. Khi null: giữ nguyên
+        // danh mục hiện tại (create đã gán danh mục mặc định ở builder).
+        if (request.categoryId() != null) {
+            product.setCategory(findCategory(request.categoryId()));
+        }
         product.setName(request.name().trim());
         product.setSlug(request.slug().trim());
         product.setShortDescription(trimToNull(request.shortDescription()));
@@ -130,6 +134,10 @@ public class AdminProductService {
         product.setStockQuantity(request.stockQuantity());
         product.setStatus(request.status());
         product.setFeatured(request.isFeatured());
+        // Ảnh: chỉ cập nhật khi client gửi URL (ảnh upload từ thiết bị); null/blank -> giữ nguyên.
+        if (request.imageUrl() != null && !request.imageUrl().isBlank()) {
+            product.setImageUrl(request.imageUrl().trim());
+        }
 
         product.getPriceTiers().clear();
         for (AdminPriceTierRequest tierRequest : safeTiers(request.priceTiers())) {
@@ -146,6 +154,19 @@ public class AdminProductService {
     private Category findCategory(UUID categoryId) {
         return categoryRepository.findActiveByPublicId(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
+    }
+
+    /**
+     * Resolve the category for a newly created product. When the admin does not
+     * provide a categoryId, fall back to the first active category so that the
+     * backend owns the default category assignment.
+     */
+    private Category resolveCategoryForCreate(UUID categoryId) {
+        if (categoryId != null) {
+            return findCategory(categoryId);
+        }
+        return categoryRepository.findFirstByActiveTrueOrderByDisplayOrderAscNameAsc()
+                .orElseThrow(() -> new ResourceNotFoundException("Không có danh mục mặc định"));
     }
 
     private void ensureSlugAvailable(String slug, UUID excludedPublicId) {

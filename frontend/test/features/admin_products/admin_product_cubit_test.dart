@@ -15,6 +15,8 @@ class _FakeRepo implements AdminProductRepository {
   )
   updateResponder;
   final Future<ApiResponse<void>> Function(String id) deleteResponder;
+  final Future<String> Function(List<int> bytes, String fileName)
+  uploadResponder;
 
   _FakeRepo({
     required this.listResponder,
@@ -26,7 +28,11 @@ class _FakeRepo implements AdminProductRepository {
     )?
     updateResponder,
     Future<ApiResponse<void>> Function(String id)? deleteResponder,
-  }) : createResponder =
+    Future<String> Function(List<int> bytes, String fileName)? uploadResponder,
+  }) : uploadResponder =
+           uploadResponder ??
+           ((_, fileName) async => 'https://cdn.test/$fileName'),
+       createResponder =
            createResponder ??
            ((_) async =>
                const ApiResponse(success: false, message: 'Không tạo được')),
@@ -47,6 +53,16 @@ class _FakeRepo implements AdminProductRepository {
     AdminProductStatus? status,
     bool? featured,
   }) => listResponder();
+
+  @override
+  Future<ApiResponse<List<AdminProductCategory>>> getCategories() async =>
+      const ApiResponse(success: true, message: 'OK', data: [_category]);
+
+  @override
+  Future<String> uploadProductImage({
+    required List<int> bytes,
+    required String fileName,
+  }) => uploadResponder(bytes, fileName);
 
   @override
   Future<ApiResponse<AdminProduct>> createProduct(AdminProductDraft draft) =>
@@ -258,6 +274,46 @@ void main() {
           ),
     ],
   );
+
+  test('load populates categories from repository', () async {
+    final cubit = AdminProductCubit(
+      repository: _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_product]),
+      ),
+    );
+
+    await cubit.load();
+
+    expect(cubit.state.categories, const [_category]);
+  });
+
+  test('uploadProductImage returns url from repository', () async {
+    final cubit = AdminProductCubit(
+      repository: _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_product]),
+      ),
+    );
+
+    final url = await cubit.uploadProductImage(const [1, 2, 3], 'muc.png');
+
+    expect(url, 'https://cdn.test/muc.png');
+  });
+
+  test('uploadProductImage returns null when repository throws', () async {
+    final cubit = AdminProductCubit(
+      repository: _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_product]),
+        uploadResponder: (_, _) async => throw Exception('boom'),
+      ),
+    );
+
+    final url = await cubit.uploadProductImage(const [1, 2, 3], 'muc.png');
+
+    expect(url, isNull);
+  });
 }
 
 const _category = AdminProductCategory(id: 'category-001', name: 'Mực khô');

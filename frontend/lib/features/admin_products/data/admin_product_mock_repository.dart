@@ -35,6 +35,25 @@ class AdminProductMockRepository implements AdminProductRepository {
   }
 
   @override
+  Future<ApiResponse<List<AdminProductCategory>>> getCategories() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return const ApiResponse(
+      success: true,
+      message: 'OK',
+      data: _sampleCategories,
+    );
+  }
+
+  @override
+  Future<String> uploadProductImage({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return 'https://cdn.marinelink.mock/uploads/$fileName';
+  }
+
+  @override
   Future<ApiResponse<AdminProduct>> createProduct(
     AdminProductDraft draft,
   ) async {
@@ -52,14 +71,17 @@ class AdminProductMockRepository implements AdminProductRepository {
       );
     }
 
-    final category = _categoryFromDraft(draft);
+    // Empty category → backend assigns the default category (first active one).
+    final category = draft.categoryId.trim().isEmpty
+        ? _sampleCategories.first
+        : _categoryFromDraft(draft);
     final product = AdminProduct(
       id: 'product-${_nextId++}',
       name: draft.name,
       slug: draft.slug,
       description: draft.description,
       origin: draft.origin,
-      imageUrl: null,
+      imageUrl: draft.imageUrl,
       basePrice: draft.basePrice,
       unit: draft.unit,
       minOrderQuantity: draft.minOrderQuantity,
@@ -107,13 +129,17 @@ class AdminProductMockRepository implements AdminProductRepository {
       slug: draft.slug,
       description: draft.description,
       origin: draft.origin,
+      imageUrl: draft.imageUrl ?? existing.imageUrl,
       basePrice: draft.basePrice,
       unit: draft.unit,
       minOrderQuantity: draft.minOrderQuantity,
       stockQuantity: draft.stockQuantity,
       status: draft.status,
       isFeatured: draft.isFeatured,
-      category: _categoryFromDraft(draft),
+      // Empty category → keep the product's existing category unchanged.
+      category: draft.categoryId.trim().isEmpty
+          ? existing.category
+          : _categoryFromDraft(draft),
       priceTiers: _tiersWithIds(draft.priceTiers),
     );
     _products[index] = updated;
@@ -157,7 +183,8 @@ class AdminProductMockRepository implements AdminProductRepository {
   }
 
   String? _validateDraft(AdminProductDraft draft) {
-    if (draft.categoryId.trim().isEmpty) return AppStrings.categoryRequired;
+    // Category is optional: empty means the backend picks a default (create)
+    // or keeps the existing category (update).
     if (draft.name.trim().isEmpty) return AppStrings.productNameRequired;
     if (draft.slug.trim().isEmpty) return AppStrings.slugRequired;
     if (draft.basePrice <= 0) return AppStrings.basePriceMustBePositive;

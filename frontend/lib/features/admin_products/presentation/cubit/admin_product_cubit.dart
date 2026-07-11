@@ -18,6 +18,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
     emit(state.copyWith(status: AdminProductStatusView.loading));
     try {
       final response = await repository.getProducts();
+      final categories = await _loadCategories();
       if (response.success && response.data != null) {
         final products = response.data!;
         emit(
@@ -26,6 +27,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
                 ? AdminProductStatusView.empty
                 : AdminProductStatusView.success,
             products: products,
+            categories: categories,
           ),
         );
       } else {
@@ -49,6 +51,34 @@ class AdminProductCubit extends Cubit<AdminProductState> {
           ),
         ),
       );
+    }
+  }
+
+  /// Load selectable categories for the product form. Categories are secondary
+  /// data: a failure here must not fail the whole product list load, so we keep
+  /// whatever was previously loaded.
+  Future<List<AdminProductCategory>> _loadCategories() async {
+    try {
+      final response = await repository.getCategories();
+      if (response.success && response.data != null) {
+        return response.data!;
+      }
+    } catch (_) {
+      // ignore — keep existing categories
+    }
+    return state.categories;
+  }
+
+  /// Upload an image picked from the device and return its public URL, or null
+  /// if the upload failed. The form uses the returned URL as the product image.
+  Future<String?> uploadProductImage(List<int> bytes, String fileName) async {
+    try {
+      return await repository.uploadProductImage(
+        bytes: bytes,
+        fileName: fileName,
+      );
+    } catch (_) {
+      return null;
     }
   }
 

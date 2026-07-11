@@ -609,6 +609,12 @@ abstract final class AppStrings {
   static const originLabel = 'Xuất xứ';
   static const shortDescriptionLabel = 'Mô tả tóm tắt';
   static const descriptionLabel = 'Mô tả';
+  static const noCategoryOption = 'Danh mục mặc định (hệ thống chọn)';
+  static const productImageLabel = 'Ảnh sản phẩm';
+  static const productImageUrlLabel = 'Đường dẫn ảnh (URL)';
+  static const pickImageFromDevice = 'Chọn ảnh từ thiết bị';
+  static const uploadingImage = 'Đang tải ảnh lên...';
+  static const imageUploadFailed = 'Không tải được ảnh lên. Vui lòng thử lại.';
   static const firstWholesalePrice = 'Giá sỉ đầu tiên';
   static const fromLabel = 'Từ';
   static const toLabel = 'Đến';

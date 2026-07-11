@@ -7,6 +7,7 @@ enum AdminProductActionStatus { idle, saving, deleting, success, failure }
 class AdminProductState extends Equatable {
   final AdminProductStatusView status;
   final List<AdminProduct> products;
+  final List<AdminProductCategory> categories;
   final String query;
   final AdminProductStatus? selectedStatus;
   final bool? selectedFeatured;
@@ -18,6 +19,7 @@ class AdminProductState extends Equatable {
   const AdminProductState({
     this.status = AdminProductStatusView.initial,
     this.products = const [],
+    this.categories = const [],
     this.query = '',
     this.selectedStatus,
     this.selectedFeatured,
@@ -43,20 +45,10 @@ class AdminProductState extends Equatable {
     }).toList();
   }
 
-  List<AdminProductCategory> get categories {
-    final byId = <String, AdminProductCategory>{};
-    for (final product in products) {
-      final category = product.category;
-      if (category != null && category.id.isNotEmpty) {
-        byId[category.id] = category;
-      }
-    }
-    return byId.values.toList();
-  }
-
   AdminProductState copyWith({
     AdminProductStatusView? status,
     List<AdminProduct>? products,
+    List<AdminProductCategory>? categories,
     String? query,
     AdminProductStatus? selectedStatus,
     bool clearSelectedStatus = false,
@@ -72,6 +64,7 @@ class AdminProductState extends Equatable {
     return AdminProductState(
       status: status ?? this.status,
       products: products ?? this.products,
+      categories: categories ?? this.categories,
       query: query ?? this.query,
       selectedStatus: clearSelectedStatus
           ? null
@@ -94,6 +87,7 @@ class AdminProductState extends Equatable {
   List<Object?> get props => [
     status,
     products,
+    categories,
     query,
     selectedStatus,
     selectedFeatured,
