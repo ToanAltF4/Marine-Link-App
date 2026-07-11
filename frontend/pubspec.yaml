@@ -46,6 +46,9 @@ dependencies:
   google_sign_in: ^6.2.1
   flutter_local_notifications: ^22.0.1
 
+  # Push notification (OneSignal) — ML-72: nhận thông báo khi app tắt/màn khóa
+  onesignal_flutter: ^5.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

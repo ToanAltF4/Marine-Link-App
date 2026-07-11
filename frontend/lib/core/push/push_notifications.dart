@@ -1,0 +1,32 @@
+import 'package:flutter/foundation.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+
+/// App ID công khai của OneSignal (an toàn để nhúng vào app).
+/// Có thể override khi build: `--dart-define=ONESIGNAL_APP_ID=...`.
+const String kOneSignalAppId = String.fromEnvironment(
+  'ONESIGNAL_APP_ID',
+  defaultValue: '93b7e231-08ca-4254-963e-93a185103592',
+);
+
+/// Khởi tạo OneSignal để thiết bị nhận push notification (kể cả khi app đã tắt
+/// hoặc màn hình khóa).
+///
+/// Thiết kế fail-safe: web không hỗ trợ OneSignal nên bỏ qua; mọi lỗi khởi tạo
+/// đều được nuốt để không bao giờ chặn việc mở app. Chỉ khởi tạo — thiết bị tự
+/// đăng ký với OneSignal; việc gửi push do backend/dashboard đảm nhiệm.
+class PushNotifications {
+  const PushNotifications._();
+
+  static Future<void> initialize() async {
+    if (kIsWeb || kOneSignalAppId.isEmpty) {
+      return;
+    }
+    try {
+      OneSignal.initialize(kOneSignalAppId);
+      // Xin quyền hiển thị thông báo (Android 13+ / iOS bắt buộc).
+      await OneSignal.Notifications.requestPermission(true);
+    } catch (_) {
+      // Không để lỗi push chặn khởi động app.
+    }
+  }
+}
