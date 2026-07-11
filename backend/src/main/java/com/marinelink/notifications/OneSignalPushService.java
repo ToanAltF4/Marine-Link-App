@@ -37,7 +37,7 @@ public class OneSignalPushService {
             @Value("${app.onesignal.rest-api-key:}") String restApiKey,
             @Value("${app.onesignal.base-url:https://onesignal.com/api/v1/notifications}") String baseUrl,
             @Value("${app.onesignal.auth-scheme:Basic}") String authScheme,
-            @Value("${app.onesignal.segment:Subscribed Users}") String segment) {
+            @Value("${app.onesignal.segment:Total Subscriptions}") String segment) {
         this(enabled, appId, restApiKey, baseUrl, authScheme, segment, RestClient.create());
     }
 
