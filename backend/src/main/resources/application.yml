@@ -54,7 +54,8 @@ spring:
         debug: false
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Render (và nhiều PaaS) tự cấp biến PORT; local dùng SERVER_PORT hoặc 8080.
+  port: ${PORT:${SERVER_PORT:8080}}
   servlet:
     context-path: /
 
