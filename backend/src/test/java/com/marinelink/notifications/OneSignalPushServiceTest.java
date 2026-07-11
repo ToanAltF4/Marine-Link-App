@@ -43,6 +43,26 @@ class OneSignalPushServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void userPayloadTargetsExternalId() {
+        Map<String, Object> payload =
+                service(true, "app-id", "key").buildUserPayload("user-123", "Tiêu đề", "Nội dung");
+
+        assertThat(payload.get("target_channel")).isEqualTo("push");
+        Map<String, Object> aliases = (Map<String, Object>) payload.get("include_aliases");
+        assertThat((List<String>) aliases.get("external_id")).containsExactly("user-123");
+        assertThat((Map<String, String>) payload.get("contents")).containsEntry("vi", "Nội dung");
+    }
+
+    @Test
+    void sendToExternalUserNoOpWhenNotConfiguredOrBlankId() {
+        assertThatCode(() -> service(true, "", "").sendToExternalUser("u", "t", "b"))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> service(true, "app", "key").sendToExternalUser("", "t", "b"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void payloadTargetsSegmentWithBilingualContent() {
         Map<String, Object> payload =
                 service(true, "app-id-123", "key").buildPayload("Nghỉ lễ 30/4", "Kho nghỉ 2 ngày");

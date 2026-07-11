@@ -126,6 +126,12 @@ public class NotificationService {
         }
 
         notificationRepository.save(builder.build());
+
+        // Đẩy push OneSignal tới đúng thiết bị của người dùng (sau commit, fail-safe).
+        if (user.getPublicId() != null) {
+            eventPublisher.publishEvent(
+                    new UserPushEvent(user.getPublicId().toString(), title, body));
+        }
     }
 
     private NotificationResponseDTO toDTO(Notification n) {
