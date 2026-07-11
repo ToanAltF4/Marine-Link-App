@@ -8,6 +8,7 @@ import '../../features/auth/data/auth_mock_repository.dart';
 import '../../features/auth/data/auth_remote_repository.dart';
 import '../../features/auth/data/google_sign_in_service.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/auth/presentation/cubit/forgot_password_cubit.dart';
 
 // Products
 import '../../features/products/domain/product_repository.dart';
@@ -136,6 +137,9 @@ Future<void> setupServiceLocator({
   );
   sl.registerFactory<AuthBloc>(
     () => AuthBloc(authRepository: sl<AuthRepository>()),
+  );
+  sl.registerFactory<ForgotPasswordCubit>(
+    () => ForgotPasswordCubit(authRepository: sl<AuthRepository>()),
   );
 
   // ── Products ─────────────────────────────────────────────────────────────────

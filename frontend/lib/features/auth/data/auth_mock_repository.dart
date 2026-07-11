@@ -155,6 +155,25 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<void> forgotPassword({required String email}) async {
+    // Backend always returns 204 to avoid email enumeration — mock mirrors that.
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: treat "000000" as an invalid/expired OTP to exercise the error path.
+    if (otpCode == '000000') {
+      throw Exception(AppStrings.otpInvalidOrUsed);
+    }
+  }
+
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,

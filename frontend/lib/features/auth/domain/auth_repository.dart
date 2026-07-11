@@ -31,6 +31,17 @@ abstract class AuthRepository {
 
   Future<void> resendOtp({required String email});
 
+  /// Request a password-reset OTP for [email]. The backend always responds 204
+  /// regardless of whether the account exists (to avoid email enumeration).
+  Future<void> forgotPassword({required String email});
+
+  /// Complete a password reset using the OTP sent to [email].
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+  });
+
   Future<void> logout();
 
   Future<void> changePassword({

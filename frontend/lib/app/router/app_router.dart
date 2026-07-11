@@ -14,9 +14,11 @@ import '../../features/chat/presentation/screens/staff_chat_management_screen.da
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/change_password_screen.dart';
 import '../../features/cart/presentation/screens/cart_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
@@ -40,6 +42,8 @@ abstract class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const verifyEmail = '/verify-email';
+  static const forgotPassword = '/forgot-password';
+  static const resetPassword = '/reset-password';
   static const changePassword = '/change-password';
   static const home = '/home';
   static const productList = '/products';
@@ -132,6 +136,17 @@ class AppRouter {
         builder: (context, state) {
           final email = state.extra as String? ?? '';
           return OtpVerificationScreen(email: email);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) {
+          final email = state.extra as String? ?? '';
+          return ResetPasswordScreen(email: email);
         },
       ),
       GoRoute(path: AppRoutes.vnpayResult, builder: _vnpayResultBuilder),
