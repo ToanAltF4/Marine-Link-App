@@ -1,5 +1,5 @@
+import '../../../../core/utils/date_time_formatter.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
@@ -18,7 +18,7 @@ class OrderStatusTimeline extends StatelessWidget {
     }
     return Column(
       children: history.map((step) {
-        final time = DateFormat('dd/MM HH:mm').format(step.createdAt);
+        final time = DateTimeFormatter.shortDateTime(step.createdAt);
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(

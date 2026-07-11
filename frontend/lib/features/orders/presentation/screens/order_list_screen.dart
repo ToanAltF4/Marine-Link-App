@@ -1,3 +1,4 @@
+import '../../../../core/utils/date_time_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -332,7 +333,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = DateFormat('dd/MM/yyyy - hh:mm a').format(order.createdAt);
+    final date = DateTimeFormatter.dateTime12h(order.createdAt);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,

@@ -1,9 +1,9 @@
+import '../../../../core/utils/date_time_formatter.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
@@ -629,7 +629,7 @@ class _SmallBadge extends StatelessWidget {
 
 String _formatTime(DateTime? value) {
   if (value == null) return AppStrings.noMessageYet;
-  return DateFormat('HH:mm dd/MM').format(value.toLocal());
+  return DateTimeFormatter.timeThenDate(value);
 }
 
 String _orderStatusLabel(String status) {
