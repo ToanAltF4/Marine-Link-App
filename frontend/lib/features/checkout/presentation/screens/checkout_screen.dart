@@ -244,11 +244,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   label: Text(AppStrings.paymentCod),
                 ),
                 ButtonSegment<PaymentMethod>(
-                  value: PaymentMethod.bankTransfer,
-                  icon: Icon(Icons.account_balance_outlined),
-                  label: Text(AppStrings.paymentBankTransfer),
-                ),
-                ButtonSegment<PaymentMethod>(
                   value: PaymentMethod.vnpay,
                   icon: Icon(Icons.qr_code_rounded),
                   label: Text(AppStrings.paymentVnpay),
