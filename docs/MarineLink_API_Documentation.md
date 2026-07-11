@@ -150,6 +150,8 @@ Orders:
 | GET | `/api/auth/email-availability` | Public |
 | GET | `/api/auth/phone-availability` | Public |
 | POST | `/api/auth/register` | Public |
+| POST | `/api/auth/forgot-password` | Public |
+| POST | `/api/auth/reset-password` | Public |
 | POST | `/api/auth/logout` | Authenticated |
 | GET | `/api/users/me` | Authenticated |
 | PUT | `/api/users/me` | Authenticated |
@@ -341,6 +343,25 @@ Validation/business rules:
 - `email` và `phone` phải unique theo user chưa soft delete.
 - Password không trả về response.
 - Backend gán role mặc định `USER` qua cột `role_id` của `users`.
+
+### POST `/api/auth/forgot-password`
+
+Gửi mã OTP đặt lại mật khẩu tới email của tài khoản đang hoạt động. Luôn trả `204 No Content` (không tiết lộ email có tồn tại hay không).
+
+Request:
+```json
+{ "email": "daily-a@marinelink.demo" }
+```
+
+### POST `/api/auth/reset-password`
+
+Đặt lại mật khẩu bằng OTP hợp lệ đã gửi qua email. Thành công trả `204 No Content`; OTP sai/hết hạn trả lỗi (`success:false`, message tiếng Việt).
+
+Request:
+```json
+{ "email": "daily-a@marinelink.demo", "otpCode": "123456", "newPassword": "MatKhauMoi123" }
+```
+> Xác nhận mật khẩu (nhập 2 lần) được kiểm ở client; server chỉ nhận `newPassword`.
 
 ### POST `/api/auth/logout`
 
