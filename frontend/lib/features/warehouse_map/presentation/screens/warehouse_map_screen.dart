@@ -101,9 +101,12 @@ class _WarehouseMapView extends StatelessWidget {
                 onRetry: () => context.read<WarehouseMapCubit>().load(),
               ),
               WarehouseMapStatus.empty => const WarehouseEmpty(),
-              WarehouseMapStatus.success => _WarehouseContent(
-                warehouses: state.warehouses,
-                mapLauncher: mapLauncher,
+              WarehouseMapStatus.success => RefreshIndicator(
+                onRefresh: () => context.read<WarehouseMapCubit>().load(),
+                child: _WarehouseContent(
+                  warehouses: state.warehouses,
+                  mapLauncher: mapLauncher,
+                ),
               ),
             };
           },
@@ -126,6 +129,7 @@ class _WarehouseContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       key: const Key('warehouseMapList'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         WarehouseSummary(warehouses: warehouses),

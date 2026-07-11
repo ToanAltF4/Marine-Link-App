@@ -22,6 +22,7 @@ class CartBody extends StatelessWidget {
   Widget build(BuildContext context) {
     if (state.cart.isEmpty) {
       return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
         child: Center(
           child: ConstrainedBox(
@@ -40,6 +41,7 @@ class CartBody extends StatelessWidget {
 
     return SingleChildScrollView(
       key: const Key('cartScrollView'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 18),
       child: Center(
         child: ConstrainedBox(

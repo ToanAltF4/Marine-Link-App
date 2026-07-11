@@ -11,6 +11,7 @@ class ProductScrollableState extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(0, 0, 0, 28),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),

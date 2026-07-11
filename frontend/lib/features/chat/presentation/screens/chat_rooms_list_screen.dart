@@ -115,14 +115,20 @@ class _ChatRoomsView extends StatelessWidget {
                   onAction: () => _createRoom(context),
                 );
               case ChatRoomsStatus.success:
-                return ListView.separated(
-                  key: const Key('chatRoomsList'),
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
-                  itemCount: state.rooms.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) => _ChatRoomTile(
-                    room: state.rooms[index],
-                    onTap: () => _openRoom(context, state.rooms[index].roomId),
+                return RefreshIndicator(
+                  onRefresh: () =>
+                      context.read<ChatRoomsCubit>().load(silent: true),
+                  child: ListView.separated(
+                    key: const Key('chatRoomsList'),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+                    itemCount: state.rooms.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) => _ChatRoomTile(
+                      room: state.rooms[index],
+                      onTap: () =>
+                          _openRoom(context, state.rooms[index].roomId),
+                    ),
                   ),
                 );
             }

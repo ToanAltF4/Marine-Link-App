@@ -66,26 +66,31 @@ class _AdminDashboardView extends StatelessWidget {
                       );
                     case AdminDashboardStatus.success:
                       final data = state.dashboard!;
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                        children: [
-                          SystemSummaryBand(data: data),
-                          const SizedBox(height: 20),
-                          OperationsSection(
-                            onOpenOrders: () =>
-                                context.push(AppRoutes.adminOrders),
-                            onOpenProducts: () =>
-                                context.push(AppRoutes.adminProducts),
-                            onOpenUsers: () =>
-                                context.push(AppRoutes.adminUsers),
-                          ),
-                          const SizedBox(height: 20),
-                          RecentOrdersSection(
-                            orders: data.recentOrders,
-                            onViewAll: () =>
-                                context.push(AppRoutes.adminOrders),
-                          ),
-                        ],
+                      return RefreshIndicator(
+                        onRefresh: () =>
+                            context.read<AdminDashboardCubit>().load(),
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                          children: [
+                            SystemSummaryBand(data: data),
+                            const SizedBox(height: 20),
+                            OperationsSection(
+                              onOpenOrders: () =>
+                                  context.push(AppRoutes.adminOrders),
+                              onOpenProducts: () =>
+                                  context.push(AppRoutes.adminProducts),
+                              onOpenUsers: () =>
+                                  context.push(AppRoutes.adminUsers),
+                            ),
+                            const SizedBox(height: 20),
+                            RecentOrdersSection(
+                              orders: data.recentOrders,
+                              onViewAll: () =>
+                                  context.push(AppRoutes.adminOrders),
+                            ),
+                          ],
+                        ),
                       );
                   }
                 },

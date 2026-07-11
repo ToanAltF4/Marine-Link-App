@@ -46,10 +46,14 @@ class _CartScreenState extends State<CartScreen> {
               Expanded(
                 child: BlocBuilder<CartCubit, CartState>(
                   builder: (context, state) {
-                    return CartBody(
-                      state: state,
-                      onCheckout: () => _goCheckout(context),
-                      onContinueShopping: () => _goProducts(context),
+                    return RefreshIndicator(
+                      onRefresh: () =>
+                          context.read<CartCubit>().loadCart(force: true),
+                      child: CartBody(
+                        state: state,
+                        onCheckout: () => _goCheckout(context),
+                        onContinueShopping: () => _goProducts(context),
+                      ),
                     );
                   },
                 ),

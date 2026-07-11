@@ -55,7 +55,10 @@ class _AdminUserView extends StatelessWidget {
               case AdminUserStatusView.empty:
                 return const _AdminUsersEmpty();
               case AdminUserStatusView.success:
-                return _AdminUsersContent(state: state);
+                return RefreshIndicator(
+                  onRefresh: () => context.read<AdminUserCubit>().load(),
+                  child: _AdminUsersContent(state: state),
+                );
             }
           },
         ),
@@ -125,6 +128,7 @@ class _AdminUsersContent extends StatelessWidget {
     final visibleUsers = state.visibleUsers;
     return ListView(
       key: const Key('adminUsersList'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         _AdminUsersHeader(users: state.users),

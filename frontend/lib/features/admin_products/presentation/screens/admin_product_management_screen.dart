@@ -78,7 +78,10 @@ class _AdminProductView extends StatelessWidget {
               case AdminProductStatusView.empty:
                 return const AdminProductsEmpty();
               case AdminProductStatusView.success:
-                return _AdminProductsContent(state: state);
+                return RefreshIndicator(
+                  onRefresh: () => context.read<AdminProductCubit>().load(),
+                  child: _AdminProductsContent(state: state),
+                );
             }
           },
         ),
@@ -97,6 +100,7 @@ class _AdminProductsContent extends StatelessWidget {
     final visibleProducts = state.visibleProducts;
     return ListView(
       key: const Key('adminProductsList'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         AdminProductsHeader(products: state.products),

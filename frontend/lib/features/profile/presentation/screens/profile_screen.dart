@@ -154,23 +154,27 @@ class _ProfileViewState extends State<_ProfileView> {
 
             _fillFields(profile);
 
-            return SingleChildScrollView(
-              key: const Key('profileScrollView'),
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _ProfileHeader(profile: profile),
-                    const SizedBox(height: 16),
-                    _buildInfoPanel(),
-                    const SizedBox(height: 16),
-                    if (_isEditing)
-                      _buildActionButtons(context, state)
-                    else
-                      _buildNavigationTiles(context),
-                  ],
+            return RefreshIndicator(
+              onRefresh: () => context.read<ProfileCubit>().loadProfile(),
+              child: SingleChildScrollView(
+                key: const Key('profileScrollView'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ProfileHeader(profile: profile),
+                      const SizedBox(height: 16),
+                      _buildInfoPanel(),
+                      const SizedBox(height: 16),
+                      if (_isEditing)
+                        _buildActionButtons(context, state)
+                      else
+                        _buildNavigationTiles(context),
+                    ],
+                  ),
                 ),
               ),
             );
