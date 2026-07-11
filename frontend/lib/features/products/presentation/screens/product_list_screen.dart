@@ -221,7 +221,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         ),
                       ),
                     ),
-                    _buildBody(theme, state, visibleProducts),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _handleRefresh,
+                        child: _buildBody(theme, state, visibleProducts),
+                      ),
+                    ),
                   ],
                 );
               },
@@ -293,92 +298,88 @@ class _ProductListScreenState extends State<ProductListScreen> {
     List<Product> visibleProducts,
   ) {
     if (state is ProductInitial || state is ProductListLoading) {
-      return const Expanded(
-        child: ProductScrollableState(
-          child: AppLoadingIndicator(message: AppStrings.loadingProductList),
-        ),
+      return const ProductScrollableState(
+        child: AppLoadingIndicator(message: AppStrings.loadingProductList),
       );
     }
 
     if (state is ProductListError) {
-      return Expanded(
-        child: ProductScrollableState(
-          child: AppErrorState(
-            message: state.message,
-            onRetry: _requestProducts,
-          ),
-        ),
+      return ProductScrollableState(
+        child: AppErrorState(message: state.message, onRetry: _requestProducts),
       );
     }
 
     if (visibleProducts.isEmpty) {
-      return Expanded(
-        child: ProductScrollableState(
-          child: AppEmptyState(
-            key: const Key('productListEmptyState'),
-            message: AppStrings.noMatchingProducts,
-            actionLabel: AppStrings.clearFilters,
-            onAction: _resetProductFilters,
-            icon: Icons.search_off_outlined,
-          ),
+      return ProductScrollableState(
+        child: AppEmptyState(
+          key: const Key('productListEmptyState'),
+          message: AppStrings.noMatchingProducts,
+          actionLabel: AppStrings.clearFilters,
+          onAction: _resetProductFilters,
+          icon: Icons.search_off_outlined,
         ),
       );
     }
 
-    return Expanded(
-      child: ClipRect(
-        child: ListView.separated(
-          key: ProductListScreen.productListScrollKey,
-          clipBehavior: Clip.hardEdge,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
-          itemCount: visibleProducts.length + 1,
-          separatorBuilder: (_, index) => index == 0
-              ? const SizedBox(height: 8)
-              : const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  WholesalePolicyCard(
-                    categoryName: _selectedCategoryId == null
-                        ? null
-                        : _screenTitle(),
-                  ),
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      children: [
-                        Text(
-                          AppStrings.productCount(visibleProducts.length),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.w800,
-                          ),
+    return ClipRect(
+      child: ListView.separated(
+        key: ProductListScreen.productListScrollKey,
+        clipBehavior: Clip.hardEdge,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+        itemCount: visibleProducts.length + 1,
+        separatorBuilder: (_, index) =>
+            index == 0 ? const SizedBox(height: 8) : const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                WholesalePolicyCard(
+                  categoryName: _selectedCategoryId == null
+                      ? null
+                      : _screenTitle(),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        AppStrings.productCount(visibleProducts.length),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.w800,
                         ),
-                        const Spacer(),
-                        Text(
-                          _sortLabel(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF006A7C),
-                            fontWeight: FontWeight.w700,
-                          ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _sortLabel(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF006A7C),
+                          fontWeight: FontWeight.w700,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              );
-            }
-            final product = visibleProducts[index - 1];
-            return ProductListCard(
-              product: product,
-              onTap: () => _openProductDetail(product.id),
+                ),
+              ],
             );
-          },
-        ),
+          }
+          final product = visibleProducts[index - 1];
+          return ProductListCard(
+            product: product,
+            onTap: () => _openProductDetail(product.id),
+          );
+        },
       ),
+    );
+  }
+
+  Future<void> _handleRefresh() async {
+    _requestProducts();
+    await _productBloc.stream.firstWhere(
+      (state) => state is! ProductListLoading,
     );
   }
 

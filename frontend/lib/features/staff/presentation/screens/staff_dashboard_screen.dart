@@ -29,22 +29,27 @@ class StaffDashboardScreen extends StatelessWidget {
               onProfilePressed: () => context.push(AppRoutes.staffProfile),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                children: [
-                  _WorkOverviewSection(
-                    onOpenChats: () => context.push(AppRoutes.staffChat),
-                    onOpenOrders: () => context.push(AppRoutes.staffOrders),
-                    onOpenWarehouses: () =>
-                        context.push(AppRoutes.staffWarehouses),
-                  ),
-                  const SizedBox(height: 20),
-                  _QuickActionsSection(
-                    onOpenProducts: () => context.push(AppRoutes.staffProducts),
-                  ),
-                  const SizedBox(height: 20),
-                  const _SupportChatSection(),
-                ],
+              child: RefreshIndicator(
+                onRefresh: () async {},
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                  children: [
+                    _WorkOverviewSection(
+                      onOpenChats: () => context.push(AppRoutes.staffChat),
+                      onOpenOrders: () => context.push(AppRoutes.staffOrders),
+                      onOpenWarehouses: () =>
+                          context.push(AppRoutes.staffWarehouses),
+                    ),
+                    const SizedBox(height: 20),
+                    _QuickActionsSection(
+                      onOpenProducts: () =>
+                          context.push(AppRoutes.staffProducts),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SupportChatSection(),
+                  ],
+                ),
               ),
             ),
           ],

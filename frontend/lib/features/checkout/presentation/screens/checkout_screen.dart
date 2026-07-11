@@ -609,16 +609,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _goBack(BuildContext context) {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-      return;
-    }
-    // Cart opens checkout with go() and both share the same buyer tab, so there
-    // is no page to pop. Go straight to the cart tab instead of popOrGo — the
-    // latter treats /cart and /checkout as one tab and jumps to the previous
-    // buyer tab (or no-ops), which is why "back" did not return to the cart.
-    GoRouter.of(context).go(AppRoutes.cart);
+    // The checkout flow is opened from the buyer profile page, so the header
+    // back button returns the user to their profile rather than the cart.
+    GoRouter.of(context).go(AppRoutes.profile);
   }
 
   void _goToProducts(BuildContext context) {

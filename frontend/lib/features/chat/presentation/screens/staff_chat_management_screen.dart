@@ -97,7 +97,10 @@ class _StaffChatViewState extends State<_StaffChatView> {
                   onRetry: () => context.read<StaffChatCubit>().load(),
                 ),
                 StaffChatStatus.empty ||
-                StaffChatStatus.success => _StaffChatContent(state: state),
+                StaffChatStatus.success => RefreshIndicator(
+                  onRefresh: () => context.read<StaffChatCubit>().refresh(),
+                  child: _StaffChatContent(state: state),
+                ),
               };
             },
           ),
@@ -116,6 +119,7 @@ class _StaffChatContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       key: const Key('staffChatRoomsList'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         _StaffChatSummary(state: state),

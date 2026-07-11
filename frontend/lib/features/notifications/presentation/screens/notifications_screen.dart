@@ -55,52 +55,64 @@ class _NotificationsView extends StatelessWidget {
         bottom: false,
         child: BlocBuilder<NotificationCubit, NotificationState>(
           builder: (context, state) {
-            return ListView(
-              key: const Key('notificationsScrollView'),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-              children: [
-                NotificationHeader(user: user),
-                const SizedBox(height: 18),
-                if (canManageBroadcasts) ...[
-                  const _BroadcastManager(),
-                  const SizedBox(height: 20),
+            return RefreshIndicator(
+              onRefresh: () async {
+                final notificationCubit = context.read<NotificationCubit>();
+                final broadcastCubit = canManageBroadcasts
+                    ? context.read<BroadcastCubit>()
+                    : null;
+                await notificationCubit.loadNotifications();
+                await broadcastCubit?.loadBroadcasts();
+              },
+              child: ListView(
+                key: const Key('notificationsScrollView'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                children: [
+                  NotificationHeader(user: user),
+                  const SizedBox(height: 18),
+                  if (canManageBroadcasts) ...[
+                    const _BroadcastManager(),
+                    const SizedBox(height: 20),
+                  ],
+                  NotificationSummary(state: state),
+                  const SizedBox(height: 16),
+                  NotificationFilters(selected: state.filter),
+                  const SizedBox(height: 18),
+                  if (state.status == NotificationStatus.loading)
+                    const SizedBox(
+                      height: 360,
+                      child: AppLoadingIndicator(
+                        key: Key('notificationsLoading'),
+                        message: AppStrings.loadingNotifications,
+                      ),
+                    )
+                  else if (state.status == NotificationStatus.failure)
+                    SizedBox(
+                      height: 360,
+                      child: AppErrorState(
+                        key: const Key('notificationsError'),
+                        message:
+                            state.errorMessage ??
+                            AppStrings.notificationsLoadFailed,
+                        onRetry: () => context
+                            .read<NotificationCubit>()
+                            .loadNotifications(),
+                      ),
+                    )
+                  else if (state.status == NotificationStatus.empty)
+                    const SizedBox(
+                      height: 360,
+                      child: AppEmptyState(
+                        key: Key('notificationsEmpty'),
+                        message: AppStrings.notificationsEmpty,
+                        icon: Icons.notifications_none_rounded,
+                      ),
+                    )
+                  else
+                    NotificationSections(state: state, user: user),
                 ],
-                NotificationSummary(state: state),
-                const SizedBox(height: 16),
-                NotificationFilters(selected: state.filter),
-                const SizedBox(height: 18),
-                if (state.status == NotificationStatus.loading)
-                  const SizedBox(
-                    height: 360,
-                    child: AppLoadingIndicator(
-                      key: Key('notificationsLoading'),
-                      message: AppStrings.loadingNotifications,
-                    ),
-                  )
-                else if (state.status == NotificationStatus.failure)
-                  SizedBox(
-                    height: 360,
-                    child: AppErrorState(
-                      key: const Key('notificationsError'),
-                      message:
-                          state.errorMessage ??
-                          AppStrings.notificationsLoadFailed,
-                      onRetry: () =>
-                          context.read<NotificationCubit>().loadNotifications(),
-                    ),
-                  )
-                else if (state.status == NotificationStatus.empty)
-                  const SizedBox(
-                    height: 360,
-                    child: AppEmptyState(
-                      key: Key('notificationsEmpty'),
-                      message: AppStrings.notificationsEmpty,
-                      icon: Icons.notifications_none_rounded,
-                    ),
-                  )
-                else
-                  NotificationSections(state: state, user: user),
-              ],
+              ),
             );
           },
         ),

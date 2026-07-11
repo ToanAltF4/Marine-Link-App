@@ -62,10 +62,20 @@ class OrderDetailScreen extends StatelessWidget {
                       OrderDetailRequested(orderId),
                     ),
                   ),
-                  OrderDetailLoaded(:final order) => _OrderDetailBody(
-                    order: order,
-                    adminMode: adminMode,
-                    staffMode: staffMode,
+                  OrderDetailLoaded(:final order) => RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<OrderBloc>().add(
+                        OrderDetailRequested(orderId),
+                      );
+                      await context.read<OrderBloc>().stream.firstWhere(
+                        (next) => next is! OrderDetailLoading,
+                      );
+                    },
+                    child: _OrderDetailBody(
+                      order: order,
+                      adminMode: adminMode,
+                      staffMode: staffMode,
+                    ),
                   ),
                   _ => const SizedBox.shrink(),
                 };
@@ -125,6 +135,7 @@ class _OrderDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         OrderHeader(order: order),
