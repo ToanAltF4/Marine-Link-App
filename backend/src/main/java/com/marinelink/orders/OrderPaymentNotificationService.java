@@ -1,5 +1,6 @@
 package com.marinelink.orders;
 
+import com.marinelink.common.AsyncEmailSender;
 import com.marinelink.notifications.NotificationService;
 import com.marinelink.notifications.NotificationType;
 import jakarta.mail.internet.MimeMessage;
@@ -17,6 +18,7 @@ public class OrderPaymentNotificationService {
 
     private final NotificationService notificationService;
     private final JavaMailSender mailSender;
+    private final AsyncEmailSender asyncEmailSender;
 
     @Value("${app.mail.from}")
     private String mailFrom = "no-reply@marinelink.local";
@@ -58,7 +60,7 @@ public class OrderPaymentNotificationService {
             helper.setTo(toEmail);
             helper.setSubject("MarineLink - Đơn hàng " + order.getOrderCode() + " đang chờ duyệt");
             helper.setText(buildEmailHtml(order, paymentRecorded), true);
-            mailSender.send(message);
+            asyncEmailSender.send(message);
         } catch (Exception ex) {
             log.warn("Cannot send order approval email for {} to {}: {}",
                     order.getOrderCode(), toEmail, ex.getMessage());
@@ -77,7 +79,7 @@ public class OrderPaymentNotificationService {
             helper.setTo(toEmail);
             helper.setSubject("MarineLink - Đơn hàng " + order.getOrderCode() + " đã được duyệt");
             helper.setText(buildOrderApprovedEmailHtml(order), true);
-            mailSender.send(message);
+            asyncEmailSender.send(message);
         } catch (Exception ex) {
             log.warn("Cannot send order approved email for {} to {}: {}",
                     order.getOrderCode(), toEmail, ex.getMessage());
