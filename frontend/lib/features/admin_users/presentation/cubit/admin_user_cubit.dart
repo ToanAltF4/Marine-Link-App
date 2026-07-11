@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/admin_user.dart';
@@ -32,7 +33,7 @@ class AdminUserCubit extends Cubit<AdminUserState> {
             status: AdminUserStatusView.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không tải được danh sách tài khoản.',
+              fallback: AppStrings.adminUsersLoadFailed,
             ),
           ),
         );
@@ -43,7 +44,7 @@ class AdminUserCubit extends Cubit<AdminUserState> {
           status: AdminUserStatusView.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi tải danh sách tài khoản.',
+            fallback: AppStrings.adminUsersLoadUnexpected,
           ),
         ),
       );
@@ -88,7 +89,7 @@ class AdminUserCubit extends Cubit<AdminUserState> {
             status: AdminUserStatusView.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không duyệt được tài khoản.',
+              fallback: AppStrings.adminUserApproveFailed,
             ),
             clearApprovingUserId: true,
           ),
@@ -100,7 +101,7 @@ class AdminUserCubit extends Cubit<AdminUserState> {
           status: AdminUserStatusView.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi duyệt tài khoản.',
+            fallback: AppStrings.adminUserApproveUnexpected,
           ),
           clearApprovingUserId: true,
         ),

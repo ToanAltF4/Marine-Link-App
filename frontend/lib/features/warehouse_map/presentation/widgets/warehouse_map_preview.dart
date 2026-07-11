@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/warehouse.dart';
@@ -35,7 +36,11 @@ class WarehouseMapPreview extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(left: 16, top: 16, child: MapBadge(label: 'ĐBSCL')),
+            Positioned(
+              left: 16,
+              top: 16,
+              child: MapBadge(label: AppStrings.mekongDeltaShort),
+            ),
             for (var i = 0; i < markers.length; i++)
               Align(
                 alignment: _markerAlignment(i),

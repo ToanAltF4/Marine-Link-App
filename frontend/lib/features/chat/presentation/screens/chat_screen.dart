@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -113,7 +114,7 @@ class _ChatViewState extends State<_ChatView> {
                 ? (widget.staffBackLocation != AppRoutes.staffDashboard
                       ? IconButton(
                           key: const Key('staffChatBackButton'),
-                          tooltip: 'Quay l\u1ea1i',
+                          tooltip: AppStrings.back,
                           icon: const Icon(Icons.arrow_back),
                           onPressed: () => context.go(widget.staffBackLocation),
                         )
@@ -123,7 +124,7 @@ class _ChatViewState extends State<_ChatView> {
                 // direct go for deep-links that landed here without a stack.
                 : IconButton(
                     key: const Key('buyerChatBackButton'),
-                    tooltip: 'Quay l\u1ea1i',
+                    tooltip: AppStrings.back,
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () {
                       if (context.canPop()) {
@@ -135,8 +136,8 @@ class _ChatViewState extends State<_ChatView> {
                   ),
             title: Text(
               widget.staffMode
-                  ? 'Tin nh\u1eafn kh\u00e1ch h\u00e0ng'
-                  : 'Chat h\u1ed7 tr\u1ee3',
+                  ? AppStrings.chatCustomerMessagesTitle
+                  : AppStrings.chatSupportTitle,
             ),
           ),
           bottomNavigationBar: widget.staffMode
@@ -256,17 +257,14 @@ class _ChatBody extends StatelessWidget {
         child: CircularProgressIndicator(),
       ),
       ChatStatus.failure => _ChatError(
-        message:
-            state.errorMessage ??
-            'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c l\u1ecbch s\u1eed chat.',
+        message: state.errorMessage ?? AppStrings.chatHistoryLoadFailed,
         onRetry: () => _reload(context),
       ),
       ChatStatus.empty => const Center(
         key: Key('chatEmpty'),
         child: AppEmptyState(
           icon: Icons.chat_bubble_outline_rounded,
-          message:
-              'Ch\u01b0a c\u00f3 tin nh\u1eafn trong ph\u00f2ng chat n\u00e0y.',
+          message: AppStrings.chatRoomEmpty,
         ),
       ),
       ChatStatus.success => _ChatMessageList(
@@ -281,9 +279,7 @@ class _ChatBody extends StatelessWidget {
     return Column(
       children: [
         _OfflineFallbackBanner(
-          message:
-              state.errorMessage ??
-              '\u0110ang hi\u1ec3n th\u1ecb d\u1eef li\u1ec7u chat g\u1ea7n nh\u1ea5t.',
+          message: state.errorMessage ?? AppStrings.chatOfflineFallback,
           onRetry: () => _reload(context),
         ),
         Expanded(child: body),
@@ -327,7 +323,7 @@ class _OfflineFallbackBanner extends StatelessWidget {
               key: const Key('chatOfflineRetryButton'),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('T\u1ea3i l\u1ea1i'),
+              label: const Text(AppStrings.reload),
             ),
           ],
         ),
@@ -366,7 +362,7 @@ class _ChatError extends StatelessWidget {
             FilledButton(
               key: const Key('chatRetryButton'),
               onPressed: onRetry,
-              child: const Text('Th\u1eed l\u1ea1i'),
+              child: const Text(AppStrings.retry),
             ),
           ],
         ),
@@ -508,8 +504,8 @@ class _ChatComposer extends StatelessWidget {
                       textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
                         hintText: closed
-                            ? 'Ph\u00f2ng chat \u0111\u00e3 x\u1eed l\u00fd'
-                            : 'Nh\u1eadp tin nh\u1eafn...',
+                            ? AppStrings.chatRoomClosedHint
+                            : AppStrings.chatInputHint,
                       ),
                     ),
                   ),
@@ -543,7 +539,7 @@ class _ChatComposer extends StatelessWidget {
               if (closed) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Ph\u00f2ng chat \u0111\u00e3 \u0111\u00f3ng. Staff c\u00f3 th\u1ec3 m\u1edf l\u1ea1i t\u1eeb danh s\u00e1ch chat.',
+                  AppStrings.chatClosedNotice,
                   key: const Key('chatClosedNotice'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
@@ -571,7 +567,7 @@ class _ChatComposer extends StatelessWidget {
                         key: const Key('chatRetrySendButton'),
                         onPressed: sending || closed ? null : onSend,
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Thử gửi lại'),
+                        label: const Text(AppStrings.retrySend),
                       ),
                     ],
                   ],
@@ -587,9 +583,9 @@ class _ChatComposer extends StatelessWidget {
 
 String _senderLabel(ChatSenderType type) {
   return switch (type) {
-    ChatSenderType.user => '\u0110\u1ea1i l\u00fd',
-    ChatSenderType.staff => 'Nh\u00e2n vi\u00ean',
-    ChatSenderType.aiSample => 'G\u1ee3i \u00fd m\u1eabu',
+    ChatSenderType.user => AppStrings.dealer,
+    ChatSenderType.staff => AppStrings.staff,
+    ChatSenderType.aiSample => AppStrings.sampleSuggestionLabel,
   };
 }
 

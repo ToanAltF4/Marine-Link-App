@@ -126,7 +126,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success || response.data == null) {
       throw ApiException(
-        message: response.message ?? 'Không thể kiểm tra email',
+        message: response.message ?? AppStrings.emailCheckFailed,
         type: ApiExceptionType.validation,
       );
     }
@@ -150,7 +150,7 @@ class AuthRemoteRepository implements AuthRepository {
 
     if (!response.success || response.data == null) {
       throw ApiException(
-        message: response.message ?? 'Không thể kiểm tra số điện thoại',
+        message: response.message ?? AppStrings.phoneCheckFailed,
         type: ApiExceptionType.validation,
       );
     }

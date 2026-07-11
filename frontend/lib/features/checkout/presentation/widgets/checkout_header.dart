@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -7,7 +8,11 @@ class CheckoutScaffold extends StatelessWidget {
   final Widget child;
   final VoidCallback onBack;
 
-  const CheckoutScaffold({super.key, required this.child, required this.onBack});
+  const CheckoutScaffold({
+    super.key,
+    required this.child,
+    required this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +48,7 @@ class CheckoutHeader extends StatelessWidget {
           children: [
             Center(
               child: Text(
-                'Thanh toán',
+                AppStrings.paymentTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: AppColors.primaryDark,
                   fontFamily: 'serif',
@@ -60,7 +65,7 @@ class CheckoutHeader extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
                 color: AppColors.primaryDark,
-                tooltip: 'Quay lại',
+                tooltip: AppStrings.back,
               ),
             ),
           ],

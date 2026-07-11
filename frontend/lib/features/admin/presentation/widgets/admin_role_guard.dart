@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -23,7 +24,7 @@ class AdminRoleGuard extends StatelessWidget {
         return Scaffold(
           key: const Key('adminAccessDeniedScreen'),
           backgroundColor: const Color(0xFFF2F8FA),
-          appBar: AppBar(title: const Text('Khu vực quản trị')),
+          appBar: AppBar(title: const Text(AppStrings.adminAreaTitle)),
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -53,7 +54,7 @@ class AdminRoleGuard extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Bạn không có quyền truy cập',
+                          AppStrings.accessDeniedTitle,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
@@ -63,7 +64,7 @@ class AdminRoleGuard extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Chỉ tài khoản Admin được vào khu quản trị.',
+                          AppStrings.adminOnlyMessage,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
@@ -71,7 +72,7 @@ class AdminRoleGuard extends StatelessWidget {
                         FilledButton(
                           key: const Key('adminAccessLoginButton'),
                           onPressed: () => context.go('/login'),
-                          child: const Text('Đăng nhập lại'),
+                          child: const Text(AppStrings.loginAgain),
                         ),
                       ],
                     ),

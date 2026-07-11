@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -83,8 +84,11 @@ class AdminProductCard extends StatelessWidget {
                 Expanded(
                   child: _MetaLine(
                     icon: Icons.inventory_outlined,
-                    text:
-                        '${product.stockQuantity} ${product.unit} - tối thiểu ${product.minOrderQuantity}',
+                    text: AppStrings.productStockSummary(
+                      stockQuantity: product.stockQuantity,
+                      unit: product.unit,
+                      minOrderQuantity: product.minOrderQuantity,
+                    ),
                   ),
                 ),
               ],
@@ -95,13 +99,13 @@ class AdminProductCard extends StatelessWidget {
                 if (product.isFeatured)
                   const _SmallBadge(
                     key: Key('adminProductFeaturedBadge'),
-                    label: 'Nổi bật',
+                    label: AppStrings.featured,
                     icon: Icons.star_outline,
                   ),
                 const Spacer(),
                 IconButton(
                   key: Key('adminProductEditButton_${product.id}'),
-                  tooltip: 'Sửa sản phẩm',
+                  tooltip: AppStrings.editProduct,
                   onPressed: editing ? null : onEdit,
                   icon: editing
                       ? const SizedBox(
@@ -113,7 +117,7 @@ class AdminProductCard extends StatelessWidget {
                 ),
                 IconButton(
                   key: Key('adminProductDeleteButton_${product.id}'),
-                  tooltip: 'Xoá sản phẩm',
+                  tooltip: AppStrings.deleteProduct,
                   color: AppColors.error,
                   onPressed: deleting
                       ? null
@@ -279,17 +283,17 @@ class _StatusPill extends StatelessWidget {
 ) {
   return switch (status) {
     AdminProductStatus.active => (
-      label: 'Đang bán',
+      label: AppStrings.productActive,
       textColor: AppColors.success,
       backgroundColor: const Color(0xFFE8F8EF),
     ),
     AdminProductStatus.outOfStock => (
-      label: 'Hết hàng',
+      label: AppStrings.outOfStock,
       textColor: AppColors.warning,
       backgroundColor: const Color(0xFFFFF7E6),
     ),
     AdminProductStatus.disabled => (
-      label: 'Tạm ẩn',
+      label: AppStrings.productDisabled,
       textColor: AppColors.error,
       backgroundColor: const Color(0xFFFFEFEF),
     ),

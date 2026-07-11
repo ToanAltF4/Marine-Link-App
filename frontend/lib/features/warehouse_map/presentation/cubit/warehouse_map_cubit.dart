@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/errors/user_facing_error.dart';
@@ -24,7 +25,7 @@ class WarehouseMapCubit extends Cubit<WarehouseMapState> {
             status: WarehouseMapStatus.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không tải được danh sách kho hàng.',
+              fallback: AppStrings.warehouseLoadFailed,
             ),
           ),
         );
@@ -46,7 +47,7 @@ class WarehouseMapCubit extends Cubit<WarehouseMapState> {
           status: WarehouseMapStatus.failure,
           errorMessage: userFacingErrorMessage(
             e,
-            fallback: 'Không tải được danh sách kho hàng.',
+            fallback: AppStrings.warehouseLoadFailed,
           ),
         ),
       );
@@ -54,7 +55,7 @@ class WarehouseMapCubit extends Cubit<WarehouseMapState> {
       emit(
         state.copyWith(
           status: WarehouseMapStatus.failure,
-          errorMessage: 'Không tải được danh sách kho hàng.',
+          errorMessage: AppStrings.warehouseLoadFailed,
         ),
       );
     }

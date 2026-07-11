@@ -2,6 +2,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/order.dart';
 import '../../domain/order_repository.dart';
@@ -44,7 +45,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           OrderListError(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Lỗi tải danh sách đơn hàng.',
+              fallback: AppStrings.orderListLoadError,
             ),
           ),
         );
@@ -70,7 +71,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     } catch (e) {
       emit(
         OrderListError(
-          userFacingErrorMessage(e, fallback: 'Lỗi tải danh sách đơn hàng.'),
+          userFacingErrorMessage(e, fallback: AppStrings.orderListLoadError),
         ),
       );
     }
@@ -89,7 +90,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           OrderDetailError(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Không tìm thấy đơn hàng.',
+              fallback: AppStrings.orderDetailNotFound,
             ),
           ),
         );
@@ -100,7 +101,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     } catch (e) {
       emit(
         OrderDetailError(
-          userFacingErrorMessage(e, fallback: 'Không tìm thấy đơn hàng.'),
+          userFacingErrorMessage(e, fallback: AppStrings.orderDetailNotFound),
         ),
       );
     }
@@ -125,7 +126,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           OrderCreateError(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Lỗi tạo đơn hàng.',
+              fallback: AppStrings.orderCreateError,
             ),
           ),
         );
@@ -136,7 +137,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     } catch (e) {
       emit(
         OrderCreateError(
-          userFacingErrorMessage(e, fallback: 'Lỗi tạo đơn hàng.'),
+          userFacingErrorMessage(e, fallback: AppStrings.orderCreateError),
         ),
       );
     }
@@ -159,7 +160,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           OrderStatusUpdateError(
             userFacingResponseMessage(
               response.message,
-              fallback: 'Lỗi cập nhật trạng thái đơn hàng.',
+              fallback: AppStrings.orderStatusUpdateError,
             ),
           ),
         );
@@ -177,7 +178,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         OrderStatusUpdateError(
           userFacingErrorMessage(
             e,
-            fallback: 'Lỗi cập nhật trạng thái đơn hàng.',
+            fallback: AppStrings.orderStatusUpdateError,
           ),
         ),
       );

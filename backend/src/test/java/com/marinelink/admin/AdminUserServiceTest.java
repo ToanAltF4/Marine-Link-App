@@ -1,6 +1,8 @@
 package com.marinelink.admin;
 
 import com.marinelink.common.exception.ResourceNotFoundException;
+import com.marinelink.notifications.NotificationService;
+import com.marinelink.notifications.NotificationType;
 import com.marinelink.users.Role;
 import com.marinelink.users.RoleRepository;
 import com.marinelink.users.User;
@@ -30,8 +32,9 @@ class AdminUserServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final RoleRepository roleRepository = mock(RoleRepository.class);
     private final AdminUserNotificationService notificationService = mock(AdminUserNotificationService.class);
+    private final NotificationService appNotificationService = mock(NotificationService.class);
     private final AdminUserService adminUserService =
-            new AdminUserService(userRepository, roleRepository, notificationService);
+            new AdminUserService(userRepository, roleRepository, notificationService, appNotificationService);
 
     @Test
     void listUsersMapsPublicFieldsWithoutPasswordHash() {
@@ -71,6 +74,12 @@ class AdminUserServiceTest {
         assertEquals("Đại lý A", response.fullName());
         verify(userRepository).save(pendingDealer);
         verify(notificationService).sendAccountApprovedEmail(pendingDealer);
+        verify(appNotificationService).createNotification(
+                pendingDealer,
+                NotificationType.SYSTEM,
+                "Chào mừng đến với MarineLink",
+                "Tài khoản của bạn đã được admin duyệt. Bạn có thể đăng nhập và sử dụng MarineLink ngay bây giờ.",
+                null);
     }
 
     @Test

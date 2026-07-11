@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/warehouse.dart';
@@ -79,7 +80,7 @@ class WarehouseCard extends StatelessWidget {
                 key: Key('warehouseOpenMapsButton_${warehouse.id}'),
                 onPressed: onOpenMaps,
                 icon: const Icon(Icons.map_outlined),
-                label: const Text('Mở Google Maps'),
+                label: const Text(AppStrings.openGoogleMaps),
               ),
             ),
           ],

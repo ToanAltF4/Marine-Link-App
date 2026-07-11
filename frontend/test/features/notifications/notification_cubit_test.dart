@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/core/api/api_response.dart';
 import 'package:marinelink/features/notifications/domain/notification.dart';
 import 'package:marinelink/features/notifications/domain/notification_broadcast.dart';
+import 'package:marinelink/features/notifications/domain/notification_display_service.dart';
 import 'package:marinelink/features/notifications/domain/notification_repository.dart';
 import 'package:marinelink/features/notifications/presentation/bloc/notification_cubit.dart';
 
@@ -51,6 +52,23 @@ class _NotificationRepo implements NotificationRepository {
       const ApiResponse(success: true);
 }
 
+class _NotificationDisplayService implements NotificationDisplayService {
+  final List<List<NotificationEntity>> syncedNotifications = [];
+  var initialized = false;
+
+  @override
+  Future<void> initialize() async {
+    initialized = true;
+  }
+
+  @override
+  Future<void> syncNewNotifications(
+    List<NotificationEntity> notifications,
+  ) async {
+    syncedNotifications.add(notifications);
+  }
+}
+
 final _items = [
   NotificationEntity(
     id: 'noti-001',
@@ -84,6 +102,22 @@ void main() {
       expect(cubit.state.unreadNotifications, hasLength(1));
       expect(cubit.state.readNotifications, hasLength(1));
       expect(repo.requestedReadFilters.single, isNull);
+    },
+  );
+
+  test(
+    'loadNotifications syncs loaded items to device notifications',
+    () async {
+      final repo = _NotificationRepo(items: _items);
+      final displayService = _NotificationDisplayService();
+      final cubit = NotificationCubit(
+        notificationRepository: repo,
+        notificationDisplayService: displayService,
+      );
+
+      await cubit.loadNotifications();
+
+      expect(displayService.syncedNotifications, [_items]);
     },
   );
 

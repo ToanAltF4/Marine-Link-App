@@ -68,7 +68,10 @@ class StompChatRealtimeService implements ChatRealtimeService {
   }
 
   void _activate(_RoomSubscription sub) {
-    if (!_connected || _client == null || sub.cancelled || sub.unsubscribe != null) {
+    if (!_connected ||
+        _client == null ||
+        sub.cancelled ||
+        sub.unsubscribe != null) {
       return;
     }
     sub.unsubscribe = _client!.subscribe(

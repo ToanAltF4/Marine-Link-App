@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -39,7 +40,7 @@ class NotificationHeader extends StatelessWidget {
       children: [
         IconButton(
           key: const Key('notificationsBackButton'),
-          tooltip: 'Quay lại',
+          tooltip: AppStrings.back,
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -55,14 +56,14 @@ class NotificationHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Thông báo',
+                AppStrings.notificationsTitle,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                'Theo dõi cập nhật đơn hàng, sản phẩm và phản hồi hỗ trợ.',
+                AppStrings.notificationsHeaderSubtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),

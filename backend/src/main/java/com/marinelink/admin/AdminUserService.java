@@ -1,6 +1,8 @@
 package com.marinelink.admin;
 
 import com.marinelink.common.exception.ResourceNotFoundException;
+import com.marinelink.notifications.NotificationService;
+import com.marinelink.notifications.NotificationType;
 import com.marinelink.users.Role;
 import com.marinelink.users.RoleRepository;
 import com.marinelink.users.User;
@@ -29,6 +31,7 @@ public class AdminUserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final AdminUserNotificationService notificationService;
+    private final NotificationService appNotificationService;
 
     public Page<AdminUserResponse> listUsers(
             int page,
@@ -95,6 +98,12 @@ public class AdminUserService {
         User savedUser = userRepository.save(user);
         if (previousStatus == UserStatus.PENDING_APPROVAL && savedUser.getStatus() == UserStatus.ACTIVE) {
             notificationService.sendAccountApprovedEmail(savedUser);
+            appNotificationService.createNotification(
+                    savedUser,
+                    NotificationType.SYSTEM,
+                    "Chào mừng đến với MarineLink",
+                    "Tài khoản của bạn đã được admin duyệt. Bạn có thể đăng nhập và sử dụng MarineLink ngay bây giờ.",
+                    null);
         }
 
         return AdminUserResponse.from(savedUser);

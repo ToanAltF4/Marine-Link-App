@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import 'admin_dashboard_common.dart';
@@ -23,32 +24,31 @@ class OperationsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(
-          title: 'Điều phối hệ thống',
-          subtitle: 'Ưu tiên quản lý tài khoản, sản phẩm và giám sát vận hành.',
+          title: AppStrings.adminOperationsTitle,
+          subtitle: AppStrings.adminOperationsSubtitle,
         ),
         const SizedBox(height: 12),
         ActionCard(
           key: const Key('adminUsersShortcut'),
           icon: Icons.people_alt_outlined,
-          title: 'Quản lý tài khoản',
-          description: 'Duyệt đại lý, nhân viên và phân quyền truy cập.',
+          title: AppStrings.adminUsersTitle,
+          description: AppStrings.adminUsersOperationDescription,
           onTap: onOpenUsers,
         ),
         const SizedBox(height: 10),
         ActionCard(
           key: const Key('adminProductsShortcut'),
           icon: Icons.inventory_2_outlined,
-          title: 'Quản lý sản phẩm',
-          description: 'Kiểm tra catalog, tồn kho và trạng thái bán.',
+          title: AppStrings.adminProductsTitle,
+          description: AppStrings.adminProductsOperationDescription,
           onTap: onOpenProducts,
         ),
         const SizedBox(height: 10),
         ActionCard(
           key: const Key('adminOrdersShortcut'),
           icon: Icons.visibility_outlined,
-          title: 'Giám sát đơn hàng',
-          description:
-              'Theo dõi luồng xử lý; nhân viên duyệt trạng thái chính.',
+          title: AppStrings.ordersMonitoring,
+          description: AppStrings.adminOrdersOperationDescription,
           onTap: onOpenOrders,
         ),
       ],

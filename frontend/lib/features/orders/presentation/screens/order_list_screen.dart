@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -109,9 +110,9 @@ class _OrderListScreenState extends State<OrderListScreen> {
                           hasScrollBody: false,
                           child: _MessageState(
                             key: Key('${stateKeyPrefix}Error'),
-                            title: 'Không tải được đơn hàng',
+                            title: AppStrings.orderLoadFailedTitle,
                             message: message,
-                            actionLabel: 'Thử lại',
+                            actionLabel: AppStrings.retry,
                             onAction: () => _reload(context),
                           ),
                         ),
@@ -119,8 +120,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                           hasScrollBody: false,
                           child: _MessageState(
                             key: Key('${stateKeyPrefix}Empty'),
-                            title: 'Chưa có đơn hàng',
-                            message: 'Các đơn đã đặt sẽ xuất hiện tại đây.',
+                            title: AppStrings.noOrdersTitle,
+                            message: AppStrings.ordersEmpty,
                           ),
                         ),
                         OrderListLoaded(:final orders) => _OrderList(
@@ -177,12 +178,12 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   String _screenTitle() {
     if (widget.staffMode) {
-      return 'Đơn cần xử lý';
+      return AppStrings.ordersNeedProcessing;
     }
     if (widget.adminMode) {
-      return 'Giám sát đơn hàng';
+      return AppStrings.ordersMonitoring;
     }
-    return 'Đơn hàng';
+    return AppStrings.orderContextFallback;
   }
 
   List<Order> _filteredOrders(List<Order> orders) {
@@ -209,7 +210,7 @@ class _SearchField extends StatelessWidget {
       onChanged: onChanged,
       decoration: const InputDecoration(
         prefixIcon: Icon(Icons.search),
-        hintText: 'Tìm mã đơn hàng (VD: ML-2025)...',
+        hintText: AppStrings.orderSearchHint,
       ),
     );
   }
@@ -227,7 +228,7 @@ class _StatusFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filters = <({String label, String? value})>[
-      (label: 'Tất cả', value: null),
+      (label: AppStrings.all, value: null),
       for (final status in OrderStatus.values)
         (label: status.displayLabel, value: status.apiValue),
     ];
@@ -267,7 +268,7 @@ class _ResultCount extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
-        '$count đơn',
+        AppStrings.orderCount(count),
         key: const Key('orderListResultCount'),
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
           color: AppColors.textSecondary,
@@ -298,8 +299,8 @@ class _OrderList extends StatelessWidget {
         hasScrollBody: false,
         child: _MessageState(
           key: Key('${stateKeyPrefix}FilteredEmpty'),
-          title: 'Không tìm thấy đơn hàng',
-          message: 'Thử mã đơn khác hoặc đổi bộ lọc.',
+          title: AppStrings.orderNotFound,
+          message: AppStrings.orderNoMatchHint,
         ),
       );
     }
@@ -381,14 +382,14 @@ class _OrderCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _Metric(
-                    label: 'Trạng thái',
+                    label: AppStrings.productStatusLabel,
                     value: order.displayStatusLabel,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _Metric(
-                    label: 'Tổng tiền',
+                    label: AppStrings.totalAmount,
                     value: _currency(order.totalAmount),
                     alignRight: true,
                   ),
@@ -407,7 +408,7 @@ class _OrderCard extends StatelessWidget {
                       : 'buyerOrderDetailButton_${order.id}',
                 ),
                 onPressed: () => _openDetail(context),
-                child: const Text('Xem chi tiết'),
+                child: const Text(AppStrings.viewDetail),
               ),
             ),
           ],
@@ -532,7 +533,7 @@ class _MessageState extends StatelessWidget {
 String _currency(double value) {
   return NumberFormat.currency(
     locale: 'vi_VN',
-    symbol: 'đ',
+    symbol: AppStrings.currencySymbol,
     decimalDigits: 0,
   ).format(value);
 }

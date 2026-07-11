@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 /// Money / number formatting for VND prices.
 abstract class MoneyFormatter {
@@ -28,7 +29,9 @@ abstract class MoneyFormatter {
     String unit = 'kg',
   }) {
     final priceStr = format(unitPrice);
-    final rangeStr = maxQty != null ? '$minQty–$maxQty' : 'Từ $minQty';
+    final rangeStr = maxQty != null
+        ? '$minQty–$maxQty'
+        : AppStrings.quantityRangeFrom(minQty);
     return '$rangeStr $unit: $priceStr/$unit';
   }
 }

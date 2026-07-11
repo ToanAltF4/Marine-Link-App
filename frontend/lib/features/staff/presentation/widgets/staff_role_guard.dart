@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -23,7 +24,7 @@ class StaffRoleGuard extends StatelessWidget {
         return Scaffold(
           key: const Key('staffAccessDeniedScreen'),
           backgroundColor: const Color(0xFFF4F7FD),
-          appBar: AppBar(title: const Text('Khu vực nhân viên')),
+          appBar: AppBar(title: const Text(AppStrings.staffAreaTitle)),
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -51,7 +52,7 @@ class StaffRoleGuard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Bạn không có quyền truy cập',
+                        AppStrings.accessDeniedTitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppColors.primary,
@@ -60,14 +61,14 @@ class StaffRoleGuard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Chỉ tài khoản Staff hoặc Admin được vào khu công việc.',
+                        AppStrings.staffOnlyMessage,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
                       FilledButton(
                         onPressed: () => context.go('/login'),
-                        child: const Text('Đăng nhập lại'),
+                        child: const Text(AppStrings.loginAgain),
                       ),
                     ],
                   ),

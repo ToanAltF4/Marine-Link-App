@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -24,8 +25,12 @@ import '../widgets/promo_banner.dart';
 
 const _compactFeaturedGridMaxWidth = 348.0;
 const _compactFeaturedCardAspectRatio = 0.80;
-const _bulkPromotionPolicyText =
-    '${CartBulkDiscountPolicy.twoPercentMinQuantity}-99kg giảm 2% • ${CartBulkDiscountPolicy.fourPercentMinQuantity}-199kg giảm 4% • ${CartBulkDiscountPolicy.sixPercentMinQuantity}-499kg giảm 6% • ≥ ${CartBulkDiscountPolicy.eightPercentMinQuantity}kg giảm 8%';
+final _bulkPromotionPolicyText = AppStrings.bulkDiscountPolicySummary(
+  twoPercentMin: CartBulkDiscountPolicy.twoPercentMinQuantity,
+  fourPercentMin: CartBulkDiscountPolicy.fourPercentMinQuantity,
+  sixPercentMin: CartBulkDiscountPolicy.sixPercentMinQuantity,
+  eightPercentMin: CartBulkDiscountPolicy.eightPercentMinQuantity,
+);
 
 class HomeScreen extends StatefulWidget {
   final ProductRepository? productRepository;
@@ -115,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '\u0110\u1ea1i l\u00fd',
+                            AppStrings.dealer,
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: const Color(0xFF006A7C),
                               fontWeight: FontWeight.w700,
@@ -131,8 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onSubmitted: (_) => _submitQuickSearch(),
                       textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
-                        hintText:
-                            'T\u00ecm ki\u1ebfm h\u1ea3i s\u1ea3n kh\u00f4...',
+                        hintText: AppStrings.searchSeafoodHint,
                         prefixIcon: const Icon(
                           Icons.search_rounded,
                           size: 30,
@@ -154,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     PromoBanner(onTap: _submitQuickSearch),
                     const SizedBox(height: 22),
                     Text(
-                      'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
+                      AppStrings.productCategories,
                       style: _sectionTitleStyle(theme),
                     ),
                     const SizedBox(height: 12),
@@ -173,8 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                         if (categories.isEmpty) {
                           return const AppEmptyState(
-                            message:
-                                'Ch\u01b0a c\u00f3 danh m\u1ee5c s\u1ea3n ph\u1ea9m.',
+                            message: AppStrings.emptyProductCategories,
                             icon: Icons.category_outlined,
                           );
                         }
@@ -232,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
+                                  AppStrings.wholesalePolicy,
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w800,
@@ -257,14 +260,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                            AppStrings.bestSellingProducts,
                             style: _sectionTitleStyle(theme),
                           ),
                         ),
                         TextButton(
                           onPressed: _openCatalog,
                           child: Text(
-                            'Xem t\u1ea5t c\u1ea3',
+                            AppStrings.viewAll,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: const Color(0xFF006A7C),
                               fontWeight: FontWeight.w600,
@@ -281,8 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return const SizedBox(
                             height: 360,
                             child: AppLoadingIndicator(
-                              message:
-                                  '\u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                              message: AppStrings.loadingBestSellingProducts,
                             ),
                           );
                         }
@@ -305,8 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return const SizedBox(
                             height: 220,
                             child: AppEmptyState(
-                              message:
-                                  'Ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m n\u1ed5i b\u1eadt.',
+                              message: AppStrings.noFeaturedProducts,
                               icon: Icons.inventory_2_outlined,
                             ),
                           );
@@ -464,12 +465,12 @@ class _HomeScreenState extends State<HomeScreen> {
       return BlocBuilder<AuthBloc, AuthState>(
         bloc: authBloc,
         builder: (context, state) {
-          String name = 'Nguy\u1ec5n V\u0103n A';
+          String name = AppStrings.defaultDealerName;
           if (state is AuthAuthenticated) {
             name = state.user.fullName;
           }
           return Text(
-            'Xin ch\u00e0o, $name',
+            AppStrings.greeting(name),
             style: theme.textTheme.headlineSmall?.copyWith(
               color: AppColors.primaryDark,
               fontFamily: 'serif',
@@ -480,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (_) {
       return Text(
-        'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
+        AppStrings.defaultGreeting,
         style: theme.textTheme.headlineSmall?.copyWith(
           color: AppColors.primaryDark,
           fontFamily: 'serif',
@@ -509,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Tài khoản của bạn đang chờ quản trị viên duyệt. Bạn chỉ có thể xem sản phẩm, chức năng đặt hàng sẽ bị khóa.',
+                    AppStrings.pendingAccountNotice,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.orange.shade900,
                     ),

@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_initializing_formals
 
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../../../core/api/api_client.dart';
 import '../../cart/domain/cart.dart';
@@ -30,8 +31,7 @@ class OrderCheckoutRepository implements CheckoutRepository {
     if (activeCart.selectedItems.isEmpty) {
       return const ApiResponse<CheckoutResult>(
         success: false,
-        message:
-            '\u0110\u01a1n h\u00e0ng c\u1ea7n c\u00f3 \u00edt nh\u1ea5t m\u1ed9t s\u1ea3n ph\u1ea9m',
+        message: AppStrings.orderRequiresItem,
       );
     }
 
@@ -41,8 +41,7 @@ class OrderCheckoutRepository implements CheckoutRepository {
     if (invalidItems.isNotEmpty) {
       return const ApiResponse<CheckoutResult>(
         success: false,
-        message:
-            'Gi\u1ecf h\u00e0ng c\u00f3 s\u1ea3n ph\u1ea9m kh\u00f4ng h\u1ee3p l\u1ec7',
+        message: AppStrings.cartContainsInvalidProduct,
       );
     }
 
@@ -72,9 +71,7 @@ class OrderCheckoutRepository implements CheckoutRepository {
       if (!response.success || response.data == null) {
         return ApiResponse<CheckoutResult>(
           success: false,
-          message:
-              response.message ??
-              'Kh\u00f4ng th\u1ec3 t\u1ea1o \u0111\u01a1n h\u00e0ng',
+          message: response.message ?? AppStrings.orderCreateFailed,
           errors: response.errors,
         );
       }

@@ -43,8 +43,8 @@ class CartRemoteRepository implements CartRepository {
     bool? selected,
   }) async {
     final data = <String, dynamic>{
-      'quantity':? quantity,
-      'selected':? selected,
+      'quantity': ?quantity,
+      'selected': ?selected,
     };
     final response = await apiClient.patch<Cart>(
       ApiEndpoints.cartItem(productId),

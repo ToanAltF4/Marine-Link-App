@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 enum OrderStatus {
   pending,
@@ -21,11 +22,11 @@ enum OrderStatus {
   String get apiValue => name.toUpperCase();
 
   String get displayLabel => switch (this) {
-    OrderStatus.pending => 'Chờ duyệt',
-    OrderStatus.confirmed => 'Đã xác nhận',
-    OrderStatus.shipping => 'Đang giao',
-    OrderStatus.completed => 'Hoàn tất',
-    OrderStatus.cancelled => 'Đã hủy',
+    OrderStatus.pending => AppStrings.orderPendingApproval,
+    OrderStatus.confirmed => AppStrings.orderStatusConfirmed,
+    OrderStatus.shipping => AppStrings.orderShipping,
+    OrderStatus.completed => AppStrings.orderStatusCompleted,
+    OrderStatus.cancelled => AppStrings.orderCancelledAlt,
   };
 
   List<OrderStatus> get allowedTransitions => switch (this) {
@@ -45,20 +46,20 @@ enum PaymentMethod {
   static PaymentMethod fromString(String value) {
     return switch (value.toUpperCase()) {
       'BANK_TRANSFER' => PaymentMethod.bankTransfer,
-      'VNPAY' => PaymentMethod.vnpay,
+      AppStrings.paymentVnpay => PaymentMethod.vnpay,
       _ => PaymentMethod.cod,
     };
   }
 
   String get apiValue => switch (this) {
-    PaymentMethod.cod => 'COD',
+    PaymentMethod.cod => AppStrings.paymentCod,
     PaymentMethod.bankTransfer => 'BANK_TRANSFER',
-    PaymentMethod.vnpay => 'VNPAY',
+    PaymentMethod.vnpay => AppStrings.paymentVnpay,
   };
 
   String get displayLabel => switch (this) {
-    PaymentMethod.cod => 'Thanh toán khi nhận hàng (COD)',
-    PaymentMethod.bankTransfer => 'Chuyển khoản ngân hàng',
+    PaymentMethod.cod => AppStrings.cashOnDelivery,
+    PaymentMethod.bankTransfer => AppStrings.bankTransfer,
     PaymentMethod.vnpay => 'VNPAY QR',
   };
 }
@@ -140,7 +141,7 @@ class Order extends Equatable {
   }
 
   String get displayStatusLabel =>
-      isWaitingForPayment ? 'Chờ thanh toán' : status.displayLabel;
+      isWaitingForPayment ? AppStrings.waitingForPayment : status.displayLabel;
 
   @override
   List<Object?> get props => [

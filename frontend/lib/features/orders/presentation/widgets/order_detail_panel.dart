@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/order_status_badge.dart';
@@ -26,7 +27,7 @@ class OrderHeader extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Mã đơn: ${order.orderCode}',
+                    AppStrings.orderCode(order.orderCode),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w900,

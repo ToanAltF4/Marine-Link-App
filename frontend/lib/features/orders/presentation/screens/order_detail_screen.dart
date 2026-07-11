@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -55,7 +56,7 @@ class OrderDetailScreen extends StatelessWidget {
                     child: CircularProgressIndicator(),
                   ),
                   OrderDetailError(:final message) => OrderDetailMessage(
-                    title: 'Không tải được chi tiết',
+                    title: AppStrings.orderDetailLoadFailedTitle,
                     message: message,
                     onRetry: () => context.read<OrderBloc>().add(
                       OrderDetailRequested(orderId),
@@ -87,12 +88,12 @@ class OrderDetailScreen extends StatelessWidget {
 
   String _screenTitle() {
     if (staffMode) {
-      return 'Cập nhật trạng thái đơn';
+      return AppStrings.orderStatusUpdateTitle;
     }
     if (adminMode) {
-      return 'Giám sát trạng thái đơn';
+      return AppStrings.orderStatusMonitorTitle;
     }
-    return 'Chi tiết đơn hàng';
+    return AppStrings.orderDetailTitle;
   }
 
   Widget _roleBottomNav() {
@@ -133,7 +134,9 @@ class _OrderDetailBody extends StatelessWidget {
             key: Key(
               staffMode ? 'staffOrderStatusPanel' : 'adminOrderStatusPanel',
             ),
-            title: staffMode ? 'Cập nhật trạng thái' : 'Giám sát trạng thái',
+            title: staffMode
+                ? AppStrings.orderStatusUpdateShort
+                : AppStrings.orderStatusMonitorShort,
             icon: staffMode
                 ? Icons.fact_check_outlined
                 : Icons.admin_panel_settings_outlined,
@@ -145,13 +148,13 @@ class _OrderDetailBody extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         OrderDetailPanel(
-          title: 'Trạng thái',
+          title: AppStrings.productStatusLabel,
           icon: Icons.route_outlined,
           child: OrderStatusTimeline(history: order.statusHistory),
         ),
         const SizedBox(height: 12),
         OrderDetailPanel(
-          title: 'Địa chỉ giao hàng',
+          title: AppStrings.shippingAddressLabel,
           icon: Icons.location_on_outlined,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +172,7 @@ class _OrderDetailBody extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         OrderDetailPanel(
-          title: 'Sản phẩm đã đặt (${order.items.length})',
+          title: AppStrings.orderItemsTitle(order.items.length),
           icon: Icons.inventory_2_outlined,
           child: Column(
             children: order.items
@@ -179,7 +182,7 @@ class _OrderDetailBody extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         OrderDetailPanel(
-          title: 'Thanh toán',
+          title: AppStrings.paymentTitle,
           icon: Icons.account_balance_wallet_outlined,
           child: OrderPaymentSummary(order: order),
         ),

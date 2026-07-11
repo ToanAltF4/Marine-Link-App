@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -76,8 +77,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 return const Scaffold(
                   backgroundColor: _detailBackground,
                   body: AppLoadingIndicator(
-                    message:
-                        '\u0110ang t\u1ea3i chi ti\u1ebft s\u1ea3n ph\u1ea9m',
+                    message: AppStrings.loadingProductDetail,
                   ),
                 );
               }
@@ -142,8 +142,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '\u0110\u00e3 th\u00eam ${displayProductName(detail)} '
-          'v\u00e0o gi\u1ecf h\u00e0ng',
+          AppStrings.addedProductToCart(displayProductName(detail)),
         ),
       ),
     );
@@ -210,12 +209,13 @@ class _ProductDetailContent extends StatelessWidget {
                           : null,
                       onQuantityChanged: (value) =>
                           onQuantityChanged(detail, value),
-                      onAddToCart: (context.read<AuthBloc>().state
+                      onAddToCart:
+                          (context.read<AuthBloc>().state
                                   is AuthAuthenticated &&
                               (context.read<AuthBloc>().state
-                                      as AuthAuthenticated)
-                                  .user
-                                  .status ==
+                                          as AuthAuthenticated)
+                                      .user
+                                      .status ==
                                   'PENDING_APPROVAL')
                           ? null
                           : (outOfStock ? null : () => onAddToCart(detail)),

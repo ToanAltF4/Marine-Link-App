@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/order.dart';
@@ -38,7 +39,7 @@ class OrderItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Đơn giá: ${_currency(item.unitPrice)}',
+                  AppStrings.unitPrice(_currency(item.unitPrice)),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -92,7 +93,7 @@ class OrderItemImage extends StatelessWidget {
 String _currency(double value) {
   return NumberFormat.currency(
     locale: 'vi_VN',
-    symbol: 'đ',
+    symbol: AppStrings.currencySymbol,
     decimalDigits: 0,
   ).format(value);
 }

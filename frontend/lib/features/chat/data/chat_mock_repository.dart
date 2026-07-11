@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../domain/chat.dart';
 import '../domain/chat_repository.dart';
@@ -25,7 +26,7 @@ class ChatMockRepository implements ChatRepository {
     if (thread == null) {
       return const ApiResponse(
         success: false,
-        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y ph\u00f2ng chat.',
+        message: AppStrings.chatRoomNotFound,
       );
     }
     return ApiResponse(success: true, message: 'OK', data: thread);
@@ -44,7 +45,7 @@ class ChatMockRepository implements ChatRepository {
         roomId: id,
         title: thread.messages.isNotEmpty
             ? thread.messages.first.content
-            : 'Cuộc trò chuyện mới',
+            : AppStrings.newConversation,
         isClosed: thread.isClosed,
         lastMessageAt: thread.messages.isNotEmpty
             ? thread.messages.last.createdAt
@@ -108,8 +109,7 @@ class ChatMockRepository implements ChatRepository {
     if (trimmed.isEmpty) {
       return const ApiResponse(
         success: false,
-        message:
-            'N\u1ed9i dung tin nh\u1eafn kh\u00f4ng \u0111\u01b0\u1ee3c \u0111\u1ec3 tr\u1ed1ng.',
+        message: AppStrings.chatMessageRequired,
       );
     }
 
@@ -117,13 +117,13 @@ class ChatMockRepository implements ChatRepository {
     if (thread == null) {
       return const ApiResponse(
         success: false,
-        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y ph\u00f2ng chat.',
+        message: AppStrings.chatRoomNotFound,
       );
     }
     if (thread.isClosed) {
       return const ApiResponse(
         success: false,
-        message: 'Ph\u00f2ng chat \u0111\u00e3 \u0111\u00f3ng.',
+        message: AppStrings.chatRoomClosed,
       );
     }
 
@@ -162,7 +162,7 @@ class ChatMockRepository implements ChatRepository {
     if (room == null || thread == null) {
       return const ApiResponse(
         success: false,
-        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y ph\u00f2ng chat.',
+        message: AppStrings.chatRoomNotFound,
       );
     }
     final updatedRoom = room.copyWith(
@@ -191,14 +191,13 @@ class ChatMockRepository implements ChatRepository {
     if (trimmedTitle.isEmpty || trimmedDescription.isEmpty) {
       return const ApiResponse(
         success: false,
-        message:
-            'Vui l\u00f2ng nh\u1eadp ti\u00eau \u0111\u1ec1 v\u00e0 m\u00f4 t\u1ea3 khi\u1ebfu n\u1ea1i.',
+        message: AppStrings.complaintTitleDescriptionRequired,
       );
     }
     if (!_rooms.containsKey(roomId)) {
       return const ApiResponse(
         success: false,
-        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y ph\u00f2ng chat.',
+        message: AppStrings.chatRoomNotFound,
       );
     }
     final complaint = StaffChatComplaint(
@@ -229,16 +228,14 @@ class ChatMockRepository implements ChatRepository {
             id: 'mock-message-1',
             roomId: defaultRoomId,
             senderType: ChatSenderType.user,
-            content:
-                'Cho t\u00f4i h\u1ecfi \u0111\u01a1n ML-20260528-0001 khi n\u00e0o giao?',
+            content: 'Cho tôi hỏi đơn ML-20260528-0001 khi nào giao?',
             createdAt: createdAt,
           ),
           ChatMessage(
             id: 'mock-message-2',
             roomId: defaultRoomId,
             senderType: ChatSenderType.staff,
-            content:
-                '\u0110\u01a1n h\u00e0ng \u0111ang \u0111\u01b0\u1ee3c chu\u1ea9n b\u1ecb, d\u1ef1 ki\u1ebfn giao trong h\u00f4m nay.',
+            content: 'Đơn hàng đang được chuẩn bị, dự kiến giao trong hôm nay.',
             createdAt: createdAt.add(const Duration(minutes: 4)),
           ),
           ChatMessage(
@@ -246,7 +243,7 @@ class ChatMockRepository implements ChatRepository {
             roomId: defaultRoomId,
             senderType: ChatSenderType.aiSample,
             content:
-                'M\u1eabu g\u1ee3i \u00fd: nh\u00e2n vi\u00ean c\u00f3 th\u1ec3 ki\u1ec3m tra m\u00e3 \u0111\u01a1n v\u00e0 ph\u1ea3n h\u1ed3i nhanh.',
+                'Mẫu gợi ý: nhân viên có thể kiểm tra mã đơn và phản hồi nhanh.',
             createdAt: createdAt.add(const Duration(minutes: 5)),
           ),
         ],
@@ -264,8 +261,7 @@ class ChatMockRepository implements ChatRepository {
             id: 'mock-message-closed-1',
             roomId: closedRoomId,
             senderType: ChatSenderType.user,
-            content:
-                'T\u00f4i \u0111\u00e3 nh\u1eadn \u0111\u1ee7 h\u00e0ng, c\u1ea3m \u01a1n.',
+            content: 'Tôi đã nhận đủ hàng, cảm ơn.',
             createdAt: createdAt.subtract(const Duration(hours: 3)),
           ),
         ],
@@ -279,7 +275,7 @@ class ChatMockRepository implements ChatRepository {
             roomId: orderComplaintRoomId,
             senderType: ChatSenderType.aiSample,
             content:
-                'Khi\u1ebfu n\u1ea1i \u0111\u01a1n h\u00e0ng ML-20260526-0001\nS\u1ea3n ph\u1ea9m: Kh\u00f4 c\u00e1 l\u00f3c\nT\u1ed5ng ti\u1ec1n: 7800000 VND\nVui l\u00f2ng m\u00f4 t\u1ea3 v\u1ea5n \u0111\u1ec1 c\u1ea7n h\u1ed7 tr\u1ee3.',
+                'Khiếu nại đơn hàng ML-20260526-0001\nSản phẩm: Khô cá lóc\nTổng tiền: 7800000 VND\nVui lòng mô tả vấn đề cần hỗ trợ.',
             createdAt: createdAt.add(const Duration(minutes: 12)),
           ),
         ],
@@ -294,7 +290,7 @@ class ChatMockRepository implements ChatRepository {
         thread: threads[defaultRoomId]!,
         customer: const StaffChatCustomer(
           id: '550e8400-e29b-41d4-a716-446655440003',
-          fullName: '\u0110\u1ea1i l\u00fd H\u1ea3i S\u1ea3n A',
+          fullName: 'Đại lý Hải Sản A',
           email: 'daily-a@marinelink.demo',
           phone: '0901000001',
         ),
@@ -307,7 +303,7 @@ class ChatMockRepository implements ChatRepository {
         thread: threads[emptyRoomId]!,
         customer: const StaffChatCustomer(
           id: '550e8400-e29b-41d4-a716-446655440013',
-          fullName: '\u0110\u1ea1i l\u00fd M\u1ef1c Kh\u00f4 B',
+          fullName: 'Đại lý Mực Khô B',
           email: 'daily-b@marinelink.demo',
           phone: '0901000002',
         ),
@@ -316,7 +312,7 @@ class ChatMockRepository implements ChatRepository {
         thread: threads[closedRoomId]!,
         customer: const StaffChatCustomer(
           id: '550e8400-e29b-41d4-a716-446655440023',
-          fullName: '\u0110\u1ea1i l\u00fd T\u00f4m Kh\u00f4 C',
+          fullName: 'Đại lý Tôm Khô C',
           email: 'daily-c@marinelink.demo',
           phone: '0901000003',
         ),
@@ -329,7 +325,7 @@ class ChatMockRepository implements ChatRepository {
         thread: threads[orderComplaintRoomId]!,
         customer: const StaffChatCustomer(
           id: '550e8400-e29b-41d4-a716-446655440003',
-          fullName: '\u0110\u1ea1i l\u00fd H\u1ea3i S\u1ea3n A',
+          fullName: 'Đại lý Hải Sản A',
           email: 'daily-a@marinelink.demo',
           phone: '0901000001',
         ),
@@ -362,7 +358,7 @@ class ChatMockRepository implements ChatRepository {
 
   static String _summary(List<ChatMessage> messages) {
     if (messages.isEmpty) {
-      return 'Ch\u01b0a c\u00f3 l\u1ecbch s\u1eed trao \u0111\u1ed5i.';
+      return AppStrings.noMessageHistory;
     }
     final recent = messages.skip(messages.length > 3 ? messages.length - 3 : 0);
     return recent
@@ -376,8 +372,8 @@ class ChatMockRepository implements ChatRepository {
 
 String _senderLabel(ChatSenderType type) {
   return switch (type) {
-    ChatSenderType.user => '\u0110\u1ea1i l\u00fd',
-    ChatSenderType.staff => 'Nh\u00e2n vi\u00ean',
-    ChatSenderType.aiSample => 'G\u1ee3i \u00fd',
+    ChatSenderType.user => AppStrings.dealer,
+    ChatSenderType.staff => AppStrings.staff,
+    ChatSenderType.aiSample => AppStrings.sampleSuggestion,
   };
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -74,13 +75,13 @@ class _WarehouseMapView extends StatelessWidget {
         appBar: AppBar(
           leading: IconButton(
             key: const Key('warehouseMapBackButton'),
-            tooltip: 'Quay lại',
+            tooltip: AppStrings.back,
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => context.go(
               staffMode ? AppRoutes.staffDashboard : AppRoutes.home,
             ),
           ),
-          title: const Text('Kho hàng'),
+          title: const Text(AppStrings.warehouseTitle),
         ),
         bottomNavigationBar: staffMode
             ? const StaffBottomNav(currentTab: StaffBottomNavTab.work)
@@ -94,7 +95,9 @@ class _WarehouseMapView extends StatelessWidget {
                 child: CircularProgressIndicator(),
               ),
               WarehouseMapStatus.failure => WarehouseError(
-                message: state.errorMessage ?? 'Không tải được danh sách kho.',
+                message:
+                    state.errorMessage ??
+                    AppStrings.warehouseListLoadShortFailed,
                 onRetry: () => context.read<WarehouseMapCubit>().load(),
               ),
               WarehouseMapStatus.empty => const WarehouseEmpty(),
@@ -132,7 +135,7 @@ class _WarehouseContent extends StatelessWidget {
         WarehouseMapPreview(warehouses: warehouses),
         const SizedBox(height: 16),
         Text(
-          'Điểm giao nhận',
+          AppStrings.deliveryPoint,
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
@@ -155,9 +158,9 @@ class _WarehouseContent extends StatelessWidget {
     final location = context.read<WarehouseLocationCubit>().state.location;
     final opened = await mapLauncher(warehouse, location);
     if (!context.mounted || opened) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Không mở được Google Maps.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(AppStrings.cannotOpenGoogleMaps)),
+    );
   }
 }
 
@@ -178,8 +181,8 @@ class _WarehouseLocationPermissionCard extends StatelessWidget {
               WarehouseLocationStatus.checking => const WarehouseLocationBody(
                 key: Key('warehouseLocationChecking'),
                 icon: Icons.my_location_outlined,
-                title: 'Đang kiểm tra vị trí',
-                message: 'MarineLink đang kiểm tra quyền vị trí hiện tại.',
+                title: AppStrings.checkingLocationTitle,
+                message: AppStrings.locationChecking,
                 trailing: SizedBox(
                   width: 22,
                   height: 22,
@@ -189,71 +192,65 @@ class _WarehouseLocationPermissionCard extends StatelessWidget {
               WarehouseLocationStatus.granted => WarehouseLocationBody(
                 key: const Key('warehouseLocationGranted'),
                 icon: Icons.near_me_outlined,
-                title: 'Đang dùng vị trí hiện tại',
-                message:
-                    'Tọa độ ${state.location!.latitude.toStringAsFixed(4)}, '
-                    '${state.location!.longitude.toStringAsFixed(4)} sẽ được '
-                    'dùng khi mở chỉ đường.',
+                title: AppStrings.usingCurrentLocationTitle,
+                message: AppStrings.currentLocationCoordinates(
+                  latitude: state.location!.latitude.toStringAsFixed(4),
+                  longitude: state.location!.longitude.toStringAsFixed(4),
+                ),
               ),
               WarehouseLocationStatus.denied => WarehouseLocationBody(
                 key: const Key('warehouseLocationDenied'),
                 icon: Icons.location_disabled_outlined,
-                title: 'Chưa cấp quyền vị trí',
-                message:
-                    'Bạn vẫn có thể xem danh sách kho và mở Google Maps theo '
-                    'từng kho.',
+                title: AppStrings.locationPermissionNotGranted,
+                message: AppStrings.locationPermissionDeniedMessage,
                 action: FilledButton.icon(
                   key: const Key('warehouseLocationRequestButton'),
                   onPressed: () => context
                       .read<WarehouseLocationCubit>()
                       .requestCurrentLocation(),
                   icon: const Icon(Icons.my_location),
-                  label: const Text('Cho phép vị trí'),
+                  label: const Text(AppStrings.allowLocation),
                 ),
               ),
               WarehouseLocationStatus.deniedForever => WarehouseLocationBody(
                 key: const Key('warehouseLocationDeniedForever'),
                 icon: Icons.location_off_outlined,
-                title: 'Quyền vị trí đang bị khóa',
-                message:
-                    'Hãy mở cài đặt ứng dụng để cấp lại quyền. Danh sách kho '
-                    'vẫn dùng được trong lúc này.',
+                title: AppStrings.locationPermissionLocked,
+                message: AppStrings.locationPermissionSettingsMessage,
                 action: OutlinedButton.icon(
                   key: const Key('warehouseLocationOpenSettingsButton'),
                   onPressed: () =>
                       context.read<WarehouseLocationCubit>().openAppSettings(),
                   icon: const Icon(Icons.settings_outlined),
-                  label: const Text('Mở cài đặt quyền'),
+                  label: const Text(AppStrings.openPermissionSettings),
                 ),
               ),
               WarehouseLocationStatus.serviceDisabled => WarehouseLocationBody(
                 key: const Key('warehouseLocationServiceDisabled'),
                 icon: Icons.gps_off_outlined,
-                title: 'Vị trí đang tắt',
-                message:
-                    'Bật dịch vụ vị trí để MarineLink lấy điểm xuất phát. '
-                    'Bạn vẫn có thể mở từng kho trên Google Maps.',
+                title: AppStrings.locationServiceDisabled,
+                message: AppStrings.locationServiceDisabledMessage,
                 action: OutlinedButton.icon(
                   key: const Key('warehouseLocationOpenLocationSettingsButton'),
                   onPressed: () => context
                       .read<WarehouseLocationCubit>()
                       .openLocationSettings(),
                   icon: const Icon(Icons.settings_outlined),
-                  label: const Text('Mở cài đặt vị trí'),
+                  label: const Text(AppStrings.openLocationSettings),
                 ),
               ),
               WarehouseLocationStatus.failure => WarehouseLocationBody(
                 key: const Key('warehouseLocationFailure'),
                 icon: Icons.error_outline,
-                title: 'Không lấy được vị trí',
-                message: state.errorMessage ?? 'Vui lòng thử lại sau.',
+                title: AppStrings.currentLocationUnavailable,
+                message: state.errorMessage ?? AppStrings.tryAgainLater,
                 action: OutlinedButton.icon(
                   key: const Key('warehouseLocationRetryButton'),
                   onPressed: () => context
                       .read<WarehouseLocationCubit>()
                       .requestCurrentLocation(),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Thử lại'),
+                  label: const Text(AppStrings.retry),
                 ),
               ),
             },

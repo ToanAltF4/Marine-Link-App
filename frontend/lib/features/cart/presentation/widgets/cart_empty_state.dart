@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import 'cart_card.dart';
@@ -27,7 +28,7 @@ class CartEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Giỏ hàng đang trống',
+              AppStrings.cartEmpty,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: AppColors.primaryDark,
@@ -38,7 +39,7 @@ class CartEmptyState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onContinueShopping,
               icon: const Icon(Icons.add_shopping_cart_outlined),
-              label: const Text('Chọn sản phẩm'),
+              label: const Text(AppStrings.chooseProduct),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(40),
                 shape: RoundedRectangleBorder(

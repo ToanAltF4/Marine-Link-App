@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/warehouse.dart';
@@ -30,7 +31,7 @@ class WarehouseSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${warehouses.length} kho đang hoạt động',
+                    AppStrings.warehouseCount(warehouses.length),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w900,
@@ -38,7 +39,7 @@ class WarehouseSummary extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Chọn kho gần nhất để xem vị trí và mở chỉ đường trên Google Maps.',
+                    AppStrings.warehouseSummaryMessage,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],

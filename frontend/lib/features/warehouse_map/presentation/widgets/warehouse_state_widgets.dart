@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
@@ -39,7 +40,7 @@ class WarehouseError extends StatelessWidget {
               key: const Key('warehouseMapRetryButton'),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
+              label: const Text(AppStrings.retry),
             ),
           ],
         ),
@@ -58,7 +59,7 @@ class WarehouseEmpty extends StatelessWidget {
       key: Key('warehouseMapEmpty'),
       child: AppEmptyState(
         icon: Icons.warehouse_outlined,
-        message: 'Chưa có kho hàng đang hoạt động.',
+        message: AppStrings.warehouseEmpty,
       ),
     );
   }

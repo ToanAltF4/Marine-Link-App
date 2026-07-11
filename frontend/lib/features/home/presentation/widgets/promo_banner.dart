@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../cart/domain/cart_pricing.dart';
 
-const _bulkPromotionTitle = 'Ưu đãi mua nhiều';
-const _bulkPromotionBannerText =
-    'Giảm đến 8% cho đơn hàng từ ${CartBulkDiscountPolicy.eightPercentMinQuantity}kg';
+const _bulkPromotionTitle = AppStrings.bulkPromotionTitle;
+final _bulkPromotionBannerText = AppStrings.bulkPromotionSubtitle(
+  CartBulkDiscountPolicy.eightPercentMinQuantity,
+);
 
 /// Banner khuyến mãi mua nhiều ở đầu trang chủ, có nút mở danh sách sản phẩm.
 class PromoBanner extends StatelessWidget {
@@ -61,7 +63,7 @@ class PromoBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Ưu đãi',
+                    AppStrings.promotionBadge,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -116,7 +118,7 @@ class PromoBanner extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                    child: const Text('Xem ngay'),
+                    child: const Text(AppStrings.viewNow),
                   ),
                 ),
               ],

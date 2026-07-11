@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -22,18 +23,18 @@ class ProductDetailFlatBottomNav extends StatelessWidget {
           children: [
             _FlatNavItem(
               icon: Icons.home_outlined,
-              label: 'Trang ch\u1ee7',
+              label: AppStrings.homeTitle,
               onTap: () => BuyerNavigation.push(context, AppRoutes.home),
             ),
             _FlatNavItem(
               icon: Icons.sailing_outlined,
-              label: 'S\u1ea3n ph\u1ea9m',
+              label: AppStrings.productsTitle,
               active: true,
               onTap: () => BuyerNavigation.push(context, AppRoutes.productList),
             ),
             _FlatNavItem(
               icon: Icons.shopping_cart_outlined,
-              label: 'Gi\u1ecf h\u00e0ng',
+              label: AppStrings.cartTitle,
               onTap: () => BuyerNavigation.push(context, AppRoutes.cart),
             ),
             _FlatNavItem(
@@ -43,7 +44,7 @@ class ProductDetailFlatBottomNav extends StatelessWidget {
             ),
             _FlatNavItem(
               icon: Icons.person_outline_rounded,
-              label: 'T\u00e0i kho\u1ea3n',
+              label: AppStrings.accountTitle,
               onTap: () => BuyerNavigation.push(context, AppRoutes.profile),
             ),
           ],

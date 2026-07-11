@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -117,7 +118,7 @@ class AdvancedFilterButton extends StatelessWidget {
             const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF006A7C)),
             const SizedBox(width: 6),
             Text(
-              'Lọc ($activeCount)',
+              AppStrings.filterCount(activeCount),
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: isActive
                     ? const Color(0xFF006A7C)

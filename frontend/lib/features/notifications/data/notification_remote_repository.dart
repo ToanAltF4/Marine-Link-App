@@ -59,7 +59,9 @@ class NotificationRemoteRepository implements NotificationRepository {
 
   @override
   Future<ApiResponse<void>> deleteBroadcast(String broadcastId) async {
-    await apiClient.delete(ApiEndpoints.notificationBroadcastDetail(broadcastId));
+    await apiClient.delete(
+      ApiEndpoints.notificationBroadcastDetail(broadcastId),
+    );
     return const ApiResponse(success: true);
   }
 }

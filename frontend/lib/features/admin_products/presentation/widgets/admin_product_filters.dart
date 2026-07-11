@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../domain/admin_product.dart';
 import '../cubit/admin_product_cubit.dart';
@@ -20,25 +21,25 @@ class AdminProductFilters extends StatelessWidget {
           children: [
             StatusFilterChip(
               key: const Key('adminProductStatusFilterAll'),
-              label: 'Tất cả',
+              label: AppStrings.all,
               selected: state.selectedStatus == null,
               status: null,
             ),
             StatusFilterChip(
               key: const Key('adminProductStatusFilterActive'),
-              label: 'Đang bán',
+              label: AppStrings.productActive,
               selected: state.selectedStatus == AdminProductStatus.active,
               status: AdminProductStatus.active,
             ),
             StatusFilterChip(
               key: const Key('adminProductStatusFilterOutOfStock'),
-              label: 'Hết hàng',
+              label: AppStrings.outOfStock,
               selected: state.selectedStatus == AdminProductStatus.outOfStock,
               status: AdminProductStatus.outOfStock,
             ),
             StatusFilterChip(
               key: const Key('adminProductStatusFilterDisabled'),
-              label: 'Tạm ẩn',
+              label: AppStrings.productDisabled,
               selected: state.selectedStatus == AdminProductStatus.disabled,
               status: AdminProductStatus.disabled,
             ),
@@ -49,19 +50,19 @@ class AdminProductFilters extends StatelessWidget {
           children: [
             FeaturedFilterChip(
               key: const Key('adminProductFeaturedFilterAll'),
-              label: 'Tất cả nổi bật',
+              label: AppStrings.allFeatured,
               selected: state.selectedFeatured == null,
               featured: null,
             ),
             FeaturedFilterChip(
               key: const Key('adminProductFeaturedFilterYes'),
-              label: 'Nổi bật',
+              label: AppStrings.featured,
               selected: state.selectedFeatured == true,
               featured: true,
             ),
             FeaturedFilterChip(
               key: const Key('adminProductFeaturedFilterNo'),
-              label: 'Không nổi bật',
+              label: AppStrings.notFeatured,
               selected: state.selectedFeatured == false,
               featured: false,
             ),

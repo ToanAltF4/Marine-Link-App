@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/admin_product.dart';
@@ -33,7 +34,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
             status: AdminProductStatusView.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không tải được danh sách sản phẩm.',
+              fallback: AppStrings.adminProductsLoadFailed,
             ),
           ),
         );
@@ -44,7 +45,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
           status: AdminProductStatusView.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi tải danh sách sản phẩm.',
+            fallback: AppStrings.adminProductsLoadUnexpected,
           ),
         ),
       );
@@ -94,7 +95,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
             actionStatus: AdminProductActionStatus.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không tạo được sản phẩm.',
+              fallback: AppStrings.adminProductCreateFailed,
             ),
           ),
         );
@@ -105,7 +106,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
           actionStatus: AdminProductActionStatus.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi tạo sản phẩm.',
+            fallback: AppStrings.adminProductCreateUnexpected,
           ),
         ),
       );
@@ -143,7 +144,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
             actionStatus: AdminProductActionStatus.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không cập nhật được sản phẩm.',
+              fallback: AppStrings.adminProductUpdateFailed,
             ),
             clearEditingProductId: true,
           ),
@@ -155,7 +156,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
           actionStatus: AdminProductActionStatus.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi cập nhật sản phẩm.',
+            fallback: AppStrings.adminProductUpdateUnexpected,
           ),
           clearEditingProductId: true,
         ),
@@ -192,7 +193,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
             actionStatus: AdminProductActionStatus.failure,
             errorMessage: userFacingResponseMessage(
               response.message,
-              fallback: 'Không xoá được sản phẩm.',
+              fallback: AppStrings.adminProductDeleteFailed,
             ),
             clearDeletingProductId: true,
           ),
@@ -204,7 +205,7 @@ class AdminProductCubit extends Cubit<AdminProductState> {
           actionStatus: AdminProductActionStatus.failure,
           errorMessage: userFacingErrorMessage(
             error,
-            fallback: 'Đã xảy ra lỗi khi xoá sản phẩm.',
+            fallback: AppStrings.adminProductDeleteUnexpected,
           ),
           clearDeletingProductId: true,
         ),

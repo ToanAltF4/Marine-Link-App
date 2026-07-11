@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../core/utils/validators.dart';
 import '../../domain/auth_repository.dart';
@@ -172,7 +173,7 @@ class AuthFormCubit extends Cubit<AuthFormState> {
       state.copyWith(
         fullName: _validateDirty(
           value,
-          Validators.required(value, fieldName: 'Họ tên'),
+          Validators.required(value, fieldName: AppStrings.fullNameField),
         ),
       ),
     );
@@ -232,7 +233,7 @@ class AuthFormCubit extends Cubit<AuthFormState> {
                     value: normalized,
                     dirty: true,
                     status: AuthFieldStatus.serverInvalid,
-                    message: 'Email đã được sử dụng.',
+                    message: AppStrings.emailAlreadyUsed,
                   ),
           ),
         );
@@ -304,7 +305,7 @@ class AuthFormCubit extends Cubit<AuthFormState> {
                     value: normalized,
                     dirty: true,
                     status: AuthFieldStatus.serverInvalid,
-                    message: 'Số điện thoại đã được sử dụng.',
+                    message: AppStrings.phoneAlreadyUsed,
                   ),
           ),
         );
@@ -405,7 +406,7 @@ class AuthFormCubit extends Cubit<AuthFormState> {
   String? _validateLoginEmailOrPhone(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
-      return 'Email hoặc số điện thoại không được để trống';
+      return AppStrings.emailOrPhoneRequired;
     }
     if (RegExp(r'^\+?\d+$').hasMatch(trimmed)) {
       return Validators.phone(trimmed);

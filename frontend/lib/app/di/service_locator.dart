@@ -28,6 +28,8 @@ import '../../features/orders/presentation/bloc/order_bloc.dart';
 
 // Notifications
 import '../../features/notifications/domain/notification_repository.dart';
+import '../../features/notifications/domain/notification_display_service.dart';
+import '../../features/notifications/data/local_notification_display_service.dart';
 import '../../features/notifications/data/notification_mock_repository.dart';
 import '../../features/notifications/data/notification_remote_repository.dart';
 import '../../features/notifications/presentation/bloc/broadcast_cubit.dart';
@@ -177,9 +179,15 @@ Future<void> setupServiceLocator({
         ? NotificationRemoteRepository(apiClient: sl<ApiClient>())
         : NotificationMockRepository(),
   );
+  sl.registerLazySingleton<NotificationDisplayService>(
+    () => LocalNotificationDisplayService(),
+  );
+  await sl<NotificationDisplayService>().initialize();
   sl.registerFactory<NotificationCubit>(
-    () =>
-        NotificationCubit(notificationRepository: sl<NotificationRepository>()),
+    () => NotificationCubit(
+      notificationRepository: sl<NotificationRepository>(),
+      notificationDisplayService: sl<NotificationDisplayService>(),
+    ),
   );
   sl.registerFactory<BroadcastCubit>(
     () => BroadcastCubit(notificationRepository: sl<NotificationRepository>()),

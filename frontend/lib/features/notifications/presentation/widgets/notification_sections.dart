@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../auth/domain/user.dart';
@@ -13,7 +14,11 @@ class NotificationSections extends StatelessWidget {
   final NotificationState state;
   final User? user;
 
-  const NotificationSections({super.key, required this.state, required this.user});
+  const NotificationSections({
+    super.key,
+    required this.state,
+    required this.user,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +29,7 @@ class NotificationSections extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (unreadItems.isNotEmpty) ...[
-          const SectionTitle(title: 'Mới nhất'),
+          const SectionTitle(title: AppStrings.latest),
           const SizedBox(height: 12),
           for (final item in unreadItems) ...[
             NotificationTile(
@@ -37,7 +42,7 @@ class NotificationSections extends StatelessWidget {
         ],
         if (readItems.isNotEmpty) ...[
           const SizedBox(height: 8),
-          const SectionTitle(title: 'Trước đó'),
+          const SectionTitle(title: AppStrings.earlier),
           const SizedBox(height: 12),
           for (final item in readItems) ...[
             NotificationTile(

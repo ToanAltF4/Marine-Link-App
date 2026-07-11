@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../domain/order.dart';
 import '../domain/order_repository.dart';
 import '../../../core/api/api_response.dart';
@@ -15,7 +16,7 @@ class OrderMockRepository implements OrderRepository {
       createdAt: DateTime.parse('2026-05-28T08:30:00Z'),
       receiverName: 'Đại lý Nguyễn Văn A',
       receiverPhone: '0912345678',
-      shippingAddress: 'Cần Thơ',
+      shippingAddress: AppStrings.originCanTho,
       paymentMethod: PaymentMethod.cod,
       paymentStatus: 'UNPAID',
       subtotalAmount: 4200000,
@@ -25,7 +26,7 @@ class OrderMockRepository implements OrderRepository {
       items: const [
         OrderItem(
           productId: 'prod-001',
-          productNameSnapshot: 'Mực khô loại 1',
+          productNameSnapshot: AppStrings.drySquidGrade1,
           productUnitSnapshot: 'kg',
           unitPrice: 420000,
           quantity: 10,
@@ -48,7 +49,7 @@ class OrderMockRepository implements OrderRepository {
       createdAt: DateTime.parse('2026-05-29T09:15:00Z'),
       receiverName: 'Đại lý Nguyễn Văn A',
       receiverPhone: '0912345678',
-      shippingAddress: 'Cần Thơ',
+      shippingAddress: AppStrings.originCanTho,
       paymentMethod: PaymentMethod.bankTransfer,
       paymentStatus: 'UNPAID',
       subtotalAmount: 3250000,
@@ -57,7 +58,7 @@ class OrderMockRepository implements OrderRepository {
       items: const [
         OrderItem(
           productId: 'prod-002',
-          productNameSnapshot: 'Tôm khô size lớn',
+          productNameSnapshot: AppStrings.largeDriedShrimp,
           productUnitSnapshot: 'kg',
           unitPrice: 650000,
           quantity: 5,
@@ -86,7 +87,7 @@ class OrderMockRepository implements OrderRepository {
       createdAt: DateTime.parse('2026-05-30T07:00:00Z'),
       receiverName: 'Đại lý Nguyễn Văn A',
       receiverPhone: '0912345678',
-      shippingAddress: 'Cần Thơ',
+      shippingAddress: AppStrings.originCanTho,
       paymentMethod: PaymentMethod.cod,
       paymentStatus: 'UNPAID',
       subtotalAmount: 950000,
@@ -111,7 +112,7 @@ class OrderMockRepository implements OrderRepository {
         OrderStatusHistory(
           fromStatus: 'PENDING',
           toStatus: 'CONFIRMED',
-          note: 'Đã xác nhận',
+          note: AppStrings.orderStatusConfirmed,
           createdAt: DateTime.parse('2026-05-30T07:30:00Z'),
         ),
         OrderStatusHistory(
@@ -130,7 +131,7 @@ class OrderMockRepository implements OrderRepository {
       createdAt: DateTime.parse('2026-05-26T06:45:00Z'),
       receiverName: 'Đại lý Nguyễn Văn A',
       receiverPhone: '0912345678',
-      shippingAddress: 'Cần Thơ',
+      shippingAddress: AppStrings.originCanTho,
       paymentMethod: PaymentMethod.bankTransfer,
       paymentStatus: 'PAID',
       subtotalAmount: 7800000,
@@ -169,7 +170,7 @@ class OrderMockRepository implements OrderRepository {
       createdAt: DateTime.parse('2026-05-25T10:10:00Z'),
       receiverName: 'Đại lý Nguyễn Văn A',
       receiverPhone: '0912345678',
-      shippingAddress: 'Cần Thơ',
+      shippingAddress: AppStrings.originCanTho,
       paymentMethod: PaymentMethod.cod,
       paymentStatus: 'UNPAID',
       subtotalAmount: 1500000,
@@ -179,7 +180,7 @@ class OrderMockRepository implements OrderRepository {
       items: const [
         OrderItem(
           productId: 'prod-005',
-          productNameSnapshot: 'Mực một nắng',
+          productNameSnapshot: AppStrings.semiDriedSquid,
           productUnitSnapshot: 'kg',
           unitPrice: 500000,
           quantity: 3,
@@ -246,7 +247,7 @@ class OrderMockRepository implements OrderRepository {
     if (order == null) {
       return const ApiResponse<OrderDetail>(
         success: false,
-        message: 'Không tìm thấy đơn hàng',
+        message: AppStrings.orderNotFound,
         data: null,
       );
     }
@@ -321,7 +322,7 @@ class OrderMockRepository implements OrderRepository {
     if (index < 0) {
       return const ApiResponse<void>(
         success: false,
-        message: 'Không tìm thấy đơn hàng',
+        message: AppStrings.orderNotFound,
       );
     }
 
@@ -331,14 +332,16 @@ class OrderMockRepository implements OrderRepository {
     if (!order.status.allowedTransitions.contains(targetStatus)) {
       return ApiResponse<void>(
         success: false,
-        message:
-            'Không thể chuyển trạng thái từ ${order.status.displayLabel} sang ${targetStatus.displayLabel}',
+        message: AppStrings.orderStatusTransition(
+          order.status.displayLabel,
+          targetStatus.displayLabel,
+        ),
       );
     }
     if (targetStatus == OrderStatus.confirmed && order.isWaitingForPayment) {
       return const ApiResponse<void>(
         success: false,
-        message: 'Đơn hàng chưa thanh toán',
+        message: AppStrings.orderUnpaid,
       );
     }
 

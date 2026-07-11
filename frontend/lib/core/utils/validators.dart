@@ -1,6 +1,6 @@
 // Client-side validation utilities used before calling repository/BLoC.
 // Backend always re-validates; these are convenience checks for UX.
-import '../constants/app_strings.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 abstract class Validators {
   static String? email(String? value) {
@@ -53,7 +53,10 @@ abstract class Validators {
     return null;
   }
 
-  static String? required(String? value, {String fieldName = 'Trường này'}) {
+  static String? required(
+    String? value, {
+    String fieldName = AppStrings.defaultFieldName,
+  }) {
     if (value == null || value.trim().isEmpty) {
       return AppStrings.requiredField(fieldName);
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -23,7 +24,7 @@ class ProductDetailHeader extends StatelessWidget {
           children: [
             Center(
               child: Text(
-                'Chi tiết sản phẩm',
+                AppStrings.productDetailTitle,
                 key: const Key('productDetailLogo'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
@@ -41,7 +42,7 @@ class ProductDetailHeader extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
                 color: AppColors.primaryDark,
-                tooltip: 'Quay lại',
+                tooltip: AppStrings.back,
               ),
             ),
             Positioned(
@@ -53,7 +54,7 @@ class ProductDetailHeader extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.notifications_none_rounded, size: 24),
                 color: AppColors.primaryDark,
-                tooltip: 'Thông báo',
+                tooltip: AppStrings.notificationsTitle,
               ),
             ),
           ],

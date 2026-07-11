@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../domain/admin_product.dart';
 import '../domain/admin_product_repository.dart';
@@ -47,7 +48,7 @@ class AdminProductMockRepository implements AdminProductRepository {
     )) {
       return const ApiResponse(
         success: false,
-        message: 'Slug sản phẩm đã tồn tại.',
+        message: AppStrings.productSlugExists,
       );
     }
 
@@ -82,7 +83,7 @@ class AdminProductMockRepository implements AdminProductRepository {
     if (index == -1) {
       return const ApiResponse(
         success: false,
-        message: 'Không tìm thấy sản phẩm cần cập nhật.',
+        message: AppStrings.productNotFoundForUpdate,
       );
     }
     final validationMessage = _validateDraft(draft);
@@ -96,7 +97,7 @@ class AdminProductMockRepository implements AdminProductRepository {
     )) {
       return const ApiResponse(
         success: false,
-        message: 'Slug sản phẩm đã tồn tại.',
+        message: AppStrings.productSlugExists,
       );
     }
 
@@ -127,7 +128,7 @@ class AdminProductMockRepository implements AdminProductRepository {
     if (_products.length == beforeLength) {
       return const ApiResponse(
         success: false,
-        message: 'Không tìm thấy sản phẩm cần xoá.',
+        message: AppStrings.productNotFoundForDelete,
       );
     }
     return const ApiResponse(success: true, message: 'OK');
@@ -138,7 +139,7 @@ class AdminProductMockRepository implements AdminProductRepository {
       (category) => category.id == draft.categoryId,
       orElse: () => AdminProductCategory(
         id: draft.categoryId,
-        name: 'Danh mục tuỳ chỉnh',
+        name: AppStrings.customCategoryName,
       ),
     );
   }
@@ -156,14 +157,14 @@ class AdminProductMockRepository implements AdminProductRepository {
   }
 
   String? _validateDraft(AdminProductDraft draft) {
-    if (draft.categoryId.trim().isEmpty) return 'Danh mục không được để trống.';
-    if (draft.name.trim().isEmpty) return 'Tên sản phẩm không được để trống.';
-    if (draft.slug.trim().isEmpty) return 'Slug không được để trống.';
-    if (draft.basePrice <= 0) return 'Giá gốc phải lớn hơn 0.';
+    if (draft.categoryId.trim().isEmpty) return AppStrings.categoryRequired;
+    if (draft.name.trim().isEmpty) return AppStrings.productNameRequired;
+    if (draft.slug.trim().isEmpty) return AppStrings.slugRequired;
+    if (draft.basePrice <= 0) return AppStrings.basePriceMustBePositive;
     if (draft.minOrderQuantity <= 0) {
-      return 'Số lượng tối thiểu phải lớn hơn 0.';
+      return AppStrings.minQuantityMustBePositive;
     }
-    if (draft.stockQuantity < 0) return 'Tồn kho không được âm.';
+    if (draft.stockQuantity < 0) return AppStrings.stockMustNotBeNegative;
 
     final tiers = List<AdminPriceTier>.of(draft.priceTiers)
       ..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
@@ -171,16 +172,16 @@ class AdminProductMockRepository implements AdminProductRepository {
     for (var index = 0; index < tiers.length; index++) {
       final tier = tiers[index];
       if (tier.minQuantity <= 0 || tier.unitPrice <= 0) {
-        return 'Khoảng giá sỉ không hợp lệ.';
+        return AppStrings.wholesaleTierInvalid;
       }
       if (tier.maxQuantity != null && tier.maxQuantity! < tier.minQuantity) {
-        return 'Khoảng giá sỉ không hợp lệ.';
+        return AppStrings.wholesaleTierInvalid;
       }
       if (previousMax != null && tier.minQuantity <= previousMax) {
-        return 'Khoảng giá sỉ bị trùng nhau.';
+        return AppStrings.wholesaleTierDuplicated;
       }
       if (previousMax == null && index > 0) {
-        return 'Khoảng giá sỉ bị trùng nhau.';
+        return AppStrings.wholesaleTierDuplicated;
       }
       previousMax = tier.maxQuantity;
     }
@@ -191,25 +192,25 @@ class AdminProductMockRepository implements AdminProductRepository {
 const _sampleCategories = [
   AdminProductCategory(
     id: '550e8400-e29b-41d4-a716-446655440004',
-    name: 'Mực khô',
+    name: AppStrings.driedSquid,
   ),
   AdminProductCategory(
     id: '550e8400-e29b-41d4-a716-446655440005',
-    name: 'Tôm khô',
+    name: AppStrings.driedShrimp,
   ),
   AdminProductCategory(
     id: '550e8400-e29b-41d4-a716-446655440006',
-    name: 'Cá khô',
+    name: AppStrings.driedFish,
   ),
 ];
 
 final _sampleProducts = [
   AdminProduct(
     id: 'product-001',
-    name: 'Mực khô loại 1',
+    name: AppStrings.drySquidGrade1,
     slug: 'muc-kho-loai-1',
-    description: 'Mực khô phục vụ đơn sỉ.',
-    origin: 'Cà Mau',
+    description: AppStrings.wholesaleDrySquidDescription,
+    origin: AppStrings.originCaMau,
     imageUrl: 'assets/products/dried_squid.png',
     basePrice: 450000,
     unit: 'kg',
@@ -230,10 +231,10 @@ final _sampleProducts = [
   ),
   AdminProduct(
     id: 'product-002',
-    name: 'Tôm khô size lớn',
+    name: AppStrings.largeDriedShrimp,
     slug: 'tom-kho-size-lon',
-    description: 'Tôm khô tuyển chọn cho đại lý.',
-    origin: 'Bạc Liêu',
+    description: AppStrings.wholesaleDriedShrimpDescription,
+    origin: AppStrings.originBacLieu,
     imageUrl: 'assets/products/dried_shrimp.png',
     basePrice: 680000,
     unit: 'kg',
@@ -245,10 +246,10 @@ final _sampleProducts = [
   ),
   AdminProduct(
     id: 'product-003',
-    name: 'Cá chỉ vàng',
+    name: AppStrings.yellowstripeScad,
     slug: 'ca-chi-vang',
-    description: 'Sản phẩm đang tạm ẩn khỏi gian hàng.',
-    origin: 'Phan Thiết',
+    description: AppStrings.hiddenProductDescription,
+    origin: AppStrings.originPhanThiet,
     imageUrl: 'assets/products/dried_yellowstripe_scad.png',
     basePrice: 240000,
     unit: 'kg',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
@@ -39,7 +40,7 @@ class AdminProductsError extends StatelessWidget {
             FilledButton(
               key: const Key('adminProductsRetryButton'),
               onPressed: onRetry,
-              child: const Text('Thử lại'),
+              child: const Text(AppStrings.retry),
             ),
           ],
         ),
@@ -58,7 +59,7 @@ class AdminProductsEmpty extends StatelessWidget {
       key: Key('adminProductsEmpty'),
       child: AppEmptyState(
         icon: Icons.inventory_2_outlined,
-        message: 'Chưa có sản phẩm. Sản phẩm mới sẽ hiển thị sau khi được tạo.',
+        message: AppStrings.adminProductsEmpty,
       ),
     );
   }
@@ -76,7 +77,7 @@ class FilteredEmptyState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Text(
-          'Không có sản phẩm phù hợp với bộ lọc.',
+          AppStrings.noFilteredProducts,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),

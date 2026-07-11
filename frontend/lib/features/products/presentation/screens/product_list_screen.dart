@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -169,8 +170,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
                                 hintText: _selectedCategoryId == null
-                                    ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
-                                    : 'T\u00ecm trong danh m\u1ee5c...',
+                                    ? AppStrings.productSearchHint
+                                    : AppStrings.productCategorySearchHint,
                                 prefixIcon: const Icon(
                                   Icons.search_rounded,
                                   color: AppColors.textSecondary,
@@ -213,7 +214,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             ActiveFilterBar(
                               labels: _activeFilterLabels(),
                               activeCount: _activeFilterCount(),
-                              onFilterTap: () => _openAdvancedFilters(_allOriginOptions),
+                              onFilterTap: () =>
+                                  _openAdvancedFilters(_allOriginOptions),
                             ),
                           ],
                         ),
@@ -293,7 +295,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (state is ProductInitial || state is ProductListLoading) {
       return const Expanded(
         child: ProductScrollableState(
-          child: AppLoadingIndicator(message: 'Đang tải danh sách sản phẩm'),
+          child: AppLoadingIndicator(message: AppStrings.loadingProductList),
         ),
       );
     }
@@ -314,8 +316,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
         child: ProductScrollableState(
           child: AppEmptyState(
             key: const Key('productListEmptyState'),
-            message: 'Không tìm thấy sản phẩm phù hợp',
-            actionLabel: 'Xóa lọc',
+            message: AppStrings.noMatchingProducts,
+            actionLabel: AppStrings.clearFilters,
             onAction: _resetProductFilters,
             icon: Icons.search_off_outlined,
           ),
@@ -349,7 +351,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     child: Row(
                       children: [
                         Text(
-                          '${visibleProducts.length} mặt hàng',
+                          AppStrings.productCount(visibleProducts.length),
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: AppColors.primaryDark,
                             fontWeight: FontWeight.w800,
@@ -428,9 +430,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   String _sortLabel() {
     if (!_hasCustomSort) {
-      return 'Mặc định';
+      return AppStrings.defaultLabel;
     }
-    return _sortAscending ? 'Giá tăng dần' : 'Giá giảm dần';
+    return _sortAscending
+        ? AppStrings.sortPriceAscending
+        : AppStrings.sortPriceDescending;
   }
 
   int _activeFilterCount() {
@@ -462,29 +466,29 @@ class _ProductListScreenState extends State<ProductListScreen> {
       }
     }
     if (_stockFilter != ProductStockFilter.all) {
-      labels.add(
-        switch (_stockFilter) {
-          ProductStockFilter.all => '',
-          ProductStockFilter.available => 'Còn hàng',
-          ProductStockFilter.low => 'Sắp hết',
-        },
-      );
+      labels.add(switch (_stockFilter) {
+        ProductStockFilter.all => '',
+        ProductStockFilter.available => AppStrings.inStock,
+        ProductStockFilter.low => AppStrings.lowStock,
+      });
     }
     if (_priceFilter != ProductPriceFilter.all) {
-      labels.add(
-        switch (_priceFilter) {
-          ProductPriceFilter.all => '',
-          ProductPriceFilter.under300 => 'Dưới 300k',
-          ProductPriceFilter.from300To500 => '300k–500k',
-          ProductPriceFilter.over500 => 'Trên 500k',
-        },
-      );
+      labels.add(switch (_priceFilter) {
+        ProductPriceFilter.all => '',
+        ProductPriceFilter.under300 => AppStrings.under300k,
+        ProductPriceFilter.from300To500 => AppStrings.from300To500k,
+        ProductPriceFilter.over500 => AppStrings.over500k,
+      });
     }
     if (_originFilter != null) {
       labels.add(displayOrigin(_originFilter!));
     }
     if (_hasCustomSort) {
-      labels.add(_sortAscending ? 'Giá tăng dần' : 'Giá giảm dần');
+      labels.add(
+        _sortAscending
+            ? AppStrings.sortPriceAscending
+            : AppStrings.sortPriceDescending,
+      );
     }
     return labels;
   }
@@ -593,18 +597,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   String _screenTitle() {
     if (_selectedCategoryId == null) {
-      return 'Sản phẩm';
+      return AppStrings.productsTitle;
     }
 
     for (final category in _categories) {
       final matched = _findCategoryById(_selectedCategoryId, category);
       if (matched != null) return displayCategoryName(matched);
     }
-    return 'Sản phẩm';
+    return AppStrings.productsTitle;
   }
-
-
-
 
   Category? _findCategoryById(String? categoryId, [Category? root]) {
     if (categoryId == null) {
@@ -629,8 +630,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     }
     return null;
   }
-
-
 
   void _requestProducts() {
     _productBloc.add(

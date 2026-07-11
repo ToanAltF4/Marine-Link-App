@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -38,9 +39,9 @@ class _ChatRoomsView extends StatelessWidget {
     if (roomId != null && roomId.isNotEmpty && context.mounted) {
       await _openRoom(context, roomId);
     } else if (context.mounted && cubit.state.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(cubit.state.errorMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(cubit.state.errorMessage!)));
     }
   }
 
@@ -65,7 +66,7 @@ class _ChatRoomsView extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => BuyerNavigation.popOrGo(context, AppRoutes.home),
           ),
-          title: const Text('Lịch sử chat'),
+          title: const Text(AppStrings.chatHistoryTitle),
           centerTitle: true,
         ),
         bottomNavigationBar: const BuyerBottomNav(
@@ -85,7 +86,7 @@ class _ChatRoomsView extends StatelessWidget {
                     ),
                   )
                 : const Icon(Icons.add_comment_outlined),
-            label: const Text('Cuộc trò chuyện mới'),
+            label: const Text(AppStrings.newConversation),
           ),
         ),
         body: BlocBuilder<ChatRoomsCubit, ChatRoomsState>(
@@ -95,19 +96,22 @@ class _ChatRoomsView extends StatelessWidget {
               case ChatRoomsStatus.loading:
                 return const Center(
                   key: Key('chatRoomsLoading'),
-                  child: AppLoadingIndicator(message: 'Đang tải lịch sử chat'),
+                  child: AppLoadingIndicator(
+                    message: AppStrings.loadingChatHistory,
+                  ),
                 );
               case ChatRoomsStatus.failure:
                 return AppErrorState(
-                  message: state.errorMessage ?? 'Không tải được lịch sử chat.',
+                  message:
+                      state.errorMessage ?? AppStrings.chatHistoryLoadFailed,
                   onRetry: () => context.read<ChatRoomsCubit>().load(),
                 );
               case ChatRoomsStatus.empty:
                 return AppEmptyState(
                   key: const Key('chatRoomsEmpty'),
                   icon: Icons.forum_outlined,
-                  message: 'Bạn chưa có cuộc trò chuyện nào.',
-                  actionLabel: 'Cuộc trò chuyện mới',
+                  message: AppStrings.chatHistoryEmpty,
+                  actionLabel: AppStrings.newConversation,
                   onAction: () => _createRoom(context),
                 );
               case ChatRoomsStatus.success:
@@ -118,8 +122,7 @@ class _ChatRoomsView extends StatelessWidget {
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) => _ChatRoomTile(
                     room: state.rooms[index],
-                    onTap: () =>
-                        _openRoom(context, state.rooms[index].roomId),
+                    onTap: () => _openRoom(context, state.rooms[index].roomId),
                   ),
                 );
             }
@@ -189,7 +192,7 @@ class _ChatRoomTile extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: const Text(
-                              'Đã xử lý',
+                              AppStrings.chatClosedFilter,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -220,7 +223,7 @@ class _ChatRoomTile extends StatelessWidget {
   }
 
   String _formatTime(DateTime? time) {
-    if (time == null) return 'Chưa có tin nhắn';
+    if (time == null) return AppStrings.noChatMessagesYet;
     return DateFormat('HH:mm dd/MM').format(time.toLocal());
   }
 }

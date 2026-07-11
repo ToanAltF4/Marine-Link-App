@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -37,7 +38,7 @@ class AdminDashboardError extends StatelessWidget {
             FilledButton(
               key: const Key('adminDashboardRetryButton'),
               onPressed: onRetry,
-              child: const Text('Thử lại'),
+              child: const Text(AppStrings.retry),
             ),
           ],
         ),

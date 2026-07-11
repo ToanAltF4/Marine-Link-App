@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../storage/secure_token_storage.dart';
 import 'api_endpoints.dart';
 import 'api_response.dart';
@@ -136,7 +137,7 @@ class ApiClient {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return const ApiException(
-        message: 'Kết nối quá chậm. Vui lòng thử lại.',
+        message: AppStrings.apiSlowConnection,
         type: ApiExceptionType.network,
       );
     }
@@ -146,27 +147,27 @@ class ApiClient {
 
     return switch (statusCode) {
       401 => ApiException(
-        message: serverMessage ?? 'Phiên đăng nhập hết hạn.',
+        message: serverMessage ?? AppStrings.sessionExpiredShort,
         type: ApiExceptionType.unauthorized,
         statusCode: statusCode,
       ),
       403 => ApiException(
-        message: serverMessage ?? 'Bạn không có quyền thực hiện thao tác này.',
+        message: serverMessage ?? AppStrings.forbiddenAction,
         type: ApiExceptionType.forbidden,
         statusCode: statusCode,
       ),
       404 => ApiException(
-        message: serverMessage ?? 'Không tìm thấy dữ liệu.',
+        message: serverMessage ?? AppStrings.dataNotFound,
         type: ApiExceptionType.notFound,
         statusCode: statusCode,
       ),
       422 => ApiException(
-        message: serverMessage ?? 'Dữ liệu không hợp lệ.',
+        message: serverMessage ?? AppStrings.invalidData,
         type: ApiExceptionType.validation,
         statusCode: statusCode,
       ),
       _ => ApiException(
-        message: serverMessage ?? 'Lỗi hệ thống. Vui lòng thử lại.',
+        message: serverMessage ?? AppStrings.systemErrorTryAgain,
         type: ApiExceptionType.server,
         statusCode: statusCode,
       ),

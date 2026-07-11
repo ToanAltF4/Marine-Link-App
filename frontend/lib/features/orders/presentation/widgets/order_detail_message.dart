@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 
@@ -34,7 +35,10 @@ class OrderDetailMessage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Thử lại')),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text(AppStrings.retry),
+            ),
           ],
         ),
       ),

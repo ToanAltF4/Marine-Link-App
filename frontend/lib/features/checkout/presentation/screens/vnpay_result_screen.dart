@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -40,11 +41,11 @@ class _VnpayResultScreenState extends State<VnpayResultScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = _success
-        ? 'Đặt hàng thành công'
-        : 'Thanh toán VNPAY chưa hoàn tất';
+        ? AppStrings.orderSuccessTitle
+        : AppStrings.vnpayPaymentIncompleteTitle;
     final message = _success
-        ? 'Đơn hàng ${_orderCode ?? ''} đã thanh toán VNPAY thành công và sẽ được duyệt trong thời gian sớm nhất.'
-        : 'Giao dịch chưa thành công hoặc đã bị hủy. Bạn có thể quay lại giỏ hàng để thử lại.';
+        ? AppStrings.vnpayPaymentSuccess(_orderCode ?? '')
+        : AppStrings.vnpayPaymentIncompleteMessage;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FC),
@@ -100,22 +101,22 @@ class _VnpayResultScreenState extends State<VnpayResultScreen> {
                       ),
                       const SizedBox(height: 18),
                       _ResultDetailRow(
-                        label: 'Mã đơn',
+                        label: AppStrings.orderCodeLabel,
                         value: _orderCode ?? '-',
                       ),
                       _ResultDetailRow(
-                        label: 'Trạng thái',
+                        label: AppStrings.productStatusLabel,
                         value: widget.queryParameters['paymentStatus'] ?? '-',
                       ),
                       _ResultDetailRow(
-                        label: 'Mã phản hồi',
+                        label: AppStrings.responseCodeLabel,
                         value: widget.queryParameters['responseCode'] ?? '-',
                       ),
                       const SizedBox(height: 22),
                       FilledButton.icon(
                         onPressed: () => context.go(AppRoutes.orders),
                         icon: const Icon(Icons.receipt_long_outlined),
-                        label: const Text('Xem đơn hàng'),
+                        label: const Text(AppStrings.viewOrder),
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(50),
                           shape: RoundedRectangleBorder(
@@ -133,7 +134,9 @@ class _VnpayResultScreenState extends State<VnpayResultScreen> {
                               ? Icons.home_outlined
                               : Icons.shopping_cart_outlined,
                         ),
-                        label: Text(_success ? 'Về trang chủ' : 'Về giỏ hàng'),
+                        label: Text(
+                          _success ? AppStrings.goHome : AppStrings.goToCart,
+                        ),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(50),
                           shape: RoundedRectangleBorder(

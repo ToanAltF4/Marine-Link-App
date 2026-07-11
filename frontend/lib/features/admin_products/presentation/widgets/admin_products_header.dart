@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/theme/app_theme.dart';
 import '../../domain/admin_product.dart';
@@ -36,7 +37,7 @@ class AdminProductsHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Kho sản phẩm',
+                    AppStrings.productInventoryTitle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w900,
@@ -44,7 +45,11 @@ class AdminProductsHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${products.length} sản phẩm - $activeCount đang bán - $lowStockCount cần kiểm kho',
+                    AppStrings.adminProductSummary(
+                      productCount: products.length,
+                      activeCount: activeCount,
+                      lowStockCount: lowStockCount,
+                    ),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],

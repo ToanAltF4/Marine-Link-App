@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../domain/order.dart';
 
 class OrderDto {
@@ -24,7 +25,7 @@ class OrderDto {
       id: json['id'] as String,
       orderCode: json['orderCode'] as String,
       status: json['status'] as String? ?? 'PENDING',
-      paymentMethod: json['paymentMethod'] as String? ?? 'COD',
+      paymentMethod: json['paymentMethod'] as String? ?? AppStrings.paymentCod,
       paymentStatus: json['paymentStatus'] as String? ?? 'UNPAID',
       totalAmount: (json['totalAmount'] as num? ?? 0).toDouble(),
       createdAt: DateTime.parse(json['createdAt'] as String),
