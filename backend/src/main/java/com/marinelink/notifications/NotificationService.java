@@ -7,6 +7,7 @@ import com.marinelink.notifications.dto.NotificationResponseDTO;
 import com.marinelink.users.User;
 import com.marinelink.users.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Admin/staff broadcast: fan out one notification per active dealer, tagged
@@ -53,6 +55,8 @@ public class NotificationService {
                     .read(false)
                     .build());
         }
+        // Đẩy push (OneSignal) sau khi commit; lỗi push không ảnh hưởng broadcast.
+        eventPublisher.publishEvent(new BroadcastCreatedEvent(title, body));
         return new BroadcastSummaryDTO(broadcastId, title, body, creatorPublicId, now, recipients.size());
     }
 
