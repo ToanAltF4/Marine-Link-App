@@ -42,12 +42,15 @@ AdminProduct adminProductFromJson(dynamic json) {
 
 Map<String, dynamic> adminProductDraftToJson(AdminProductDraft draft) {
   return {
-    'categoryId': draft.categoryId,
+    // Empty means "no category selected" → let the backend assign a default
+    // (create) or keep the existing category (update).
+    'categoryId': draft.categoryId.trim().isEmpty ? null : draft.categoryId,
     'name': draft.name,
     'slug': draft.slug,
     'shortDescription': draft.shortDescription,
     'description': draft.description,
     'origin': draft.origin,
+    'imageUrl': draft.imageUrl,
     'basePrice': draft.basePrice,
     'unit': draft.unit,
     'minOrderQuantity': draft.minOrderQuantity,
@@ -64,6 +67,43 @@ Map<String, dynamic> adminProductDraftToJson(AdminProductDraft draft) {
         )
         .toList(),
   };
+}
+
+/// Flatten the (possibly nested) category tree returned by
+/// `GET /api/products/categories` into a flat list of selectable categories.
+List<AdminProductCategory> adminCategoriesFromJson(dynamic json) {
+  final rawItems = switch (json) {
+    {'items': final List<dynamic> items} => items,
+    {'content': final List<dynamic> content} => content,
+    final List<dynamic> list => list,
+    _ => const <dynamic>[],
+  };
+
+  final result = <AdminProductCategory>[];
+  final seen = <String>{};
+  void collect(Iterable<dynamic> nodes) {
+    for (final node in nodes.whereType<Map<String, dynamic>>()) {
+      final category = _categoryFromJson(node);
+      if (category != null && category.id.isNotEmpty && seen.add(category.id)) {
+        result.add(category);
+      }
+      final children = node['children'];
+      if (children is List<dynamic>) {
+        collect(children);
+      }
+    }
+  }
+
+  collect(rawItems);
+  return result;
+}
+
+/// Extract the public image URL from the storage upload response payload.
+String uploadedImageUrlFromJson(dynamic json) {
+  if (json is Map<String, dynamic>) {
+    return _stringOrEmpty(json['url']);
+  }
+  return '';
 }
 
 AdminProductCategory? _categoryFromJson(dynamic value) {

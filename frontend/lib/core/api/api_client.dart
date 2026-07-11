@@ -78,6 +78,27 @@ class ApiClient {
     }
   }
 
+  /// POST a multipart/form-data body (e.g. file uploads).
+  Future<ApiResponse<T>> postMultipart<T>(
+    String path, {
+    required FormData formData,
+    required T Function(dynamic json) fromJson,
+  }) async {
+    try {
+      final response = await _dio.post(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
+      return ApiResponse.fromJson(response.data, fromJson);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   Future<ApiResponse<T>> put<T>(
     String path, {
     dynamic data,

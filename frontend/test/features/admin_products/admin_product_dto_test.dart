@@ -131,7 +131,55 @@ void main() {
     expect(json['categoryId'], 'category-001');
     expect(json['shortDescription'], 'Tóm tắt');
     expect(json['status'], 'ACTIVE');
-    expect(json.containsKey('imageUrl'), isFalse);
+    expect(json.containsKey('imageUrl'), isTrue);
     expect(json['priceTiers'], hasLength(1));
+  });
+
+  test('adminProductDraftToJson sends null categoryId when empty', () {
+    final json = adminProductDraftToJson(
+      const AdminProductDraft(
+        categoryId: '',
+        name: 'Mực khô',
+        slug: 'muc-kho',
+        imageUrl: 'https://cdn/muc.png',
+        basePrice: 450000,
+        unit: 'kg',
+        minOrderQuantity: 2,
+        stockQuantity: 120,
+        status: AdminProductStatus.active,
+        isFeatured: false,
+      ),
+    );
+
+    expect(json['categoryId'], isNull);
+    expect(json['imageUrl'], 'https://cdn/muc.png');
+  });
+
+  test('adminCategoriesFromJson flattens nested category tree', () {
+    final categories = adminCategoriesFromJson([
+      {
+        'id': 'parent-001',
+        'name': 'Hải sản khô',
+        'children': [
+          {'id': 'child-001', 'name': 'Mực khô'},
+          {'id': 'child-002', 'name': 'Tôm khô'},
+        ],
+      },
+    ]);
+
+    expect(categories.map((c) => c.id), [
+      'parent-001',
+      'child-001',
+      'child-002',
+    ]);
+    expect(categories[1].name, 'Mực khô');
+  });
+
+  test('uploadedImageUrlFromJson reads url field', () {
+    expect(
+      uploadedImageUrlFromJson({'url': 'https://cdn/muc.png', 'path': 'x'}),
+      'https://cdn/muc.png',
+    );
+    expect(uploadedImageUrlFromJson('nope'), '');
   });
 }

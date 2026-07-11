@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
@@ -140,7 +141,10 @@ class _ProductFormSheet extends StatefulWidget {
 
 class _ProductFormSheetState extends State<_ProductFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _categoryIdController;
+  final _imagePicker = ImagePicker();
+  String? _selectedCategoryId;
+  bool _uploadingImage = false;
+  late final TextEditingController _imageUrlController;
   late final TextEditingController _nameController;
   late final TextEditingController _slugController;
   late final TextEditingController _shortDescriptionController;
@@ -163,11 +167,16 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     final firstTier = product?.priceTiers.isNotEmpty == true
         ? product!.priceTiers.first
         : null;
-    _categoryIdController = TextEditingController(
-      text:
-          product?.categoryId ??
-          (widget.categories.isNotEmpty ? widget.categories.first.id : ''),
-    );
+    // Preselect the product's current category on edit; only if it exists in
+    // the fetched list (otherwise the dropdown would assert). Null means "let
+    // the backend choose a default / keep the existing category".
+    final currentCategoryId = product?.categoryId;
+    _selectedCategoryId =
+        (currentCategoryId != null &&
+            widget.categories.any((c) => c.id == currentCategoryId))
+        ? currentCategoryId
+        : null;
+    _imageUrlController = TextEditingController(text: product?.imageUrl ?? '');
     _nameController = TextEditingController(text: product?.name ?? '');
     _slugController = TextEditingController(text: product?.slug ?? '');
     _shortDescriptionController = TextEditingController(
@@ -202,7 +211,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
 
   @override
   void dispose() {
-    _categoryIdController.dispose();
+    _imageUrlController.dispose();
     _nameController.dispose();
     _slugController.dispose();
     _shortDescriptionController.dispose();
@@ -259,11 +268,34 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                   label: 'Slug',
                   validator: _required,
                 ),
-                _TextField(
-                  key: const Key('adminProductCategoryIdField'),
-                  controller: _categoryIdController,
-                  label: 'Category ID',
-                  validator: _required,
+                DropdownButtonFormField<String?>(
+                  key: const Key('adminProductCategoryDropdown'),
+                  initialValue: _selectedCategoryId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.categoryLabel,
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(AppStrings.noCategoryOption),
+                    ),
+                    ...widget.categories.map(
+                      (category) => DropdownMenuItem<String?>(
+                        value: category.id,
+                        child: Text(category.name),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedCategoryId = value),
+                ),
+                const SizedBox(height: 10),
+                _ImagePickerField(
+                  imageUrlController: _imageUrlController,
+                  uploading: _uploadingImage,
+                  onPickImage: _pickAndUploadImage,
+                  onUrlChanged: () => setState(() {}),
                 ),
                 Row(
                   children: [
@@ -407,15 +439,45 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final cubit = context.read<AdminProductCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (picked == null) return;
+      setState(() => _uploadingImage = true);
+      final bytes = await picked.readAsBytes();
+      final url = await cubit.uploadProductImage(bytes, picked.name);
+      if (!mounted) return;
+      if (url == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text(AppStrings.imageUploadFailed)),
+        );
+        return;
+      }
+      setState(() => _imageUrlController.text = url);
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text(AppStrings.imageUploadFailed)),
+      );
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final draft = AdminProductDraft(
-      categoryId: _categoryIdController.text.trim(),
+      categoryId: _selectedCategoryId ?? '',
       name: _nameController.text.trim(),
       slug: _slugController.text.trim(),
       shortDescription: _trimToNull(_shortDescriptionController.text),
       description: _trimToNull(_descriptionController.text),
       origin: _trimToNull(_originController.text),
+      imageUrl: _trimToNull(_imageUrlController.text),
       basePrice: _toDouble(_basePriceController.text),
       unit: _unitController.text.trim(),
       minOrderQuantity: _toInt(_minOrderController.text, fallback: 1),
@@ -488,6 +550,81 @@ class _TextField extends StatelessWidget {
         maxLines: maxLines,
         decoration: InputDecoration(labelText: label),
       ),
+    );
+  }
+}
+
+class _ImagePickerField extends StatelessWidget {
+  final TextEditingController imageUrlController;
+  final bool uploading;
+  final Future<void> Function() onPickImage;
+  final VoidCallback onUrlChanged;
+
+  const _ImagePickerField({
+    required this.imageUrlController,
+    required this.uploading,
+    required this.onPickImage,
+    required this.onUrlChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = imageUrlController.text.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppStrings.productImageLabel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              key: const Key('adminProductPickImageButton'),
+              onPressed: uploading ? null : onPickImage,
+              icon: const Icon(Icons.image_outlined),
+              label: const Text(AppStrings.pickImageFromDevice),
+            ),
+            const SizedBox(width: 12),
+            if (uploading)
+              const SizedBox(
+                key: Key('adminProductImageUploading'),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          key: const Key('adminProductImageUrlField'),
+          controller: imageUrlController,
+          decoration: const InputDecoration(
+            labelText: AppStrings.productImageUrlLabel,
+          ),
+          onChanged: (_) => onUrlChanged(),
+        ),
+        if (imageUrl.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          ClipRRect(
+            key: const Key('adminProductImagePreview'),
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              imageUrl,
+              height: 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 120,
+                alignment: Alignment.center,
+                color: AppColors.background,
+                child: const Icon(Icons.broken_image_outlined),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

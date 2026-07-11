@@ -71,6 +71,7 @@ class AdminProductDraft extends Equatable {
   final String? shortDescription;
   final String? description;
   final String? origin;
+  final String? imageUrl;
   final double basePrice;
   final String unit;
   final int minOrderQuantity;
@@ -86,6 +87,7 @@ class AdminProductDraft extends Equatable {
     this.shortDescription,
     this.description,
     this.origin,
+    this.imageUrl,
     required this.basePrice,
     required this.unit,
     required this.minOrderQuantity,
@@ -103,6 +105,7 @@ class AdminProductDraft extends Equatable {
     shortDescription,
     description,
     origin,
+    imageUrl,
     basePrice,
     unit,
     minOrderQuantity,
@@ -198,6 +201,7 @@ class AdminProduct extends Equatable {
       shortDescription: shortDescription,
       description: description,
       origin: origin,
+      imageUrl: imageUrl,
       basePrice: basePrice,
       unit: unit,
       minOrderQuantity: minOrderQuantity,

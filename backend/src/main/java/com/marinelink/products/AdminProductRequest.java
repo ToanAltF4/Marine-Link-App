@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record AdminProductRequest(
-        @NotNull(message = "Danh mục không được để trống")
         UUID categoryId,
         @NotBlank(message = "Tên sản phẩm không được để trống")
         @Size(max = 180, message = "Tên sản phẩm tối đa 180 ký tự")
@@ -26,6 +25,8 @@ public record AdminProductRequest(
         String description,
         @Size(max = 120, message = "Xuất xứ tối đa 120 ký tự")
         String origin,
+        @Size(max = 500, message = "URL ảnh tối đa 500 ký tự")
+        String imageUrl,
         @NotNull(message = "Giá gốc không được để trống")
         @DecimalMin(value = "0", inclusive = false, message = "Giá gốc phải lớn hơn 0")
         BigDecimal basePrice,

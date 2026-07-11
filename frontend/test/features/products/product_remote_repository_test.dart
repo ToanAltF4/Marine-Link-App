@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/core/api/api_client.dart';
 import 'package:marinelink/core/api/api_response.dart';
@@ -100,6 +101,15 @@ class _FakeApiClient implements ApiClient {
   Future<ApiResponse<T>> post<T>(
     String path, {
     dynamic data,
+    required T Function(dynamic json) fromJson,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ApiResponse<T>> postMultipart<T>(
+    String path, {
+    required FormData formData,
     required T Function(dynamic json) fromJson,
   }) {
     throw UnimplementedError();
