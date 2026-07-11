@@ -344,6 +344,49 @@ class ChatCubit extends Cubit<ChatState> {
     }
   }
 
+  /// Bắt đầu một cuộc trò chuyện mới (dùng khi phòng hiện tại đã đóng —
+  /// buyer bấm "Đoạn chat mới"). Tái sử dụng cùng cơ chế tạo phòng như màn
+  /// danh sách chat; trả về roomId mới để mở, hoặc null nếu thất bại.
+  Future<String?> createRoom() async {
+    emit(state.copyWith(creating: true, clearSendErrorMessage: true));
+    try {
+      final response = await repository.createRoom();
+      if (response.success && response.data != null) {
+        emit(state.copyWith(creating: false));
+        return response.data!.roomId;
+      }
+      emit(
+        state.copyWith(
+          creating: false,
+          sendErrorMessage: userFacingResponseMessage(
+            response.message,
+            fallback: AppStrings.newConversationCreateFailed,
+          ),
+        ),
+      );
+      return null;
+    } on ApiException catch (error) {
+      emit(
+        state.copyWith(
+          creating: false,
+          sendErrorMessage: userFacingErrorMessage(
+            error,
+            fallback: AppStrings.newConversationCreateFailed,
+          ),
+        ),
+      );
+      return null;
+    } catch (_) {
+      emit(
+        state.copyWith(
+          creating: false,
+          sendErrorMessage: AppStrings.chatNewConversationCreateUnexpected,
+        ),
+      );
+      return null;
+    }
+  }
+
   Future<String?> _resolveRoomIdForSend({required bool sendAsStaff}) async {
     final currentRoomId = state.roomId;
     if (currentRoomId != null && currentRoomId.isNotEmpty) {

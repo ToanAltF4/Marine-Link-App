@@ -368,6 +368,22 @@ abstract final class AppStrings {
   static const chatHistoryEmpty = 'Bạn chưa có cuộc trò chuyện nào.';
   static const noChatMessagesYet = 'Chưa có tin nhắn';
 
+  /// Nút thay cho ô nhập tin khi phòng chat của buyer đã được xử lý/đóng.
+  static const chatNewConversationCta = 'Đoạn chat mới';
+
+  /// Trả lời nhanh cho staff/admin ("Đoạn chat nhanh").
+  static const quickRepliesTitle = 'Đoạn chat nhanh';
+  static const quickReplyLeaveMessage =
+      'Anh/chị vui lòng để lại lời nhắn để được tư vấn thêm';
+  static const quickReplyAskIssue = 'Anh chị đang có vấn đề gì cần hỗ trợ ạ?';
+  static const quickReplyEndChat =
+      'Nếu không còn thắc mắc nào nữa em xin kết thúc đoạn chat ở đây ạ';
+  static const List<String> staffQuickReplies = [
+    quickReplyLeaveMessage,
+    quickReplyAskIssue,
+    quickReplyEndChat,
+  ];
+
   static const searchSeafoodHint = 'Tìm kiếm hải sản khô...';
   static const productCategories = 'Danh mục sản phẩm';
   static const wholesalePolicy = 'Chính sách giá sỉ';

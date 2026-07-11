@@ -153,14 +153,30 @@ class _ChatViewState extends State<_ChatView> {
                   viewerIsStaff: widget.staffMode,
                 ),
               ),
-              _ChatComposer(
-                controller: _controller,
-                sending: state.sending,
-                canRetrySend: state.canRetrySend,
-                closed: state.thread?.isClosed ?? false,
-                errorMessage: state.sendErrorMessage,
-                onSend: _send,
-              ),
+              // Staff/admin quick replies ("Đoạn chat nhanh") — only when the
+              // room is open (can't send to a closed room).
+              if (widget.staffMode && !(state.thread?.isClosed ?? false))
+                _StaffQuickReplies(
+                  sending: state.sending,
+                  onSend: _sendPreset,
+                ),
+              // Buyer cannot type in a closed (handled) room: offer to start a
+              // fresh conversation instead of the composer.
+              if (!widget.staffMode && (state.thread?.isClosed ?? false))
+                _ChatNewConversationButton(
+                  creating: state.creating,
+                  errorMessage: state.sendErrorMessage,
+                  onStart: _startNewConversation,
+                )
+              else
+                _ChatComposer(
+                  controller: _controller,
+                  sending: state.sending,
+                  canRetrySend: state.canRetrySend,
+                  closed: state.thread?.isClosed ?? false,
+                  errorMessage: state.sendErrorMessage,
+                  onSend: _send,
+                ),
             ],
           ),
         );
@@ -186,6 +202,26 @@ class _ChatViewState extends State<_ChatView> {
     if (!mounted) return;
     if (cubit.state.sendErrorMessage == null) {
       _controller.clear();
+    }
+  }
+
+  /// Staff quick reply: immediately send the preset text (same send action as
+  /// the composer), without touching the input field.
+  Future<void> _sendPreset(String content) async {
+    final cubit = context.read<ChatCubit>();
+    if (cubit.state.sending) return;
+    await cubit.sendMessage(content, sendAsStaff: widget.staffMode);
+  }
+
+  /// Buyer starts a fresh conversation from a closed room — reuses the same
+  /// create-then-open flow as the chat history list ("Cuộc trò chuyện mới").
+  Future<void> _startNewConversation() async {
+    final cubit = context.read<ChatCubit>();
+    if (cubit.state.creating) return;
+    final roomId = await cubit.createRoom();
+    if (!mounted) return;
+    if (roomId != null && roomId.isNotEmpty) {
+      context.push(AppRoutes.chatRoomPath(roomId));
     }
   }
 
@@ -453,6 +489,135 @@ class _ChatBubble extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Staff/admin "Đoạn chat nhanh": tappable preset replies shown above the
+/// composer. Tapping a chip sends the preset immediately.
+class _StaffQuickReplies extends StatelessWidget {
+  final bool sending;
+  final ValueChanged<String> onSend;
+
+  const _StaffQuickReplies({required this.sending, required this.onSend});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      key: const Key('staffQuickReplies'),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppStrings.quickRepliesTitle,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var i = 0; i < AppStrings.staffQuickReplies.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        key: Key('quickReply$i'),
+                        label: Text(AppStrings.staffQuickReplies[i]),
+                        onPressed: sending
+                            ? null
+                            : () => onSend(AppStrings.staffQuickReplies[i]),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Buyer's replacement for the composer when a room is closed/handled: a button
+/// that starts a fresh conversation.
+class _ChatNewConversationButton extends StatelessWidget {
+  final bool creating;
+  final String? errorMessage;
+  final VoidCallback onStart;
+
+  const _ChatNewConversationButton({
+    required this.creating,
+    required this.errorMessage,
+    required this.onStart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                AppStrings.chatClosedNotice,
+                key: const Key('chatClosedNotice'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  key: const Key('chatNewConversationButton'),
+                  onPressed: creating ? null : onStart,
+                  icon: creating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.add_comment_outlined),
+                  label: const Text(AppStrings.chatNewConversationCta),
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage!,
+                  key: const Key('chatNewConversationError'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

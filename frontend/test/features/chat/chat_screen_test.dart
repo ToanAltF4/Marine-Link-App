@@ -558,6 +558,97 @@ void main() {
     );
   });
 
+  testWidgets(
+    'buyer sees "Doan chat moi" button instead of composer when room closed',
+    (tester) async {
+      _registerRepo(
+        _FakeRepo(
+          threadResponder: (_) async => ApiResponse(
+            success: true,
+            message: 'OK',
+            data: _thread.copyWith(isClosed: true),
+          ),
+        ),
+      );
+
+      await _pumpScreen(tester, staffMode: false);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('chatNewConversationButton')),
+        findsOneWidget,
+      );
+      expect(find.text('Đoạn chat mới'), findsOneWidget);
+      // Composer is replaced: no text field / send button for the buyer.
+      expect(find.byKey(const Key('chatMessageTextField')), findsNothing);
+      expect(find.byKey(const Key('chatSendButton')), findsNothing);
+    },
+  );
+
+  testWidgets('staff quick reply chip immediately sends the preset message', (
+    tester,
+  ) async {
+    String? sentContent;
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async =>
+            ApiResponse(success: true, message: 'OK', data: _thread),
+        sendResponder:
+            ({required roomId, required content, sendAsStaff = false}) async {
+              sentContent = content;
+              return ApiResponse(
+                success: true,
+                message: 'OK',
+                data: ChatMessage(
+                  id: 'message-quick',
+                  roomId: roomId,
+                  senderType: ChatSenderType.staff,
+                  content: content,
+                  createdAt: DateTime.utc(2026, 5, 28, 9, 0),
+                ),
+              );
+            },
+      ),
+    );
+
+    await _pumpScreen(tester, staffMode: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('staffQuickReplies')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('quickReply0')));
+    await tester.pumpAndSettle();
+
+    expect(
+      sentContent,
+      'Anh/chị vui lòng để lại lời nhắn '
+      'để được tư vấn thêm',
+    );
+    expect(
+      find.byKey(const Key('chatMessageBubble_message-quick')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('staff quick replies are hidden when room is closed', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        threadResponder: (_) async => ApiResponse(
+          success: true,
+          message: 'OK',
+          data: _thread.copyWith(isClosed: true),
+        ),
+      ),
+    );
+
+    await _pumpScreen(tester, staffMode: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('staffQuickReplies')), findsNothing);
+  });
+
   testWidgets('disables composer when room is closed', (tester) async {
     _registerRepo(
       _FakeRepo(
