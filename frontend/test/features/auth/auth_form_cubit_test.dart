@@ -194,6 +194,20 @@ class _AvailabilityRepository implements AuthRepository {
   }
 
   @override
+  Future<void> forgotPassword({required String email}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> logout() {
     throw UnimplementedError();
   }

@@ -356,6 +356,41 @@ class AuthServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    @Test
+    void forgotPasswordSendsOtpWhenUserExists() {
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(activeUser("USER")));
+
+        authService.forgotPassword(new ForgotPasswordRequest("admin@marinelink.demo"));
+
+        verify(emailOtpService).sendOtp("admin@marinelink.demo");
+    }
+
+    @Test
+    void forgotPasswordIgnoresUnknownEmailSilently() {
+        when(userRepository.findActiveByEmailOrPhone("nobody@example.com"))
+                .thenReturn(Optional.empty());
+
+        authService.forgotPassword(new ForgotPasswordRequest("nobody@example.com"));
+
+        verify(emailOtpService, never()).sendOtp(anyString());
+    }
+
+    @Test
+    void resetPasswordVerifiesOtpAndUpdatesHash() {
+        User user = activeUser("USER");
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("NewPass123")).thenReturn("new-hash");
+
+        authService.resetPassword(
+                new ResetPasswordRequest("admin@marinelink.demo", "123456", "NewPass123"));
+
+        verify(emailOtpService).verifyOtp("admin@marinelink.demo", "123456");
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+        verify(userRepository).save(user);
+    }
+
     private User activeUser(String roleCode) {
         Role role = Role.builder().id(1L).code(roleCode).name(roleCode).build();
         return User.builder()

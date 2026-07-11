@@ -197,6 +197,46 @@ class AuthRemoteRepository implements AuthRepository {
   }
 
   @override
+  Future<void> forgotPassword({required String email}) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.authForgotPassword,
+      data: {'email': email},
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? AppStrings.forgotPasswordFailed,
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+  }) async {
+    final response = await apiClient.post<void>(
+      ApiEndpoints.authResetPassword,
+      data: {
+        'email': email,
+        'otpCode': otpCode,
+        'newPassword': newPassword,
+      },
+      fromJson: (_) {},
+    );
+
+    if (!response.success) {
+      throw ApiException(
+        message: response.message ?? AppStrings.resetPasswordFailed,
+        type: ApiExceptionType.validation,
+      );
+    }
+  }
+
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,

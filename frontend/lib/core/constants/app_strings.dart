@@ -123,6 +123,8 @@ abstract final class AppStrings {
   static const registerFailed = 'Đăng ký thất bại.';
   static const verifyEmailFailed = 'Xác thực email thất bại.';
   static const resendOtpFailed = 'Không thể gửi lại OTP.';
+  static const forgotPasswordFailed = 'Không thể gửi mã OTP. Vui lòng thử lại.';
+  static const resetPasswordFailed = 'Đặt lại mật khẩu thất bại.';
   static const changePasswordFailed = 'Đổi mật khẩu thất bại.';
   static const changePasswordSuccess = 'Đổi mật khẩu thành công';
   static const profileUpdateSuccess = 'Cập nhật hồ sơ thành công';
@@ -142,6 +144,26 @@ abstract final class AppStrings {
   static const verifyNow = 'Xác thực ngay';
   static const resendOtp = 'Gửi lại mã OTP';
   static const backToRegister = 'Quay lại đăng ký';
+
+  static const forgotPasswordTitle = 'Quên mật khẩu';
+  static const forgotPasswordSubtitle =
+      'Nhập email tài khoản của bạn để nhận mã OTP đặt lại mật khẩu.';
+  static const forgotPasswordEmailLabel = 'Email';
+  static const forgotPasswordEmailHint = 'Nhập email tài khoản của bạn';
+  static const sendOtpButton = 'Gửi mã OTP';
+  static const otpSentToEmail = 'Đã gửi mã OTP tới email';
+  static const resetPasswordTitle = 'Đặt lại mật khẩu';
+  static const resetPasswordSubtitle =
+      'Nhập mã OTP đã gửi đến email của bạn và mật khẩu mới.';
+  static const otpCodeLabel = 'Mã OTP';
+  static const otpCodeHint = 'Nhập mã 6 chữ số';
+  static const confirmPasswordLabel = 'Xác nhận mật khẩu';
+  static const confirmPasswordHint = 'Nhập lại mật khẩu mới';
+  static const resetPasswordButton = 'Đặt lại mật khẩu';
+  static const resetPasswordSuccess = 'Đặt lại mật khẩu thành công';
+  static const otpCodeRequired = 'Vui lòng nhập mã OTP';
+  static const otpCodeLength = 'Mã OTP gồm 6 chữ số';
+  static const backToLogin = 'Quay lại đăng nhập';
 
   static const myOrders = 'Đơn hàng của tôi';
   static const myOrdersSubtitle = 'Theo dõi đơn đã đặt và trạng thái giao hàng';
@@ -489,6 +511,7 @@ abstract final class AppStrings {
   static const currentPasswordIncorrect = 'Mật khẩu hiện tại không chính xác';
   static const otpInvalid = 'Mã OTP không chính xác.';
   static const otpInvalidAlt = 'Mã OTP không hợp lệ';
+  static const otpInvalidOrUsed = 'Mã OTP không tồn tại hoặc đã được sử dụng';
   static const otpExpiredRequestNew =
       'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.';
   static const userNotFound = 'Không tìm thấy người dùng.';

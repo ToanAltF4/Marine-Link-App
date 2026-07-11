@@ -17,6 +17,8 @@ abstract class ApiEndpoints {
   static const String changePassword = '/api/auth/change-password';
   static const String verifyEmail = '/api/auth/verify-email';
   static const String resendOtp = '/api/auth/resend-otp';
+  static const String authForgotPassword = '/api/auth/forgot-password';
+  static const String authResetPassword = '/api/auth/reset-password';
 
   // ── Profile ───────────────────────────────────────────────────────────────
   static const String me = '/api/users/me';
