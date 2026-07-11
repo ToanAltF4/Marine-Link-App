@@ -32,6 +32,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Tắt R8/minify: R8 đổi tên WorkDatabase_Impl (OneSignal kéo WorkManager)
+            // -> Room tra class theo tên bị fail -> crash khi khởi động.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
