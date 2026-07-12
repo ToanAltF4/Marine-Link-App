@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marinelink/features/cart/domain/cart.dart';
 import 'package:marinelink/features/cart/domain/cart_pricing.dart';
 
 void main() {
@@ -24,6 +25,71 @@ void main() {
 
     test('applies eight percent from 500 kilograms', () {
       expect(CartBulkDiscountPolicy.rateForQuantity(500), 0.08);
+    });
+  });
+
+  group('CartPricingSummary', () {
+    test('does not apply bulk discount across different products', () {
+      const cart = Cart(
+        items: [
+          CartItem(
+            productId: 'shrimp',
+            productName: 'Tom kho',
+            productImageUrl: '',
+            unit: 'kg',
+            quantity: 30,
+            unitPrice: 100,
+            stockQuantity: 100,
+          ),
+          CartItem(
+            productId: 'squid',
+            productName: 'Muc kho',
+            productImageUrl: '',
+            unit: 'kg',
+            quantity: 20,
+            unitPrice: 100,
+            stockQuantity: 100,
+          ),
+        ],
+      );
+
+      final summary = CartPricingSummary.fromCart(cart);
+
+      expect(summary.subtotalAmount, 5000);
+      expect(summary.discountAmount, 0);
+      expect(summary.totalAmount, 5000);
+    });
+
+    test('applies bulk discount only to eligible product lines', () {
+      const cart = Cart(
+        items: [
+          CartItem(
+            productId: 'shrimp',
+            productName: 'Tom kho',
+            productImageUrl: '',
+            unit: 'kg',
+            quantity: 50,
+            unitPrice: 100,
+            stockQuantity: 100,
+          ),
+          CartItem(
+            productId: 'squid',
+            productName: 'Muc kho',
+            productImageUrl: '',
+            unit: 'kg',
+            quantity: 20,
+            unitPrice: 100,
+            stockQuantity: 100,
+          ),
+        ],
+      );
+
+      final summary = CartPricingSummary.fromCart(cart);
+
+      expect(summary.subtotalAmount, 7000);
+      expect(summary.discountPercent, 2);
+      expect(summary.discountAmount, 100);
+      expect(summary.totalAmount, 6900);
     });
   });
 }

@@ -90,14 +90,14 @@ public class OrderService {
                 .build();
 
         BigDecimal subtotal = BigDecimal.ZERO;
-        int totalQuantity = 0;
+        BigDecimal discountAmount = BigDecimal.ZERO;
         for (OrderLine line : orderSource.lines()) {
             Product product = line.product();
             validateItem(product, line.quantity());
 
             BigDecimal unitPrice = resolveUnitPrice(product, line.priceTier(), line.quantity());
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(line.quantity()));
-            totalQuantity += line.quantity();
+            BigDecimal lineDiscount = discountForLine(lineTotal, line.quantity());
             OrderItem orderItem = OrderItem.builder()
                     .publicId(UUID.randomUUID())
                     .order(order)
@@ -110,12 +110,9 @@ public class OrderService {
                     .build();
             order.getItems().add(orderItem);
             subtotal = subtotal.add(lineTotal);
+            discountAmount = discountAmount.add(lineDiscount);
         }
 
-        BigDecimal discountRate = BulkDiscountPolicy.rateForQuantity(totalQuantity);
-        BigDecimal discountAmount = discountRate.signum() == 0
-                ? BigDecimal.ZERO
-                : subtotal.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
         order.setSubtotalAmount(subtotal);
         order.setDiscountAmount(discountAmount);
         order.setTotalAmount(subtotal.add(order.getShippingFee()).subtract(discountAmount));
@@ -391,6 +388,13 @@ public class OrderService {
     private boolean matches(PriceTier tier, int quantity) {
         return quantity >= tier.getMinQuantity()
                 && (tier.getMaxQuantity() == null || quantity <= tier.getMaxQuantity());
+    }
+
+    private BigDecimal discountForLine(BigDecimal lineTotal, int quantity) {
+        BigDecimal discountRate = BulkDiscountPolicy.rateForQuantity(quantity);
+        return discountRate.signum() == 0
+                ? BigDecimal.ZERO
+                : lineTotal.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
     }
 
     private String nextOrderCode() {
