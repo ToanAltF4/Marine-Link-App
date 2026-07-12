@@ -609,9 +609,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _goBack(BuildContext context) {
-    // The checkout flow is opened from the buyer profile page, so the header
-    // back button returns the user to their profile rather than the cart.
-    GoRouter.of(context).go(AppRoutes.profile);
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    // Trang thanh toán mở từ giỏ hàng nên nút back thoát về giỏ hàng.
+    GoRouter.of(context).go(AppRoutes.cart);
   }
 
   void _goToProducts(BuildContext context) {

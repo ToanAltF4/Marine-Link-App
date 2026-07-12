@@ -34,7 +34,7 @@ void main() {
       expect(find.byKey(const Key('checkoutSubmitButton')), findsNothing);
     });
 
-    testWidgets('back button returns to the profile', (tester) async {
+    testWidgets('back button returns to the cart', (tester) async {
       final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
       final router = GoRouter(
         initialLocation: '/checkout',
@@ -47,9 +47,9 @@ void main() {
             ),
           ),
           GoRoute(
-            path: '/profile',
+            path: '/cart',
             builder: (_, _) =>
-                const Scaffold(body: Center(child: Text('PROFILE PAGE'))),
+                const Scaffold(body: Center(child: Text('CART PAGE'))),
           ),
         ],
       );
@@ -69,7 +69,7 @@ void main() {
       await tester.tap(find.byTooltip('Quay lại'));
       await tester.pumpAndSettle();
 
-      expect(find.text('PROFILE PAGE'), findsOneWidget);
+      expect(find.text('CART PAGE'), findsOneWidget);
     });
 
     testWidgets('validates receiver form before submitting checkout', (
