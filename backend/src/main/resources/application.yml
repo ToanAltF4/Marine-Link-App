@@ -78,6 +78,12 @@ app:
     from: ${MAIL_FROM}
     from-name: ${MAIL_FROM_NAME:MarineLink}
     otp-expiry-minutes: ${MAIL_OTP_EXPIRY_MINUTES:10}
+    # Gửi email qua Gmail API (HTTPS) thay vì SMTP — dùng khi host chặn cổng SMTP
+    # (Render chặn 25/465/587). Bỏ trống => tự động dùng SMTP (chạy local).
+    gmail-api:
+      client-id: ${GMAIL_CLIENT_ID:}
+      client-secret: ${GMAIL_CLIENT_SECRET:}
+      refresh-token: ${GMAIL_REFRESH_TOKEN:}
   google:
     # Comma-separated OAuth client IDs accepted as the ID token audience
     # (Web client ID used as serverClientId for Android/iOS google_sign_in).

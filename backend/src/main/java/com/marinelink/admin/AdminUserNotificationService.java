@@ -1,5 +1,6 @@
 package com.marinelink.admin;
 
+import com.marinelink.common.AsyncEmailSender;
 import com.marinelink.users.User;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class AdminUserNotificationService {
 
     private final JavaMailSender mailSender;
+    private final AsyncEmailSender asyncEmailSender;
 
     @Value("${app.mail.from}")
     private String mailFrom = "no-reply@marinelink.local";
@@ -35,7 +37,7 @@ public class AdminUserNotificationService {
             helper.setTo(toEmail);
             helper.setSubject("MarineLink - Tài khoản của bạn đã được duyệt");
             helper.setText(buildAccountApprovedHtml(user), true);
-            mailSender.send(message);
+            asyncEmailSender.send(message);
         } catch (Exception ex) {
             log.warn("Cannot send account approval email to {}: {}", toEmail, ex.getMessage());
         }
