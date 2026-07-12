@@ -1,5 +1,6 @@
 package com.marinelink.auth.otp;
 
+import com.marinelink.common.AsyncEmailSender;
 import com.marinelink.common.exception.BusinessException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class EmailOtpService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final JavaMailSender mailSender;
+    private final AsyncEmailSender asyncEmailSender;
     private final EmailOtpRepository emailOtpRepository;
 
     @Value("${app.mail.from}")
@@ -115,6 +117,13 @@ public class EmailOtpService {
         return String.valueOf(code);
     }
 
+    /**
+     * Dựng email OTP (đồng bộ, nhanh) rồi đẩy việc gửi SMTP sang luồng nền.
+     *
+     * <p>SMTP mất vài giây; nếu gửi đồng bộ thì request "Gửi mã OTP" bị treo,
+     * client dễ timeout dù OTP đã được lưu. OTP luôn được lưu trước khi gọi hàm
+     * này nên trả về ngay là an toàn — email vẫn đi ở luồng nền.
+     */
     private void sendOtpEmail(String toEmail, String otpCode) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -123,9 +132,9 @@ public class EmailOtpService {
             helper.setTo(toEmail);
             helper.setSubject("Xác thực email MarineLink — Mã OTP của bạn");
             helper.setText(buildEmailHtml(otpCode), true);
-            mailSender.send(message);
+            asyncEmailSender.send(message);
         } catch (Exception e) {
-            log.error("Failed to send OTP email to {}: {}", toEmail, e.getMessage());
+            log.error("Failed to build OTP email for {}: {}", toEmail, e.getMessage());
             throw new BusinessException(
                     "Không thể gửi email xác thực. Vui lòng thử lại sau.",
                     HttpStatus.INTERNAL_SERVER_ERROR);
