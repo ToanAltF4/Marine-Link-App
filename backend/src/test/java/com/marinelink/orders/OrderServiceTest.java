@@ -188,6 +188,96 @@ class OrderServiceTest {
     }
 
     @Test
+    void createOrderDoesNotApplyBulkDiscountAcrossDifferentProducts() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        User user = user(userPublicId);
+        Product shrimp = product(
+                12L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440012"),
+                "Tom kho",
+                "tom-kho");
+        Product squid = product(
+                13L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440013"),
+                "Muc kho",
+                "muc-kho");
+
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(user));
+        when(paymentMethodRepository.findByCodeAndActiveTrue(PaymentMethodCode.COD))
+                .thenReturn(Optional.of(paymentMethod(PaymentMethodCode.COD)));
+        when(productRepository.findDetailByPublicId(shrimp.getPublicId())).thenReturn(Optional.of(shrimp));
+        when(productRepository.findDetailByPublicId(squid.getPublicId())).thenReturn(Optional.of(squid));
+        when(orderRepository.countByCreatedAtBetween(any(), any())).thenReturn(0L);
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(61L);
+            order.setCreatedAt(Instant.parse("2026-06-04T01:00:00Z"));
+            return order;
+        });
+
+        OrderSummaryResponse response = orderService.createFromActiveCart(
+                userPublicId,
+                new OrderCreateRequest(
+                        "Nguyen Van A",
+                        "0912345678",
+                        "Can Tho",
+                        PaymentMethodCode.COD,
+                        null,
+                        List.of(
+                                new OrderCreateItemRequest(shrimp.getPublicId(), 30),
+                                new OrderCreateItemRequest(squid.getPublicId(), 20))));
+
+        assertEquals(new BigDecimal("22500000"), response.subtotalAmount());
+        assertEquals(BigDecimal.ZERO, response.discountAmount());
+        assertEquals(new BigDecimal("22500000"), response.totalAmount());
+    }
+
+    @Test
+    void createOrderAppliesBulkDiscountOnlyToEligibleProductLines() {
+        UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
+        User user = user(userPublicId);
+        Product shrimp = product(
+                12L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440012"),
+                "Tom kho",
+                "tom-kho");
+        Product squid = product(
+                13L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440013"),
+                "Muc kho",
+                "muc-kho");
+
+        when(userRepository.findActiveByPublicId(userPublicId)).thenReturn(Optional.of(user));
+        when(paymentMethodRepository.findByCodeAndActiveTrue(PaymentMethodCode.COD))
+                .thenReturn(Optional.of(paymentMethod(PaymentMethodCode.COD)));
+        when(productRepository.findDetailByPublicId(shrimp.getPublicId())).thenReturn(Optional.of(shrimp));
+        when(productRepository.findDetailByPublicId(squid.getPublicId())).thenReturn(Optional.of(squid));
+        when(orderRepository.countByCreatedAtBetween(any(), any())).thenReturn(0L);
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(61L);
+            order.setCreatedAt(Instant.parse("2026-06-04T01:00:00Z"));
+            return order;
+        });
+
+        OrderSummaryResponse response = orderService.createFromActiveCart(
+                userPublicId,
+                new OrderCreateRequest(
+                        "Nguyen Van A",
+                        "0912345678",
+                        "Can Tho",
+                        PaymentMethodCode.COD,
+                        null,
+                        List.of(
+                                new OrderCreateItemRequest(shrimp.getPublicId(), 50),
+                                new OrderCreateItemRequest(squid.getPublicId(), 20))));
+
+        assertEquals(new BigDecimal("31500000"), response.subtotalAmount());
+        assertEquals(new BigDecimal("450000.00"), response.discountAmount());
+        assertEquals(new BigDecimal("31050000.00"), response.totalAmount());
+    }
+
+    @Test
     void createBankTransferOrderWaitsForPaymentBeforeNotification() {
         UUID userPublicId = UUID.fromString("550e8400-e29b-41d4-a716-446655440003");
         User user = user(userPublicId);
@@ -401,6 +491,14 @@ class OrderServiceTest {
     }
 
     private Product product() {
+        return product(
+                12L,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440012"),
+                "Muc kho loai 1",
+                "muc-kho-loai-1");
+    }
+
+    private Product product(long id, UUID publicId, String name, String slug) {
         Category category = Category.builder()
                 .id(11L)
                 .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440011"))
@@ -408,11 +506,11 @@ class OrderServiceTest {
                 .slug("muc-kho")
                 .build();
         return Product.builder()
-                .id(12L)
-                .publicId(UUID.fromString("550e8400-e29b-41d4-a716-446655440012"))
+                .id(id)
+                .publicId(publicId)
                 .category(category)
-                .name("Muc kho loai 1")
-                .slug("muc-kho-loai-1")
+                .name(name)
+                .slug(slug)
                 .basePrice(new BigDecimal("450000"))
                 .unit("kg")
                 .minOrderQuantity(2)

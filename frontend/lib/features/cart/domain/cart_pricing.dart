@@ -16,17 +16,27 @@ class CartPricingSummary {
   });
 
   factory CartPricingSummary.fromCart(Cart cart) {
-    final subtotal = cart.subtotalAmount;
-    final itemCount = cart.totalSelectedItemCount;
-    final rate = CartBulkDiscountPolicy.rateForQuantity(itemCount);
-    final discount = subtotal * rate;
+    final selectedItems = cart.selectedItems;
+    final subtotal = selectedItems.fold(
+      0.0,
+      (sum, item) => sum + item.lineTotal,
+    );
+    var discount = 0.0;
+    var highestRate = 0.0;
+    for (final item in selectedItems) {
+      final rate = CartBulkDiscountPolicy.rateForQuantity(item.quantity);
+      discount += item.lineTotal * rate;
+      if (rate > highestRate) {
+        highestRate = rate;
+      }
+    }
 
     return CartPricingSummary(
       subtotalAmount: subtotal,
-      discountRate: rate,
+      discountRate: highestRate,
       discountAmount: discount,
       totalAmount: subtotal - discount,
-      totalSelectedItemCount: itemCount,
+      totalSelectedItemCount: cart.totalSelectedItemCount,
     );
   }
 
