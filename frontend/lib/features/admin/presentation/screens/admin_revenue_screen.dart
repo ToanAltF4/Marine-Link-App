@@ -105,7 +105,7 @@ class _RevenueBody extends StatelessWidget {
             const SizedBox(height: 20),
             const SectionHeader(
               title: AppStrings.adminRevenueDailyTitle,
-              subtitle: AppStrings.operationsOverviewSubtitle,
+              subtitle: AppStrings.adminRevenueDailySubtitle,
             ),
             const SizedBox(height: 12),
             AdminRevenueDailyList(series: report.dailySeries),
