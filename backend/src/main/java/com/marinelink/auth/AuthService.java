@@ -89,12 +89,13 @@ public class AuthService {
         if (user.getStatus() == UserStatus.DISABLED) {
             throw new BusinessException("Tài khoản không hoạt động", HttpStatus.FORBIDDEN);
         }
-        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
-            throw new BusinessException("Tài khoản đang chờ duyệt", HttpStatus.FORBIDDEN);
-        }
-        // Google has verified the email — clear a pending-verification state.
+        // PENDING_APPROVAL vẫn đăng nhập được (giống login thường): vào app xem
+        // sản phẩm nhưng chưa thấy giá / chưa đặt hàng cho tới khi admin duyệt.
+        //
+        // Google đã xác thực email nên bỏ qua bước OTP, nhưng KHÔNG bỏ qua bước
+        // admin duyệt: PENDING_VERIFICATION -> PENDING_APPROVAL (không nhảy thẳng ACTIVE).
         if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
-            user.setStatus(UserStatus.ACTIVE);
+            user.setStatus(UserStatus.PENDING_APPROVAL);
             return userRepository.save(user);
         }
         return user;
@@ -113,7 +114,10 @@ public class AuthService {
                 .email(email)
                 .phone(null) // Google does not provide a phone; user completes profile later
                 .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString())) // unusable
-                .status(UserStatus.ACTIVE)
+                // Google đã xác thực email (bỏ qua OTP), nhưng đại lý mới vẫn phải
+                // được admin duyệt như đăng ký thường: đăng nhập được, vào app xem
+                // sản phẩm, nhưng chưa thấy giá / chưa đặt hàng cho tới khi duyệt.
+                .status(UserStatus.PENDING_APPROVAL)
                 .avatarUrl(info.picture())
                 .build();
         return userRepository.save(user);

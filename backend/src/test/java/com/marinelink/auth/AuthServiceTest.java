@@ -233,7 +233,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void googleLoginCreatesActiveUserWhenEmailIsNew() {
+    void googleLoginCreatesPendingApprovalUserWhenEmailIsNew() {
         Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
         when(googleTokenVerifier.verify("google-id-token"))
                 .thenReturn(new GoogleUserInfo(
@@ -251,11 +251,69 @@ class AuthServiceTest {
         LoginResponse response = authService.googleLogin(
                 new GoogleLoginRequest("google-id-token"));
 
+        // Đăng nhập được (có token) nhưng phải chờ admin duyệt -> FE ẩn giá / chặn đặt hàng.
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.user().email()).isEqualTo("newuser@gmail.com");
-        assertThat(response.user().status()).isEqualTo(UserStatus.ACTIVE.name());
+        assertThat(response.user().status()).isEqualTo(UserStatus.PENDING_APPROVAL.name());
         assertThat(response.user().roles()).containsExactly("USER");
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginLetsPendingApprovalUserInWithoutApprovingThem() {
+        User user = activeUser("USER");
+        user.setStatus(UserStatus.PENDING_APPROVAL);
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Pending", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(jwtTokenProvider.generateToken(eq(user.getPublicId()), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.googleLogin(new GoogleLoginRequest("tok"));
+
+        // Vào được app nhưng trạng thái vẫn chờ duyệt (không tự nâng lên ACTIVE).
+        assertThat(response.token()).isEqualTo("jwt-token");
+        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_APPROVAL);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginMovesPendingVerificationToPendingApprovalNotActive() {
+        User user = activeUser("USER");
+        user.setStatus(UserStatus.PENDING_VERIFICATION);
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Pending", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtTokenProvider.generateToken(eq(user.getPublicId()), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        authService.googleLogin(new GoogleLoginRequest("tok"));
+
+        // Google đã xác thực email (bỏ qua OTP) nhưng KHÔNG bỏ qua bước admin duyệt.
+        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_APPROVAL);
+    }
+
+    @Test
+    void googleLoginRejectsDisabledAccount() {
+        User user = activeUser("USER");
+        user.setStatus(UserStatus.DISABLED);
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Disabled", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequest("tok")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không hoạt động");
     }
 
     @Test
