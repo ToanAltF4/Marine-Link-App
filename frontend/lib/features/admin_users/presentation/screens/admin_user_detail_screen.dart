@@ -1,20 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
 
+import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/assets/app_assets.dart';
 import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
 import '../../domain/admin_user.dart';
+import '../../domain/admin_user_repository.dart';
 
-class AdminUserDetailScreen extends StatelessWidget {
+class AdminUserDetailScreen extends StatefulWidget {
   final AdminUser? user;
 
-  const AdminUserDetailScreen({super.key, required this.user});
+  /// Cho phép inject repository trong test; mặc định lấy từ service locator.
+  final AdminUserRepository? repository;
+
+  const AdminUserDetailScreen({super.key, required this.user, this.repository});
+
+  @override
+  State<AdminUserDetailScreen> createState() => _AdminUserDetailScreenState();
+}
+
+class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
+  AdminUser? _user;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _user = widget.user;
+  }
+
+  // Chỉ chạm service locator khi thực sự bấm nút (test render không cần sl).
+  AdminUserRepository get _repository =>
+      widget.repository ?? sl<AdminUserRepository>();
+
+  Future<void> _toggleLock() async {
+    final user = _user;
+    if (user == null || _busy) return;
+
+    final isLocked = user.status == AdminUserStatus.disabled;
+
+    if (!isLocked) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          key: const Key('adminUserLockConfirmDialog'),
+          title: const Text(AppStrings.adminUserLockConfirmTitle),
+          content: const Text(AppStrings.adminUserLockConfirmBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(AppStrings.cancel),
+            ),
+            FilledButton(
+              key: const Key('adminUserLockConfirmButton'),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(AppStrings.adminUserLockAction),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
+    setState(() => _busy = true);
+    final response = isLocked
+        ? await _repository.unlockUser(user.id)
+        : await _repository.lockUser(user.id);
+    if (!mounted) return;
+
+    final updated = response.data;
+    if (response.success && updated != null) {
+      setState(() {
+        _user = updated;
+        _busy = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isLocked
+                ? AppStrings.adminUserUnlockSuccess
+                : AppStrings.adminUserLockSuccess,
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _busy = false);
+    final failure = isLocked
+        ? AppStrings.adminUserUnlockFailed
+        : AppStrings.adminUserLockFailed;
+    final message = response.message;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          (message != null && message.isNotEmpty) ? message : failure,
+        ),
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = this.user;
+    final user = _user;
     return RoleBackToDashboardScope(
       dashboardLocation: AppRoutes.adminUsers,
       child: Scaffold(
@@ -23,7 +115,11 @@ class AdminUserDetailScreen extends StatelessWidget {
         appBar: AppBar(title: const Text(AppStrings.adminUserDetailTitle)),
         body: user == null
             ? const _AdminUserDetailMissing()
-            : _AdminUserDetailContent(user: user),
+            : _AdminUserDetailContent(
+                user: user,
+                busy: _busy,
+                onToggleLock: _toggleLock,
+              ),
       ),
     );
   }
@@ -50,8 +146,14 @@ class _AdminUserDetailMissing extends StatelessWidget {
 
 class _AdminUserDetailContent extends StatelessWidget {
   final AdminUser user;
+  final bool busy;
+  final VoidCallback onToggleLock;
 
-  const _AdminUserDetailContent({required this.user});
+  const _AdminUserDetailContent({
+    required this.user,
+    required this.busy,
+    required this.onToggleLock,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +204,55 @@ class _AdminUserDetailContent extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 18),
+        _LockAccountButton(
+          locked: user.status == AdminUserStatus.disabled,
+          busy: busy,
+          onPressed: onToggleLock,
+        ),
       ],
+    );
+  }
+}
+
+/// Nút Khóa / Mở khóa tài khoản ở cuối màn chi tiết user.
+class _LockAccountButton extends StatelessWidget {
+  final bool locked;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  const _LockAccountButton({
+    required this.locked,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = locked ? AppColors.success : AppColors.error;
+    return SizedBox(
+      height: 50,
+      child: FilledButton.icon(
+        key: Key(locked ? 'adminUserUnlockButton' : 'adminUserLockButton'),
+        style: FilledButton.styleFrom(backgroundColor: color),
+        onPressed: busy ? null : onPressed,
+        icon: busy
+            ? const SizedBox(
+                key: Key('adminUserLockLoading'),
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(locked ? Icons.lock_open_outlined : Icons.lock_outline),
+        label: Text(
+          locked
+              ? AppStrings.adminUserUnlockAction
+              : AppStrings.adminUserLockAction,
+        ),
+      ),
     );
   }
 }

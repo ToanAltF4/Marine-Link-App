@@ -26,4 +26,22 @@ class AdminUserRemoteRepository implements AdminUserRepository {
       fromJson: adminUserFromJson,
     );
   }
+
+  @override
+  Future<ApiResponse<AdminUser>> lockUser(String id) {
+    return apiClient.put<AdminUser>(
+      ApiEndpoints.adminUserDetail(id),
+      data: const {'status': 'DISABLED'},
+      fromJson: adminUserFromJson,
+    );
+  }
+
+  @override
+  Future<ApiResponse<AdminUser>> unlockUser(String id) {
+    return apiClient.put<AdminUser>(
+      ApiEndpoints.adminUserDetail(id),
+      data: const {'status': 'ACTIVE'},
+      fromJson: adminUserFromJson,
+    );
+  }
 }

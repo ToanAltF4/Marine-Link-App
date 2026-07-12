@@ -230,6 +230,16 @@ abstract final class AppStrings {
   static const adminUsersLoadUnexpected =
       'Đã xảy ra lỗi khi tải danh sách tài khoản.';
   static const adminUserApproveFailed = 'Không duyệt được tài khoản.';
+  // Khóa / mở khóa tài khoản (màn chi tiết user).
+  static const adminUserLockAction = 'Khóa tài khoản';
+  static const adminUserUnlockAction = 'Mở khóa tài khoản';
+  static const adminUserLockConfirmTitle = 'Khóa tài khoản này?';
+  static const adminUserLockConfirmBody =
+      'Người dùng sẽ không đăng nhập được cho tới khi bạn mở khóa.';
+  static const adminUserLockFailed = 'Không khóa được tài khoản.';
+  static const adminUserUnlockFailed = 'Không mở khóa được tài khoản.';
+  static const adminUserLockSuccess = 'Đã khóa tài khoản.';
+  static const adminUserUnlockSuccess = 'Đã mở khóa tài khoản.';
   static const adminUserApproveUnexpected =
       'Đã xảy ra lỗi khi duyệt tài khoản.';
   static const adminUserDetailTitle = 'Thông tin tài khoản';

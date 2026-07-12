@@ -18,6 +18,14 @@ class _FakeRepo implements AdminUserRepository {
   @override
   Future<ApiResponse<AdminUser>> approveUser(String id) async =>
       const ApiResponse(success: true, message: 'OK', data: _dealer);
+
+  @override
+  Future<ApiResponse<AdminUser>> lockUser(String id) async =>
+      const ApiResponse(success: true, message: 'OK', data: _dealer);
+
+  @override
+  Future<ApiResponse<AdminUser>> unlockUser(String id) async =>
+      const ApiResponse(success: true, message: 'OK', data: _dealer);
 }
 
 const _dealer = AdminUser(
