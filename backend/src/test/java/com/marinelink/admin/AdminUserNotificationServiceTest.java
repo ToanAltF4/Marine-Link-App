@@ -18,7 +18,10 @@ import static org.mockito.Mockito.when;
 class AdminUserNotificationServiceTest {
 
     private final JavaMailSender mailSender = mock(JavaMailSender.class);
-    private final AdminUserNotificationService service = new AdminUserNotificationService(mailSender);
+    private final com.marinelink.common.AsyncEmailSender asyncEmailSender =
+            mock(com.marinelink.common.AsyncEmailSender.class);
+    private final AdminUserNotificationService service =
+            new AdminUserNotificationService(mailSender, asyncEmailSender);
 
     @Test
     void emailsUserThatAccountHasBeenApproved() throws Exception {
@@ -36,6 +39,6 @@ class AdminUserNotificationServiceTest {
         assertThat(message.getSubject()).isEqualTo("MarineLink - Tài khoản của bạn đã được duyệt");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("daily-a@example.com");
-        verify(mailSender).send(message);
+        verify(asyncEmailSender).send(message);
     }
 }
