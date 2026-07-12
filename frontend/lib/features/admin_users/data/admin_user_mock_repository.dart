@@ -30,6 +30,30 @@ class AdminUserMockRepository implements AdminUserRepository {
     _users[index] = updated;
     return ApiResponse(success: true, message: 'OK', data: updated);
   }
+
+  @override
+  Future<ApiResponse<AdminUser>> lockUser(String id) =>
+      _setStatus(id, AdminUserStatus.disabled, AppStrings.adminUserLockFailed);
+
+  @override
+  Future<ApiResponse<AdminUser>> unlockUser(String id) =>
+      _setStatus(id, AdminUserStatus.active, AppStrings.adminUserUnlockFailed);
+
+  Future<ApiResponse<AdminUser>> _setStatus(
+    String id,
+    AdminUserStatus status,
+    String failureMessage,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final index = _users.indexWhere((user) => user.id == id);
+    if (index == -1) {
+      return ApiResponse(success: false, message: failureMessage);
+    }
+
+    final updated = _users[index].copyWith(status: status);
+    _users[index] = updated;
+    return ApiResponse(success: true, message: 'OK', data: updated);
+  }
 }
 
 const _sampleUsers = [
