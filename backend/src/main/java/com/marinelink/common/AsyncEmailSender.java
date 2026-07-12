@@ -10,12 +10,15 @@ import org.springframework.stereotype.Component;
 /**
  * Cổng gửi email duy nhất của hệ thống — chạy ở luồng nền (@Async).
  *
- * <p>Chọn đường gửi theo cấu hình:
+ * <p>Chọn đường gửi theo cấu hình, ưu tiên từ trên xuống:
  * <ul>
- *   <li><b>Gmail API (HTTPS)</b> nếu có client-id/secret/refresh-token — dùng cho
- *       môi trường deploy (Render chặn cổng SMTP 25/465/587 nên SMTP không đi được).</li>
- *   <li><b>SMTP</b> nếu chưa cấu hình Gmail API — tiện cho chạy local.</li>
+ *   <li><b>Brevo HTTP API</b> nếu có {@code BREVO_API_KEY} — khuyến nghị cho deploy.</li>
+ *   <li><b>Gmail API (HTTPS)</b> nếu có client-id/secret/refresh-token.</li>
+ *   <li><b>SMTP</b> nếu không cấu hình API nào — tiện cho chạy local.</li>
  * </ul>
+ *
+ * <p>Vì sao cần API: Render (và nhiều PaaS) chặn cổng SMTP ra ngoài (25/465/587),
+ * nên SMTP không kết nối được; API chạy trên HTTPS/443 nên luôn thông.
  *
  * <p>Chạy nền để SMTP/HTTP chậm không làm treo request (gửi OTP, đặt hàng...).
  * Fail-safe: lỗi gửi chỉ ghi log, không làm hỏng nghiệp vụ đã commit.
@@ -27,11 +30,15 @@ public class AsyncEmailSender {
 
     private final JavaMailSender mailSender;
     private final GmailApiEmailSender gmailApiEmailSender;
+    private final BrevoApiEmailSender brevoApiEmailSender;
 
     @Async
     public void send(MimeMessage message) {
         try {
-            if (gmailApiEmailSender.isConfigured()) {
+            if (brevoApiEmailSender.isConfigured()) {
+                brevoApiEmailSender.send(message);
+                log.info("Đã gửi email qua Brevo API.");
+            } else if (gmailApiEmailSender.isConfigured()) {
                 gmailApiEmailSender.send(message);
                 log.info("Đã gửi email qua Gmail API.");
             } else {
