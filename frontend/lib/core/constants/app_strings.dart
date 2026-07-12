@@ -210,6 +210,8 @@ abstract final class AppStrings {
   static const adminRevenueTotalLabel = 'Tổng doanh thu';
   static const adminRevenueSelectMonth = 'Chọn tháng';
   static const adminRevenueDailyTitle = 'Doanh thu theo ngày';
+  static const adminRevenueDailySubtitle =
+      'Xu hướng doanh thu theo từng ngày trong khoảng đã chọn.';
   static const adminRevenueTopProductsTitle = 'Sản phẩm bán chạy';
   static const adminRevenueFilterRange = 'Lọc theo khoảng ngày';
   static const adminRevenueClearRange = 'Xoá bộ lọc ngày';
@@ -284,6 +286,11 @@ abstract final class AppStrings {
   static const paymentCod = 'COD';
   static const paymentBankTransfer = 'Chuyển khoản';
   static const paymentVnpay = 'VNPAY';
+  static const paymentMethodShortLabel = 'Phương thức thanh toán';
+  static const paymentStatusLabel = 'Trạng thái thanh toán';
+  static const paymentPaid = 'Đã thanh toán';
+  static const paymentUnpaid = 'Chưa thanh toán';
+  static const remainingAmountLabel = 'Số tiền còn lại';
   static const noteLabel = 'Ghi chú';
   static const creatingOrder = 'Đang tạo đơn';
   static const placeOrder = 'Đặt hàng';

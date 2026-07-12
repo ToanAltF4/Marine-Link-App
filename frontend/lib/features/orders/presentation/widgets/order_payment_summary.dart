@@ -34,8 +34,38 @@ class OrderPaymentSummary extends StatelessWidget {
           value: _currency(order.totalAmount),
           emphasized: true,
         ),
+        const Divider(height: 24),
+        OrderSummaryRow(
+          key: const Key('orderPaymentMethodRow'),
+          label: AppStrings.paymentMethodShortLabel,
+          value: _paymentMethodLabel(order.paymentMethod),
+        ),
+        OrderSummaryRow(
+          key: const Key('orderPaymentStatusRow'),
+          label: AppStrings.paymentStatusLabel,
+          value: _isPaid ? AppStrings.paymentPaid : AppStrings.paymentUnpaid,
+          valueColor: _isPaid ? AppColors.success : AppColors.warning,
+        ),
+        OrderSummaryRow(
+          key: const Key('orderRemainingAmountRow'),
+          label: AppStrings.remainingAmountLabel,
+          value: _currency(_remaining),
+          valueColor: _remaining > 0 ? AppColors.error : AppColors.success,
+        ),
       ],
     );
+  }
+
+  bool get _isPaid => order.paymentStatus.toUpperCase() == 'PAID';
+
+  double get _remaining => _isPaid ? 0 : order.totalAmount;
+
+  String _paymentMethodLabel(PaymentMethod method) {
+    return switch (method) {
+      PaymentMethod.cod => AppStrings.paymentCod,
+      PaymentMethod.bankTransfer => AppStrings.paymentBankTransfer,
+      PaymentMethod.vnpay => AppStrings.paymentVnpay,
+    };
   }
 }
 
