@@ -635,6 +635,7 @@ void _showProductForm(BuildContext context, {AdminProduct? product}) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    backgroundColor: AppColors.background,
     builder: (_) => BlocProvider.value(
       value: cubit,
       child: _ProductFormSheet(
