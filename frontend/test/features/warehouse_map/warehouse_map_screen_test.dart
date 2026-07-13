@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/core/api/api_response.dart';
@@ -10,6 +11,10 @@ import 'package:marinelink/features/warehouse_map/domain/warehouse_repository.da
 import 'package:marinelink/features/warehouse_map/domain/warehouse_user_location.dart';
 import 'package:marinelink/features/warehouse_map/presentation/cubit/warehouse_map_cubit.dart';
 import 'package:marinelink/features/warehouse_map/presentation/screens/warehouse_map_screen.dart';
+import 'package:marinelink/features/warehouse_map/presentation/widgets/warehouse_card.dart';
+import 'package:marinelink/features/warehouse_map/presentation/widgets/warehouse_osm_map.dart';
+
+import 'fake_tile_provider.dart';
 
 class _FakeRepo implements WarehouseRepository {
   final Future<ApiResponse<List<Warehouse>>> Function() responder;
@@ -31,9 +36,13 @@ Future<void> _pumpScreen(
   Future<bool> Function(Warehouse warehouse, WarehouseUserLocation? location)?
   mapLauncher,
   WarehouseLocationService? locationService,
+  MapController? mapController,
+  // Bản đồ OSM thật cao hơn khung minh hoạ cũ nên viewport test cần cao hơn để
+  // thẻ kho + nút "Chỉ đường" nằm trọn trong màn.
+  Size size = const Size(430, 1400),
 }) async {
   tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(430, 1000);
+  tester.view.physicalSize = size;
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
@@ -43,9 +52,22 @@ Future<void> _pumpScreen(
       home: WarehouseMapScreen(
         mapLauncher: mapLauncher ?? (_, _) async => true,
         locationService: locationService ?? _FakeLocationService.denied(),
+        mapController: mapController,
+        // Không bao giờ gọi mạng để tải tile trong test.
+        tileProvider: FakeTileProvider(),
       ),
     ),
   );
+}
+
+bool _isCardSelected(WidgetTester tester, String id) {
+  return tester
+      .widget<WarehouseCard>(
+        find.byWidgetPredicate(
+          (widget) => widget is WarehouseCard && widget.warehouse.id == id,
+        ),
+      )
+      .selected;
 }
 
 void main() {
@@ -92,7 +114,7 @@ void main() {
 
     expect(find.byKey(const Key('warehouseMapList')), findsOneWidget);
     expect(find.byKey(const Key('warehouseSummaryCard')), findsOneWidget);
-    expect(find.byKey(const Key('warehouseMapPreview')), findsOneWidget);
+    expect(find.byKey(const Key('warehouseOsmMap')), findsOneWidget);
     expect(find.text('Kho Cần Thơ'), findsOneWidget);
 
     await tester.tap(
@@ -213,7 +235,169 @@ void main() {
     expect(find.byKey(const Key('warehouseMapError')), findsNothing);
     expect(find.byKey(const Key('warehouseMapList')), findsOneWidget);
   });
+
+  testWidgets('bản đồ có marker cho TẤT CẢ kho (không chỉ 4 kho đầu)', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            ApiResponse(success: true, message: 'OK', data: _warehouses),
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    final markers = tester
+        .widget<MarkerLayer>(find.byType(MarkerLayer))
+        .markers;
+    expect(_warehouses.length, greaterThan(4));
+    expect(markers, hasLength(_warehouses.length));
+
+    for (final warehouse in _warehouses) {
+      final marker = markers.singleWhere(
+        (m) => m.key == Key('warehouseMarker_${warehouse.id}'),
+      );
+      // Toạ độ marker = toạ độ của chính đối tượng Warehouse.
+      expect(marker.point.latitude, warehouse.latitude);
+      expect(marker.point.longitude, warehouse.longitude);
+    }
+  });
+
+  testWidgets('chạm thẻ kho -> chọn kho đó và bản đồ move() tới toạ độ kho', (
+    tester,
+  ) async {
+    final controller = MapController();
+    addTearDown(controller.dispose);
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            ApiResponse(success: true, message: 'OK', data: _warehouses),
+      ),
+    );
+
+    await _pumpScreen(
+      tester,
+      mapController: controller,
+      size: const Size(430, 2600),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_isCardSelected(tester, 'wh-5'), isFalse);
+
+    await tester.tap(find.byKey(const Key('warehouseCardSelect_wh-5')));
+    await tester.pumpAndSettle();
+
+    // Thẻ được làm nổi bật...
+    expect(_isCardSelected(tester, 'wh-5'), isTrue);
+    // ...và bản đồ đã bay tới đúng toạ độ của kho đó.
+    final selected = _warehouses[4];
+    expect(controller.camera.center.latitude, closeTo(selected.latitude, 1e-4));
+    expect(
+      controller.camera.center.longitude,
+      closeTo(selected.longitude, 1e-4),
+    );
+    expect(controller.camera.zoom, WarehouseOsmMap.selectedZoom);
+
+    // Marker của kho đang chọn to hơn các marker còn lại.
+    final markers = tester
+        .widget<MarkerLayer>(find.byType(MarkerLayer))
+        .markers;
+    final selectedMarker = markers.singleWhere(
+      (m) => m.key == const Key('warehouseMarker_wh-5'),
+    );
+    final otherMarker = markers.singleWhere(
+      (m) => m.key == const Key('warehouseMarker_wh-1'),
+    );
+    expect(selectedMarker.width, greaterThan(otherMarker.width));
+  });
+
+  testWidgets('chạm marker -> chọn kho và làm nổi bật đúng thẻ của kho đó', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            ApiResponse(success: true, message: 'OK', data: _warehouses),
+      ),
+    );
+
+    await _pumpScreen(tester, size: const Size(430, 2600));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('warehouseMarker_wh-2')));
+    await tester.pumpAndSettle();
+
+    expect(_isCardSelected(tester, 'wh-2'), isTrue);
+    expect(_isCardSelected(tester, 'wh-1'), isFalse);
+  });
+
+  testWidgets('nút "Chỉ đường" dùng đúng toạ độ của kho đang được chọn', (
+    tester,
+  ) async {
+    Warehouse? launched;
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            ApiResponse(success: true, message: 'OK', data: _warehouses),
+      ),
+    );
+
+    await _pumpScreen(
+      tester,
+      size: const Size(430, 2600),
+      locationService: _FakeLocationService.granted(),
+      mapLauncher: (warehouse, _) async {
+        launched = warehouse;
+        return true;
+      },
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('warehouseCardSelect_wh-3')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('warehouseOpenMapsButton_wh-3')));
+    await tester.pumpAndSettle();
+
+    final selected = _warehouses[2];
+    // Thẻ / marker / nút "Chỉ đường" dùng CHUNG một đối tượng Warehouse.
+    expect(launched, same(selected));
+
+    final uri = buildWarehouseDirectionsUri(
+      launched!,
+      const WarehouseUserLocation(latitude: 10.02, longitude: 105.78),
+    );
+    expect(uri.path, '/maps/dir/');
+    expect(
+      uri.queryParameters['destination'],
+      '${selected.latitude},${selected.longitude}',
+    );
+    expect(uri.queryParameters['origin'], '10.02,105.78');
+  });
 }
+
+Warehouse _makeWarehouse(String id, double latitude, double longitude) {
+  return Warehouse(
+    id: id,
+    name: 'Kho $id',
+    address: 'Địa chỉ $id',
+    phone: '0292000000',
+    openingHours: '08:00-17:00',
+    latitude: latitude,
+    longitude: longitude,
+    isActive: true,
+  );
+}
+
+/// 5 kho — nhiều hơn 4 để chắc chắn bản đồ không cắt bớt danh sách.
+final _warehouses = [
+  _makeWarehouse('wh-1', 10.0452, 105.7469),
+  _makeWarehouse('wh-2', 9.176870, 105.150307),
+  _makeWarehouse('wh-3', 10.2899, 105.7500),
+  _makeWarehouse('wh-4', 9.6031, 105.9739),
+  _makeWarehouse('wh-5', 10.7626, 106.6601),
+];
 
 const _warehouse = Warehouse(
   id: 'warehouse-001',
