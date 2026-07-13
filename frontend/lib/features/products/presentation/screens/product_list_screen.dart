@@ -19,7 +19,6 @@ import '../widgets/product_filter_sheet.dart';
 import '../widgets/product_list_card.dart';
 import '../widgets/product_scrollable_state.dart';
 import '../widgets/product_visuals.dart';
-import '../widgets/product_wholesale_policy_card.dart';
 
 class ProductListScreen extends StatefulWidget {
   static const productListScrollKey = PageStorageKey<String>(
@@ -335,12 +334,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                WholesalePolicyCard(
-                  categoryName: _selectedCategoryId == null
-                      ? null
-                      : _screenTitle(),
-                ),
-                const SizedBox(height: 14),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Row(
@@ -597,14 +590,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   String _screenTitle() {
-    if (_selectedCategoryId == null) {
-      return AppStrings.productsTitle;
-    }
-
-    for (final category in _categories) {
-      final matched = _findCategoryById(_selectedCategoryId, category);
-      if (matched != null) return displayCategoryName(matched);
-    }
     return AppStrings.productsTitle;
   }
 
