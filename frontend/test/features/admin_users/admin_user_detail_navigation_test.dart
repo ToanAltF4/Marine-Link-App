@@ -26,6 +26,15 @@ class _FakeRepo implements AdminUserRepository {
   @override
   Future<ApiResponse<AdminUser>> unlockUser(String id) async =>
       const ApiResponse(success: true, message: 'OK', data: _dealer);
+
+  @override
+  Future<ApiResponse<AdminUser>> createUser({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    String roleCode = 'STAFF',
+  }) async => const ApiResponse(success: true, message: 'OK', data: _dealer);
 }
 
 const _dealer = AdminUser(
@@ -82,9 +91,7 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(
-      find.byKey(const Key('adminUserCardTap_user-dealer-001')),
-    );
+    await tester.tap(find.byKey(const Key('adminUserCardTap_user-dealer-001')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('adminUserDetailScreen')), findsOneWidget);

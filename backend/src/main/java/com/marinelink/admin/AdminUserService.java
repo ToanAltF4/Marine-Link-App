@@ -1,5 +1,7 @@
 package com.marinelink.admin;
 
+import com.marinelink.common.exception.BusinessException;
+import com.marinelink.common.exception.ConflictException;
 import com.marinelink.common.exception.ResourceNotFoundException;
 import com.marinelink.notifications.NotificationService;
 import com.marinelink.notifications.NotificationType;
@@ -28,10 +30,52 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AdminUserService {
 
+    private static final String DEFAULT_CREATED_ROLE = "STAFF";
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final AdminUserNotificationService notificationService;
     private final NotificationService appNotificationService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    /**
+     * Admin tạo tài khoản trực tiếp (mặc định là nhân viên - STAFF).
+     *
+     * <p>Tài khoản do admin tạo được kích hoạt luôn ({@link UserStatus#ACTIVE}) —
+     * không phải chờ xác thực email hay chờ duyệt.
+     */
+    @Transactional
+    public AdminUserResponse createUser(AdminUserCreateRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        String phone = request.phone().trim();
+
+        if (userRepository.existsVerifiedByEmail(email)) {
+            throw new ConflictException("Email đã được sử dụng");
+        }
+        if (userRepository.existsActiveByPhone(phone)) {
+            throw new ConflictException("Số điện thoại đã được sử dụng");
+        }
+
+        String roleCode = request.roleCode() == null || request.roleCode().isBlank()
+                ? DEFAULT_CREATED_ROLE
+                : request.roleCode().trim().toUpperCase(Locale.ROOT);
+        Role role = roleRepository.findByCode(roleCode)
+                .orElseThrow(() -> new BusinessException(
+                        "Vai trò không hợp lệ: " + roleCode,
+                        org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY));
+
+        User user = User.builder()
+                .publicId(UUID.randomUUID())
+                .role(role)
+                .fullName(request.fullName().trim())
+                .email(email)
+                .phone(phone)
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .status(UserStatus.ACTIVE) // admin tạo => duyệt sẵn
+                .build();
+
+        return AdminUserResponse.from(userRepository.save(user));
+    }
 
     public Page<AdminUserResponse> listUsers(
             int page,

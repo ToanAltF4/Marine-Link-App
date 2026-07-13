@@ -44,4 +44,25 @@ class AdminUserRemoteRepository implements AdminUserRepository {
       fromJson: adminUserFromJson,
     );
   }
+
+  @override
+  Future<ApiResponse<AdminUser>> createUser({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    String roleCode = 'STAFF',
+  }) {
+    return apiClient.post<AdminUser>(
+      ApiEndpoints.adminUsers,
+      data: {
+        'fullName': fullName,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'roleCode': roleCode,
+      },
+      fromJson: adminUserFromJson,
+    );
+  }
 }

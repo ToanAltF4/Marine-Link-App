@@ -69,4 +69,45 @@ void main() {
       expect(data, {'status': 'ACTIVE'});
     },
   );
+
+  test(
+    'createUser posts the account payload to the admin users endpoint',
+    () async {
+      final apiClient = _MockApiClient();
+      when(
+        () => apiClient.post<AdminUser>(
+          ApiEndpoints.adminUsers,
+          data: any(named: 'data'),
+          fromJson: any(named: 'fromJson'),
+        ),
+      ).thenAnswer((_) async => const ApiResponse(success: true, data: _user));
+
+      final repository = AdminUserRemoteRepository(apiClient: apiClient);
+
+      final response = await repository.createUser(
+        fullName: 'Nhan vien Moi',
+        email: 'nhanvien@marinelink.demo',
+        phone: '0987654321',
+        password: 'matkhau123',
+      );
+
+      expect(response.data, _user);
+      final data =
+          verify(
+                () => apiClient.post<AdminUser>(
+                  ApiEndpoints.adminUsers,
+                  data: captureAny(named: 'data'),
+                  fromJson: any(named: 'fromJson'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(data, {
+        'fullName': 'Nhan vien Moi',
+        'email': 'nhanvien@marinelink.demo',
+        'phone': '0987654321',
+        'password': 'matkhau123',
+        'roleCode': 'STAFF',
+      });
+    },
+  );
 }

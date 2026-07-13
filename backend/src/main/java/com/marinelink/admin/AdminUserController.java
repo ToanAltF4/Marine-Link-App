@@ -5,8 +5,11 @@ import com.marinelink.users.UserStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +35,17 @@ public class AdminUserController {
             @RequestParam(name = "q", required = false) String query) {
         Page<AdminUserResponse> users = adminUserService.listUsers(page, size, role, status, query);
         return ApiResponse.ok(users.getContent(), ApiResponse.PaginationMeta.of(users));
+    }
+
+    /** Admin tạo tài khoản (mặc định STAFF); tài khoản được kích hoạt sẵn (ACTIVE). */
+    @PostMapping
+    public ResponseEntity<ApiResponse<AdminUserResponse>> createUser(
+            @Valid @RequestBody AdminUserCreateRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.created(
+                        adminUserService.createUser(request),
+                        "Đã tạo tài khoản"));
     }
 
     @GetMapping("/{id}")

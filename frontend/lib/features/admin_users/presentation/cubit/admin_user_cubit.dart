@@ -64,6 +64,70 @@ class AdminUserCubit extends Cubit<AdminUserState> {
     );
   }
 
+  /// Admin tạo tài khoản mới (mặc định STAFF).
+  ///
+  /// Trả về `true` khi tạo thành công; khi thất bại trả về `false` và đặt
+  /// [AdminUserState.errorMessage] để form hiển thị SnackBar lỗi.
+  ///
+  /// Lỗi tạo tài khoản KHÔNG chuyển màn danh sách sang trạng thái failure:
+  /// form đang mở phía trên, người dùng chỉ cần sửa lại thông tin nhập.
+  Future<bool> createUser({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    String roleCode = 'STAFF',
+  }) async {
+    emit(state.copyWith(creatingUser: true));
+    try {
+      final response = await repository.createUser(
+        fullName: fullName,
+        email: email,
+        phone: phone,
+        password: password,
+        roleCode: roleCode,
+      );
+      if (response.success && response.data != null) {
+        final created = response.data!;
+        final users = [
+          created,
+          for (final user in state.users)
+            if (user.id != created.id) user,
+        ];
+        emit(
+          state.copyWith(
+            status: AdminUserStatusView.success,
+            users: users,
+            creatingUser: false,
+          ),
+        );
+        return true;
+      }
+
+      emit(
+        state.copyWith(
+          creatingUser: false,
+          errorMessage: userFacingResponseMessage(
+            response.message,
+            fallback: AppStrings.adminCreateUserFailed,
+          ),
+        ),
+      );
+      return false;
+    } catch (error) {
+      emit(
+        state.copyWith(
+          creatingUser: false,
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: AppStrings.adminCreateUserUnexpected,
+          ),
+        ),
+      );
+      return false;
+    }
+  }
+
   Future<void> approveUser(String id) async {
     emit(state.copyWith(approvingUserId: id));
     try {

@@ -4,6 +4,7 @@ import com.marinelink.cart.Cart;
 import com.marinelink.cart.CartItem;
 import com.marinelink.cart.CartItemRepository;
 import com.marinelink.cart.CartRepository;
+import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.exception.ResourceNotFoundException;
 import com.marinelink.notifications.NotificationService;
 import com.marinelink.products.Category;
@@ -409,6 +410,104 @@ class OrderServiceTest {
                 any()
         );
         verify(orderPaymentNotificationService).sendOrderApprovedEmail(order);
+    }
+
+    @Test
+    void approvingOrderDeductsStockFromEachProduct() {
+        UUID adminPublicId = UUID.randomUUID();
+        UUID orderPublicId = UUID.randomUUID();
+        User admin = user(adminPublicId);
+        Product product = Product.builder()
+                .publicId(UUID.randomUUID())
+                .name("Khô cá đuối")
+                .stockQuantity(100)
+                .build();
+        Order order = Order.builder()
+                .publicId(orderPublicId)
+                .orderCode("ML-20260604-0002")
+                .user(user(UUID.randomUUID()))
+                .status(OrderStatus.PENDING)
+                .build();
+        order.getItems().add(OrderItem.builder()
+                .publicId(UUID.randomUUID())
+                .order(order)
+                .product(product)
+                .quantity(30)
+                .build());
+
+        when(userRepository.findActiveByPublicId(adminPublicId)).thenReturn(Optional.of(admin));
+        when(orderRepository.findDetailByPublicId(orderPublicId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        orderService.updateStatus(adminPublicId, orderPublicId, OrderStatus.CONFIRMED, null);
+
+        assertEquals(70, product.getStockQuantity());
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    void approvingOrderFailsClearlyWhenStockIsNotEnough() {
+        UUID adminPublicId = UUID.randomUUID();
+        UUID orderPublicId = UUID.randomUUID();
+        Product product = Product.builder()
+                .publicId(UUID.randomUUID())
+                .name("Khô cá đuối")
+                .stockQuantity(5)
+                .build();
+        Order order = Order.builder()
+                .publicId(orderPublicId)
+                .orderCode("ML-20260604-0003")
+                .user(user(UUID.randomUUID()))
+                .status(OrderStatus.PENDING)
+                .build();
+        order.getItems().add(OrderItem.builder()
+                .publicId(UUID.randomUUID())
+                .order(order)
+                .product(product)
+                .quantity(30)
+                .build());
+
+        when(userRepository.findActiveByPublicId(adminPublicId))
+                .thenReturn(Optional.of(user(adminPublicId)));
+        when(orderRepository.findDetailByPublicId(orderPublicId)).thenReturn(Optional.of(order));
+
+        assertThrows(BusinessException.class, () -> orderService.updateStatus(
+                adminPublicId, orderPublicId, OrderStatus.CONFIRMED, null));
+        // Tồn kho giữ nguyên khi duyệt thất bại.
+        assertEquals(5, product.getStockQuantity());
+    }
+
+    @Test
+    void shippingDoesNotDeductStockAgain() {
+        UUID adminPublicId = UUID.randomUUID();
+        UUID orderPublicId = UUID.randomUUID();
+        Product product = Product.builder()
+                .publicId(UUID.randomUUID())
+                .name("Khô cá đuối")
+                .stockQuantity(70)
+                .build();
+        Order order = Order.builder()
+                .publicId(orderPublicId)
+                .orderCode("ML-20260604-0004")
+                .user(user(UUID.randomUUID()))
+                .status(OrderStatus.CONFIRMED) // đã duyệt (đã trừ kho trước đó)
+                .build();
+        order.getItems().add(OrderItem.builder()
+                .publicId(UUID.randomUUID())
+                .order(order)
+                .product(product)
+                .quantity(30)
+                .build());
+
+        when(userRepository.findActiveByPublicId(adminPublicId))
+                .thenReturn(Optional.of(user(adminPublicId)));
+        when(orderRepository.findDetailByPublicId(orderPublicId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        orderService.updateStatus(adminPublicId, orderPublicId, OrderStatus.SHIPPING, null);
+
+        assertEquals(70, product.getStockQuantity());
+        verify(productRepository, never()).save(any(Product.class));
     }
 
     @Test

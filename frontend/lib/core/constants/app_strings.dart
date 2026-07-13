@@ -221,8 +221,7 @@ abstract final class AppStrings {
   static const adminRevenueDailyEmpty = 'Không có dữ liệu theo ngày.';
   static const adminRevenueTopEmpty = 'Chưa có sản phẩm bán ra.';
   static const adminRevenueLoadFailed = 'Không tải được dữ liệu doanh thu.';
-  static const adminRevenueLoadUnexpected =
-      'Đã xảy ra lỗi khi tải doanh thu.';
+  static const adminRevenueLoadUnexpected = 'Đã xảy ra lỗi khi tải doanh thu.';
   static String adminRevenueSoldQuantity(int qty) => 'Đã bán: $qty';
   static const adminUsersTitle = 'Quản lý tài khoản';
   static const approveDealer = 'Duyệt đại lý';
@@ -242,6 +241,22 @@ abstract final class AppStrings {
   static const adminUserUnlockSuccess = 'Đã mở khóa tài khoản.';
   static const adminUserApproveUnexpected =
       'Đã xảy ra lỗi khi duyệt tài khoản.';
+  // Admin tạo tài khoản nhân viên / quản trị / đại lý.
+  static const adminCreateUserAction = 'Tạo tài khoản nhân viên';
+  static const adminCreateUserTitle = 'Tạo tài khoản nhân viên';
+  static const adminCreateUserSubmit = 'Tạo tài khoản';
+  static const adminCreateUserRoleLabel = 'Vai trò';
+  static const adminCreateUserRoleStaff = 'Nhân viên (STAFF)';
+  static const adminCreateUserRoleAdmin = 'Quản trị (ADMIN)';
+  static const adminCreateUserRoleUser = 'Đại lý (USER)';
+  static const adminCreateUserActiveNote =
+      'Tài khoản được kích hoạt ngay khi tạo, không cần chờ duyệt.';
+  static const adminCreateUserSuccess = 'Đã tạo tài khoản.';
+  static const adminCreateUserFailed = 'Không tạo được tài khoản.';
+  static const adminCreateUserUnexpected = 'Đã xảy ra lỗi khi tạo tài khoản.';
+  static const adminCreateUserFormInvalid =
+      'Vui lòng kiểm tra lại thông tin đã nhập.';
+  static const adminCreateUserEmailExists = 'Email đã được sử dụng.';
   static const adminUserDetailTitle = 'Thông tin tài khoản';
   static const adminUserDetailContactSection = 'Thông tin liên hệ';
   static const adminUserDetailBusinessSection = 'Thông tin kinh doanh';
