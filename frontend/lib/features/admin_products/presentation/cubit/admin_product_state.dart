@@ -2,7 +2,14 @@ part of 'admin_product_cubit.dart';
 
 enum AdminProductStatusView { initial, loading, success, empty, failure }
 
-enum AdminProductActionStatus { idle, saving, deleting, success, failure }
+enum AdminProductActionStatus {
+  idle,
+  loadingDetail,
+  saving,
+  deleting,
+  success,
+  failure,
+}
 
 class AdminProductState extends Equatable {
   final AdminProductStatusView status;

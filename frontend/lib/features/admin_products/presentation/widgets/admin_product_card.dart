@@ -23,6 +23,58 @@ class AdminProductCard extends StatelessWidget {
     required this.onEdit,
   });
 
+  /// Hỏi xác nhận trước khi xoá, rồi báo kết quả bằng SnackBar (trước đây xoá
+  /// ngay lập tức và thất bại trong im lặng).
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const Key('adminProductDeleteConfirmDialog'),
+        title: const Text(AppStrings.adminProductDeleteConfirmTitle),
+        content: Text(
+          AppStrings.adminProductDeleteConfirmMessage(product.name),
+        ),
+        actions: [
+          TextButton(
+            key: const Key('adminProductDeleteCancelButton'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(AppStrings.cancel),
+          ),
+          FilledButton(
+            key: const Key('adminProductDeleteConfirmButton'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(AppStrings.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final cubit = context.read<AdminProductCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    await cubit.deleteProduct(product.id);
+
+    // Thẻ đã bị gỡ khỏi cây widget sau khi xoá thành công, nên dùng messenger và
+    // cubit đã giữ sẵn thay vì context.
+    if (cubit.state.actionStatus == AdminProductActionStatus.success) {
+      messenger.showSnackBar(
+        const SnackBar(
+          key: Key('adminProductSuccessSnackBar'),
+          content: Text(AppStrings.adminProductDeleteSuccess),
+        ),
+      );
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        key: const Key('adminProductErrorSnackBar'),
+        content: Text(
+          cubit.state.errorMessage ?? AppStrings.adminProductDeleteFailed,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusStyle = _statusStyle(product.status);
@@ -119,11 +171,8 @@ class AdminProductCard extends StatelessWidget {
                   key: Key('adminProductDeleteButton_${product.id}'),
                   tooltip: AppStrings.deleteProduct,
                   color: AppColors.error,
-                  onPressed: deleting
-                      ? null
-                      : () => context.read<AdminProductCubit>().deleteProduct(
-                          product.id,
-                        ),
+                  // Vô hiệu hoá khi đang xoá để tránh gửi lệnh xoá hai lần.
+                  onPressed: deleting ? null : () => _confirmDelete(context),
                   icon: deleting
                       ? const SizedBox(
                           width: 18,

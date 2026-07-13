@@ -17,8 +17,12 @@ import jakarta.persistence.criteria.JoinType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -139,8 +143,35 @@ public class AdminProductService {
             product.setImageUrl(request.imageUrl().trim());
         }
 
-        product.getPriceTiers().clear();
-        for (AdminPriceTierRequest tierRequest : safeTiers(request.priceTiers())) {
+        applyPriceTiers(product, request.priceTiers());
+    }
+
+    /**
+     * Đồng bộ danh sách mức giá sỉ theo kiểu "reconcile" thay vì xoá sạch rồi tạo lại:
+     * mức giá gửi kèm id thì cập nhật tại chỗ, mức giá không có id thì thêm mới, chỉ
+     * xoá những mức giá không còn trong request. Nhờ vậy một lần sửa sản phẩm bình
+     * thường không xoá dòng price_tiers nào, nên không phá vỡ khoá ngoại từ
+     * cart_items.price_tier_id (giỏ hàng của khách đang trỏ tới mức giá đó).
+     */
+    private void applyPriceTiers(Product product, List<AdminPriceTierRequest> requestTiers) {
+        Map<UUID, PriceTier> existingByPublicId = new LinkedHashMap<>();
+        for (PriceTier tier : product.getPriceTiers()) {
+            if (tier.getPublicId() != null) {
+                existingByPublicId.put(tier.getPublicId(), tier);
+            }
+        }
+
+        Set<UUID> keptPublicIds = new HashSet<>();
+        for (AdminPriceTierRequest tierRequest : safeTiers(requestTiers)) {
+            PriceTier existing = tierRequest.id() == null ? null : existingByPublicId.get(tierRequest.id());
+            if (existing != null) {
+                existing.setMinQuantity(tierRequest.minQuantity());
+                existing.setMaxQuantity(tierRequest.maxQuantity());
+                existing.setUnitPrice(tierRequest.unitPrice());
+                keptPublicIds.add(existing.getPublicId());
+                continue;
+            }
+            // Không có id (mức giá mới) hoặc id không còn tồn tại -> tạo mức giá mới.
             product.getPriceTiers().add(PriceTier.builder()
                     .publicId(UUID.randomUUID())
                     .product(product)
@@ -149,6 +180,10 @@ public class AdminProductService {
                     .unitPrice(tierRequest.unitPrice())
                     .build());
         }
+
+        product.getPriceTiers().removeIf(tier -> tier.getPublicId() != null
+                && existingByPublicId.containsKey(tier.getPublicId())
+                && !keptPublicIds.contains(tier.getPublicId()));
     }
 
     private Category findCategory(UUID categoryId) {

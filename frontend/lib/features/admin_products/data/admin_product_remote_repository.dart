@@ -18,6 +18,8 @@ class AdminProductRemoteRepository implements AdminProductRepository {
     String? query,
     AdminProductStatus? status,
     bool? featured,
+    int? page,
+    int? size,
   }) {
     final normalizedQuery = query?.trim();
     return apiClient.get<List<AdminProduct>>(
@@ -27,8 +29,18 @@ class AdminProductRemoteRepository implements AdminProductRepository {
           'q': keyword,
         ...?(status == null ? null : {'status': status.apiValue}),
         ...?(featured == null ? null : {'featured': featured}),
+        ...?(page == null ? null : {'page': page}),
+        ...?(size == null ? null : {'size': size}),
       },
       fromJson: adminProductsFromJson,
+    );
+  }
+
+  @override
+  Future<ApiResponse<AdminProduct>> getProductDetail(String id) {
+    return apiClient.get<AdminProduct>(
+      ApiEndpoints.adminProductDetail(id),
+      fromJson: adminProductFromJson,
     );
   }
 

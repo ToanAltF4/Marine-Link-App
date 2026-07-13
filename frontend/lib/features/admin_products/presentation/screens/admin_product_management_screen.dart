@@ -129,6 +129,52 @@ class _AdminProductsContent extends StatelessWidget {
   }
 }
 
+/// Ô nhập của một mức giá sỉ trong form (giữ lại id để backend cập nhật đúng dòng).
+class _TierInput {
+  /// Public id của mức giá đã tồn tại; rỗng nghĩa là mức giá mới.
+  final String id;
+  final TextEditingController minController;
+  final TextEditingController maxController;
+  final TextEditingController priceController;
+
+  _TierInput({this.id = '', String? min, String? max, String? price})
+    : minController = TextEditingController(text: min ?? ''),
+      maxController = TextEditingController(text: max ?? ''),
+      priceController = TextEditingController(text: price ?? '');
+
+  factory _TierInput.fromTier(AdminPriceTier tier) {
+    return _TierInput(
+      id: tier.id,
+      min: tier.minQuantity.toString(),
+      max: tier.maxQuantity?.toString() ?? '',
+      price: tier.unitPrice.toStringAsFixed(0),
+    );
+  }
+
+  /// Dòng chưa nhập gì -> bỏ qua khi lưu (không coi là lỗi).
+  bool get isBlank =>
+      minController.text.trim().isEmpty &&
+      maxController.text.trim().isEmpty &&
+      priceController.text.trim().isEmpty;
+
+  AdminPriceTier toTier() {
+    return AdminPriceTier(
+      id: id,
+      minQuantity: _toInt(minController.text, fallback: 1),
+      maxQuantity: maxController.text.trim().isEmpty
+          ? null
+          : _toInt(maxController.text),
+      unitPrice: _toDouble(priceController.text),
+    );
+  }
+
+  void dispose() {
+    minController.dispose();
+    maxController.dispose();
+    priceController.dispose();
+  }
+}
+
 class _ProductFormSheet extends StatefulWidget {
   final AdminProduct? product;
   final List<AdminProductCategory> categories;
@@ -144,6 +190,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
   final _imagePicker = ImagePicker();
   String? _selectedCategoryId;
   bool _uploadingImage = false;
+  bool _submitting = false;
   late final TextEditingController _imageUrlController;
   late final TextEditingController _nameController;
   late final TextEditingController _slugController;
@@ -154,19 +201,16 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
   late final TextEditingController _unitController;
   late final TextEditingController _minOrderController;
   late final TextEditingController _stockController;
-  late final TextEditingController _tierMinController;
-  late final TextEditingController _tierMaxController;
-  late final TextEditingController _tierPriceController;
+  late final List<_TierInput> _tiers;
   late AdminProductStatus _status;
   late bool _featured;
 
   @override
   void initState() {
     super.initState();
+    // `product` là CHI TIẾT đầy đủ (đã fetch trước khi mở form), nên mô tả và
+    // toàn bộ các mức giá sỉ đều có sẵn để prefill.
     final product = widget.product;
-    final firstTier = product?.priceTiers.isNotEmpty == true
-        ? product!.priceTiers.first
-        : null;
     // Preselect the product's current category on edit; only if it exists in
     // the fetched list (otherwise the dropdown would assert). Null means "let
     // the backend choose a default / keep the existing category".
@@ -196,15 +240,10 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     _stockController = TextEditingController(
       text: product?.stockQuantity.toString() ?? '0',
     );
-    _tierMinController = TextEditingController(
-      text: firstTier?.minQuantity.toString() ?? '',
-    );
-    _tierMaxController = TextEditingController(
-      text: firstTier?.maxQuantity?.toString() ?? '',
-    );
-    _tierPriceController = TextEditingController(
-      text: firstTier == null ? '' : firstTier.unitPrice.toStringAsFixed(0),
-    );
+    final existingTiers = product?.priceTiers ?? const <AdminPriceTier>[];
+    _tiers = existingTiers.isEmpty
+        ? [_TierInput()]
+        : existingTiers.map(_TierInput.fromTier).toList();
     _status = product?.status ?? AdminProductStatus.active;
     _featured = product?.isFeatured ?? false;
   }
@@ -221,9 +260,9 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     _unitController.dispose();
     _minOrderController.dispose();
     _stockController.dispose();
-    _tierMinController.dispose();
-    _tierMaxController.dispose();
-    _tierPriceController.dispose();
+    for (final tier in _tiers) {
+      tier.dispose();
+    }
     super.dispose();
   }
 
@@ -386,48 +425,22 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                   onChanged: (value) => setState(() => _featured = value),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  AppStrings.firstWholesalePrice,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TextField(
-                        key: const Key('adminProductTierMinField'),
-                        controller: _tierMinController,
-                        label: AppStrings.fromLabel,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TextField(
-                        key: const Key('adminProductTierMaxField'),
-                        controller: _tierMaxController,
-                        label: AppStrings.toLabel,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TextField(
-                        key: const Key('adminProductTierPriceField'),
-                        controller: _tierPriceController,
-                        label: AppStrings.unitPriceLabel,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                  ],
-                ),
+                ..._buildTierSection(context),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
                     key: const Key('adminProductSaveButton'),
-                    onPressed: _submit,
-                    icon: const Icon(Icons.save_outlined),
+                    // Vô hiệu hoá khi đang gửi để tránh bấm lưu hai lần.
+                    onPressed: _submitting ? null : _submit,
+                    icon: _submitting
+                        ? const SizedBox(
+                            key: Key('adminProductSaveProgress'),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
                     label: const Text(AppStrings.saveProduct),
                   ),
                 ),
@@ -439,13 +452,69 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     );
   }
 
+  List<Widget> _buildTierSection(BuildContext context) {
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              AppStrings.wholesalePriceTiers,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          TextButton.icon(
+            key: const Key('adminProductAddTierButton'),
+            onPressed: _submitting ? null : _addTier,
+            icon: const Icon(Icons.add),
+            label: const Text(AppStrings.addWholesaleTier),
+          ),
+        ],
+      ),
+      if (_tiers.isEmpty)
+        const Padding(
+          key: Key('adminProductNoTiers'),
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text(AppStrings.noWholesaleTier),
+        ),
+      for (var index = 0; index < _tiers.length; index++)
+        _TierRow(
+          key: Key('adminProductTierRow_$index'),
+          index: index,
+          tier: _tiers[index],
+          onRemove: _submitting ? null : () => _removeTier(index),
+          validateQuantity: (value) => _tierMinValidator(index, value),
+          validatePrice: (value) => _tierPriceValidator(index, value),
+        ),
+    ];
+  }
+
+  void _addTier() {
+    setState(() => _tiers.add(_TierInput()));
+  }
+
+  void _removeTier(int index) {
+    setState(() {
+      final removed = _tiers.removeAt(index);
+      removed.dispose();
+    });
+  }
+
+  /// Dòng bỏ trống hoàn toàn được bỏ qua; dòng nhập dở phải hợp lệ.
+  String? _tierMinValidator(int index, String? value) {
+    if (_tiers[index].isBlank) return null;
+    return _positiveInt(value);
+  }
+
+  String? _tierPriceValidator(int index, String? value) {
+    if (_tiers[index].isBlank) return null;
+    return _positiveNumber(value);
+  }
+
   Future<void> _pickAndUploadImage() async {
     final cubit = context.read<AdminProductCubit>();
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final picked = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
       if (picked == null) return;
       setState(() => _uploadingImage = true);
       final bytes = await picked.readAsBytes();
@@ -469,11 +538,28 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_submitting) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!_formKey.currentState!.validate()) {
+      // Trước đây form im lặng khi validate hỏng -> người dùng tưởng nút hỏng.
+      messenger.showSnackBar(
+        const SnackBar(
+          key: Key('adminProductErrorSnackBar'),
+          content: Text(AppStrings.adminProductFormInvalid),
+        ),
+      );
+      return;
+    }
+
+    final cubit = context.read<AdminProductCubit>();
+    final navigator = Navigator.of(context);
+    final product = widget.product;
     final draft = AdminProductDraft(
       categoryId: _selectedCategoryId ?? '',
       name: _nameController.text.trim(),
       slug: _slugController.text.trim(),
+      // Trường tuỳ chọn để trống -> gửi null (không gửi chuỗi rỗng) để backend
+      // lưu null thay vì chặn cập nhật.
       shortDescription: _trimToNull(_shortDescriptionController.text),
       description: _trimToNull(_descriptionController.text),
       origin: _trimToNull(_originController.text),
@@ -484,43 +570,120 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       stockQuantity: _toInt(_stockController.text),
       status: _status,
       isFeatured: _featured,
-      priceTiers: _tierFromInput(),
+      priceTiers: _tiersFromInput(),
     );
-    final cubit = context.read<AdminProductCubit>();
-    final product = widget.product;
+
+    setState(() => _submitting = true);
     if (product == null) {
       await cubit.createProduct(draft);
     } else {
       await cubit.updateProduct(product.id, draft);
     }
     if (!mounted) return;
+    setState(() => _submitting = false);
+
     final actionStatus = cubit.state.actionStatus;
     if (actionStatus == AdminProductActionStatus.success) {
-      Navigator.of(context).pop();
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(
+          key: Key('adminProductSuccessSnackBar'),
+          content: Text(AppStrings.adminProductSaveSuccess),
+        ),
+      );
+      return;
     }
+    messenger.showSnackBar(
+      SnackBar(
+        key: const Key('adminProductErrorSnackBar'),
+        content: Text(
+          cubit.state.errorMessage ??
+              (product == null
+                  ? AppStrings.adminProductCreateFailed
+                  : AppStrings.adminProductUpdateFailed),
+        ),
+      ),
+    );
   }
 
-  List<AdminPriceTier> _tierFromInput() {
-    if (_tierMinController.text.trim().isEmpty ||
-        _tierPriceController.text.trim().isEmpty) {
-      return const [];
-    }
+  /// Gửi TẤT CẢ các mức giá sỉ đã nhập (kèm id của mức giá cũ), bỏ qua dòng trống.
+  List<AdminPriceTier> _tiersFromInput() {
     return [
-      AdminPriceTier(
-        id: _firstTierId(widget.product),
-        minQuantity: _toInt(_tierMinController.text, fallback: 1),
-        maxQuantity: _tierMaxController.text.trim().isEmpty
-            ? null
-            : _toInt(_tierMaxController.text),
-        unitPrice: _toDouble(_tierPriceController.text),
-      ),
+      for (final tier in _tiers)
+        if (!tier.isBlank) tier.toTier(),
     ];
   }
 }
 
-String _firstTierId(AdminProduct? product) {
-  final tiers = product?.priceTiers ?? const <AdminPriceTier>[];
-  return tiers.isEmpty ? '' : tiers.first.id;
+/// Một dòng nhập mức giá sỉ: Từ - Đến - Đơn giá, kèm nút xoá dòng.
+class _TierRow extends StatelessWidget {
+  final int index;
+  final _TierInput tier;
+  final VoidCallback? onRemove;
+  final FormFieldValidator<String> validateQuantity;
+  final FormFieldValidator<String> validatePrice;
+
+  const _TierRow({
+    super.key,
+    required this.index,
+    required this.tier,
+    required this.onRemove,
+    required this.validateQuantity,
+    required this.validatePrice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppStrings.wholesaleTierTitle(index + 1),
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: _TextField(
+                key: Key('adminProductTierMinField_$index'),
+                controller: tier.minController,
+                label: AppStrings.fromLabel,
+                keyboardType: TextInputType.number,
+                validator: validateQuantity,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _TextField(
+                key: Key('adminProductTierMaxField_$index'),
+                controller: tier.maxController,
+                label: AppStrings.toLabel,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _TextField(
+                key: Key('adminProductTierPriceField_$index'),
+                controller: tier.priceController,
+                label: AppStrings.unitPriceLabel,
+                keyboardType: TextInputType.number,
+                validator: validatePrice,
+              ),
+            ),
+            IconButton(
+              key: Key('adminProductRemoveTierButton_$index'),
+              tooltip: AppStrings.removeWholesaleTier,
+              color: AppColors.error,
+              onPressed: onRemove,
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 class _TextField extends StatelessWidget {
@@ -629,9 +792,36 @@ class _ImagePickerField extends StatelessWidget {
   }
 }
 
-void _showProductForm(BuildContext context, {AdminProduct? product}) {
+/// Mở form thêm/sửa sản phẩm.
+///
+/// Khi sửa, PHẢI tải chi tiết đầy đủ trước: item trong danh sách không có
+/// `description` và `priceTiers`, dựng form từ nó rồi lưu sẽ xoá sạch cả hai.
+Future<void> _showProductForm(
+  BuildContext context, {
+  AdminProduct? product,
+}) async {
   final cubit = context.read<AdminProductCubit>();
-  showModalBottomSheet<void>(
+  final messenger = ScaffoldMessenger.of(context);
+
+  AdminProduct? formProduct;
+  if (product != null) {
+    // Trạng thái loading hiển thị ngay trên nút Sửa của thẻ sản phẩm.
+    formProduct = await cubit.loadProductDetail(product.id);
+    if (formProduct == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          key: const Key('adminProductErrorSnackBar'),
+          content: Text(
+            cubit.state.errorMessage ?? AppStrings.adminProductDetailLoadFailed,
+          ),
+        ),
+      );
+      return;
+    }
+  }
+  if (!context.mounted) return;
+
+  await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -639,7 +829,7 @@ void _showProductForm(BuildContext context, {AdminProduct? product}) {
     builder: (_) => BlocProvider.value(
       value: cubit,
       child: _ProductFormSheet(
-        product: product,
+        product: formProduct,
         categories: cubit.state.categories,
       ),
     ),

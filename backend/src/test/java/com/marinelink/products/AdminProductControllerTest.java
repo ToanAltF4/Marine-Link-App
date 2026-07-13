@@ -2,6 +2,7 @@ package com.marinelink.products;
 
 import com.marinelink.common.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -112,6 +115,51 @@ class AdminProductControllerTest {
                 .andExpect(jsonPath("$.message").value("Product deleted"));
 
         verify(adminProductService).deleteProduct(productId);
+    }
+
+    @Test
+    void updateProductBindsExistingPriceTierIds() throws Exception {
+        UUID productId = UUID.fromString("550e8400-e29b-41d4-a716-446655440041");
+        UUID tierId = UUID.fromString("550e8400-e29b-41d4-a716-446655440043");
+        when(adminProductService.updateProduct(
+                org.mockito.ArgumentMatchers.eq(productId),
+                org.mockito.ArgumentMatchers.any(AdminProductRequest.class)))
+                .thenReturn(detail(productId));
+
+        mockMvc.perform(put("/api/admin/products/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Muc kho loai 1",
+                                  "slug": "muc-kho-loai-1",
+                                  "shortDescription": "",
+                                  "description": "",
+                                  "origin": "",
+                                  "imageUrl": "",
+                                  "basePrice": 450000,
+                                  "unit": "kg",
+                                  "minOrderQuantity": 2,
+                                  "stockQuantity": 120,
+                                  "status": "ACTIVE",
+                                  "isFeatured": true,
+                                  "priceTiers": [
+                                    {"id": "550e8400-e29b-41d4-a716-446655440043",
+                                     "minQuantity": 2, "maxQuantity": 9, "unitPrice": 450000},
+                                    {"minQuantity": 10, "maxQuantity": null, "unitPrice": 420000}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        ArgumentCaptor<AdminProductRequest> captor = ArgumentCaptor.forClass(AdminProductRequest.class);
+        verify(adminProductService).updateProduct(org.mockito.ArgumentMatchers.eq(productId), captor.capture());
+        AdminProductRequest request = captor.getValue();
+        // Mức giá đã tồn tại gửi kèm id -> backend cập nhật tại chỗ; mức giá mới có id null.
+        assertEquals(tierId, request.priceTiers().get(0).id());
+        assertNull(request.priceTiers().get(1).id());
+        // Trường tuỳ chọn để trống vẫn qua được validation (không 400).
+        assertEquals("", request.shortDescription());
     }
 
     @Test

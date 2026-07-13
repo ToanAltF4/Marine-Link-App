@@ -6,7 +6,9 @@ import 'package:marinelink/features/admin_products/domain/admin_product_reposito
 import 'package:marinelink/features/admin_products/presentation/cubit/admin_product_cubit.dart';
 
 class _FakeRepo implements AdminProductRepository {
-  final Future<ApiResponse<List<AdminProduct>>> Function() listResponder;
+  final Future<ApiResponse<List<AdminProduct>>> Function(int page, int? size)
+  listResponder;
+  final Future<ApiResponse<AdminProduct>> Function(String id) detailResponder;
   final Future<ApiResponse<AdminProduct>> Function(AdminProductDraft draft)
   createResponder;
   final Future<ApiResponse<AdminProduct>> Function(
@@ -17,9 +19,11 @@ class _FakeRepo implements AdminProductRepository {
   final Future<ApiResponse<void>> Function(String id) deleteResponder;
   final Future<String> Function(List<int> bytes, String fileName)
   uploadResponder;
+  final List<Map<String, int?>> listCalls = [];
 
   _FakeRepo({
     required this.listResponder,
+    Future<ApiResponse<AdminProduct>> Function(String id)? detailResponder,
     Future<ApiResponse<AdminProduct>> Function(AdminProductDraft draft)?
     createResponder,
     Future<ApiResponse<AdminProduct>> Function(
@@ -32,6 +36,10 @@ class _FakeRepo implements AdminProductRepository {
   }) : uploadResponder =
            uploadResponder ??
            ((_, fileName) async => 'https://cdn.test/$fileName'),
+       detailResponder =
+           detailResponder ??
+           ((_) async =>
+               const ApiResponse(success: true, message: 'OK', data: _detail)),
        createResponder =
            createResponder ??
            ((_) async =>
@@ -52,7 +60,16 @@ class _FakeRepo implements AdminProductRepository {
     String? query,
     AdminProductStatus? status,
     bool? featured,
-  }) => listResponder();
+    int? page,
+    int? size,
+  }) {
+    listCalls.add({'page': page, 'size': size});
+    return listResponder(page ?? 0, size);
+  }
+
+  @override
+  Future<ApiResponse<AdminProduct>> getProductDetail(String id) =>
+      detailResponder(id);
 
   @override
   Future<ApiResponse<List<AdminProductCategory>>> getCategories() async =>
@@ -83,7 +100,7 @@ void main() {
     'emits [loading, success] when repository returns products',
     build: () => AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
       ),
     ),
@@ -108,7 +125,7 @@ void main() {
     'emits [loading, empty] when repository returns empty list',
     build: () => AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: []),
       ),
     ),
@@ -131,7 +148,7 @@ void main() {
     'emits [loading, failure] when repository reports failure',
     build: () => AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: false, message: 'Server lỗi'),
       ),
     ),
@@ -155,7 +172,9 @@ void main() {
   blocTest<AdminProductCubit, AdminProductState>(
     'emits [loading, failure] when repository throws',
     build: () => AdminProductCubit(
-      repository: _FakeRepo(listResponder: () async => throw Exception('boom')),
+      repository: _FakeRepo(
+        listResponder: (_, _) async => throw Exception('boom'),
+      ),
     ),
     act: (cubit) => cubit.load(),
     expect: () => [
@@ -180,7 +199,7 @@ void main() {
     ),
     build: () => AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
         createResponder: (_) async =>
             const ApiResponse(success: true, message: 'OK', data: _created),
@@ -211,7 +230,7 @@ void main() {
     ),
     build: () => AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
         updateResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: _updated),
@@ -247,7 +266,7 @@ void main() {
     ),
     build: () => AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
         deleteResponder: (_) async =>
             const ApiResponse(success: true, message: 'OK'),
@@ -278,7 +297,7 @@ void main() {
   test('load populates categories from repository', () async {
     final cubit = AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
       ),
     );
@@ -288,10 +307,73 @@ void main() {
     expect(cubit.state.categories, const [_category]);
   });
 
+  test('load pages through the catalogue so every product is manageable', () async {
+    // Trang đầy (100 sản phẩm) -> phải xin tiếp trang sau, nếu không sản phẩm
+    // thứ 101+ sẽ không tìm được để sửa/xoá.
+    final firstPage = [
+      for (var index = 0; index < AdminProductCubit.productPageSize; index++)
+        _product.copyWith(id: 'product-$index'),
+    ];
+    final repository = _FakeRepo(
+      listResponder: (page, size) async => ApiResponse(
+        success: true,
+        message: 'OK',
+        data: page == 0 ? firstPage : [_product.copyWith(id: 'product-101')],
+      ),
+    );
+    final cubit = AdminProductCubit(repository: repository);
+
+    await cubit.load();
+
+    expect(
+      cubit.state.products,
+      hasLength(AdminProductCubit.productPageSize + 1),
+    );
+    expect(cubit.state.products.last.id, 'product-101');
+    expect(repository.listCalls, [
+      {'page': 0, 'size': AdminProductCubit.productPageSize},
+      {'page': 1, 'size': AdminProductCubit.productPageSize},
+    ]);
+  });
+
+  test('loadProductDetail returns the full detail with tiers', () async {
+    final cubit = AdminProductCubit(
+      repository: _FakeRepo(
+        listResponder: (_, _) async =>
+            const ApiResponse(success: true, message: 'OK', data: [_product]),
+      ),
+    );
+
+    final detail = await cubit.loadProductDetail('product-001');
+
+    expect(detail?.description, 'Mực khô phục vụ đơn sỉ.');
+    expect(detail?.priceTiers, hasLength(2));
+    expect(cubit.state.editingProductId, isNull);
+    expect(cubit.state.actionStatus, AdminProductActionStatus.idle);
+  });
+
+  test('loadProductDetail returns null and sets error on failure', () async {
+    final cubit = AdminProductCubit(
+      repository: _FakeRepo(
+        listResponder: (_, _) async =>
+            const ApiResponse(success: true, message: 'OK', data: [_product]),
+        detailResponder: (_) async =>
+            const ApiResponse(success: false, message: 'Không tìm thấy'),
+      ),
+    );
+
+    final detail = await cubit.loadProductDetail('product-001');
+
+    expect(detail, isNull);
+    expect(cubit.state.actionStatus, AdminProductActionStatus.failure);
+    expect(cubit.state.errorMessage, 'Không tìm thấy');
+    expect(cubit.state.editingProductId, isNull);
+  });
+
   test('uploadProductImage returns url from repository', () async {
     final cubit = AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
       ),
     );
@@ -304,7 +386,7 @@ void main() {
   test('uploadProductImage returns null when repository throws', () async {
     final cubit = AdminProductCubit(
       repository: _FakeRepo(
-        listResponder: () async =>
+        listResponder: (_, _) async =>
             const ApiResponse(success: true, message: 'OK', data: [_product]),
         uploadResponder: (_, _) async => throw Exception('boom'),
       ),
@@ -318,6 +400,7 @@ void main() {
 
 const _category = AdminProductCategory(id: 'category-001', name: 'Mực khô');
 
+/// Item danh sách: backend KHÔNG trả description và priceTiers ở endpoint list.
 const _product = AdminProduct(
   id: 'product-001',
   name: 'Mực khô loại 1',
@@ -329,6 +412,30 @@ const _product = AdminProduct(
   status: AdminProductStatus.active,
   isFeatured: true,
   category: _category,
+);
+
+/// Chi tiết đầy đủ của cùng sản phẩm (có description và toàn bộ mức giá sỉ).
+const _detail = AdminProduct(
+  id: 'product-001',
+  name: 'Mực khô loại 1',
+  slug: 'muc-kho-loai-1',
+  description: 'Mực khô phục vụ đơn sỉ.',
+  basePrice: 450000,
+  unit: 'kg',
+  minOrderQuantity: 2,
+  stockQuantity: 120,
+  status: AdminProductStatus.active,
+  isFeatured: true,
+  category: _category,
+  priceTiers: [
+    AdminPriceTier(
+      id: 'tier-001',
+      minQuantity: 2,
+      maxQuantity: 9,
+      unitPrice: 450000,
+    ),
+    AdminPriceTier(id: 'tier-002', minQuantity: 10, unitPrice: 420000),
+  ],
 );
 
 const _created = AdminProduct(
