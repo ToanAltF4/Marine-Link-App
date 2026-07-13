@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:marinelink/core/constants/app_strings.dart';
@@ -18,7 +19,7 @@ import '../cubit/warehouse_map_cubit.dart';
 import '../widgets/warehouse_card.dart';
 import '../widgets/warehouse_common_widgets.dart';
 import '../widgets/warehouse_location_body.dart';
-import '../widgets/warehouse_map_preview.dart';
+import '../widgets/warehouse_osm_map.dart';
 import '../widgets/warehouse_state_widgets.dart';
 import '../widgets/warehouse_summary.dart';
 
@@ -30,11 +31,19 @@ class WarehouseMapScreen extends StatelessWidget {
   final WarehouseMapLauncher? mapLauncher;
   final WarehouseLocationService? locationService;
 
+  /// Cho phép test tiêm controller để kiểm tra bản đồ có được yêu cầu `move()`.
+  final MapController? mapController;
+
+  /// Cho phép test tiêm tile provider không gọi mạng.
+  final TileProvider? tileProvider;
+
   const WarehouseMapScreen({
     super.key,
     this.staffMode = false,
     this.mapLauncher,
     this.locationService,
+    this.mapController,
+    this.tileProvider,
   });
 
   @override
@@ -53,6 +62,8 @@ class WarehouseMapScreen extends StatelessWidget {
       child: _WarehouseMapView(
         staffMode: staffMode,
         mapLauncher: mapLauncher ?? _openGoogleMaps,
+        mapController: mapController,
+        tileProvider: tileProvider,
       ),
     );
   }
@@ -61,8 +72,15 @@ class WarehouseMapScreen extends StatelessWidget {
 class _WarehouseMapView extends StatelessWidget {
   final bool staffMode;
   final WarehouseMapLauncher mapLauncher;
+  final MapController? mapController;
+  final TileProvider? tileProvider;
 
-  const _WarehouseMapView({required this.staffMode, required this.mapLauncher});
+  const _WarehouseMapView({
+    required this.staffMode,
+    required this.mapLauncher,
+    this.mapController,
+    this.tileProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +124,8 @@ class _WarehouseMapView extends StatelessWidget {
                 child: _WarehouseContent(
                   warehouses: state.warehouses,
                   mapLauncher: mapLauncher,
+                  mapController: mapController,
+                  tileProvider: tileProvider,
                 ),
               ),
             };
@@ -116,27 +136,102 @@ class _WarehouseMapView extends StatelessWidget {
   }
 }
 
-class _WarehouseContent extends StatelessWidget {
+class _WarehouseContent extends StatefulWidget {
   final List<Warehouse> warehouses;
   final WarehouseMapLauncher mapLauncher;
+  final MapController? mapController;
+  final TileProvider? tileProvider;
 
   const _WarehouseContent({
     required this.warehouses,
     required this.mapLauncher,
+    this.mapController,
+    this.tileProvider,
   });
 
   @override
+  State<_WarehouseContent> createState() => _WarehouseContentState();
+}
+
+class _WarehouseContentState extends State<_WarehouseContent> {
+  /// Kho đang được chọn — dùng CHUNG cho thẻ, marker và nút "Chỉ đường".
+  String? _selectedWarehouseId;
+
+  /// Dùng để cuộn thẻ của kho vừa chọn trên bản đồ vào tầm nhìn.
+  final Map<String, GlobalKey> _cardKeys = {};
+
+  late final MapController _mapController =
+      widget.mapController ?? MapController();
+
+  @override
+  void dispose() {
+    // Chỉ giải phóng controller do chính màn hình tạo ra.
+    if (widget.mapController == null) _mapController.dispose();
+    super.dispose();
+  }
+
+  Warehouse? get _selectedWarehouse {
+    final id = _selectedWarehouseId;
+    if (id == null) return null;
+    for (final warehouse in widget.warehouses) {
+      if (warehouse.id == id) return warehouse;
+    }
+    return null;
+  }
+
+  /// Chọn kho từ thẻ hoặc từ marker — cùng một đối tượng [Warehouse].
+  ///
+  /// `WarehouseOsmMap` nhận `selectedWarehouse` mới và gọi
+  /// `mapController.move(LatLng(w.latitude, w.longitude), 14)` để bay tới đúng
+  /// toạ độ của kho đó.
+  void _selectWarehouse(Warehouse warehouse, {bool scrollToCard = false}) {
+    if (_selectedWarehouseId != warehouse.id) {
+      setState(() => _selectedWarehouseId = warehouse.id);
+    }
+    if (!scrollToCard) return;
+    final cardContext = _cardKeys[warehouse.id]?.currentContext;
+    if (cardContext == null) return;
+    Scrollable.ensureVisible(
+      cardContext,
+      duration: const Duration(milliseconds: 300),
+      alignment: 0.2,
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final selected = _selectedWarehouse;
+    final userLocation = context
+        .watch<WarehouseLocationCubit>()
+        .state
+        .location;
+
     return ListView(
       key: const Key('warehouseMapList'),
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        WarehouseSummary(warehouses: warehouses),
+        WarehouseSummary(warehouses: widget.warehouses),
         const SizedBox(height: 14),
         const _WarehouseLocationPermissionCard(),
         const SizedBox(height: 14),
-        WarehouseMapPreview(warehouses: warehouses),
+        WarehouseOsmMap(
+          warehouses: widget.warehouses,
+          selectedWarehouse: selected,
+          userLocation: userLocation,
+          mapController: _mapController,
+          tileProvider: widget.tileProvider,
+          onWarehouseSelected: (warehouse) =>
+              _selectWarehouse(warehouse, scrollToCard: true),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppStrings.warehouseMapHint,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 16),
         Text(
           AppStrings.deliveryPoint,
@@ -145,11 +240,14 @@ class _WarehouseContent extends StatelessWidget {
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 10),
-        ...warehouses.map(
+        ...widget.warehouses.map(
           (warehouse) => Padding(
+            key: _cardKeys.putIfAbsent(warehouse.id, GlobalKey.new),
             padding: const EdgeInsets.only(bottom: 12),
             child: WarehouseCard(
               warehouse: warehouse,
+              selected: warehouse.id == _selectedWarehouseId,
+              onSelect: () => _selectWarehouse(warehouse),
               onOpenMaps: () => _openWarehouse(context, warehouse),
             ),
           ),
@@ -160,7 +258,7 @@ class _WarehouseContent extends StatelessWidget {
 
   Future<void> _openWarehouse(BuildContext context, Warehouse warehouse) async {
     final location = context.read<WarehouseLocationCubit>().state.location;
-    final opened = await mapLauncher(warehouse, location);
+    final opened = await widget.mapLauncher(warehouse, location);
     if (!context.mounted || opened) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(AppStrings.cannotOpenGoogleMaps)),

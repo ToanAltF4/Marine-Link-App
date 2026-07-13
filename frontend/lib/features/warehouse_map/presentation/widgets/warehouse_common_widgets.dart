@@ -39,3 +39,13 @@ final warehouseCardDecoration = BoxDecoration(
     BoxShadow(color: Color(0x110B3760), blurRadius: 12, offset: Offset(0, 4)),
   ],
 );
+
+/// Khung thẻ kho khi đang được chọn trên bản đồ (viền đậm + đổ bóng rõ hơn).
+final warehouseSelectedCardDecoration = BoxDecoration(
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(8),
+  border: Border.all(color: AppColors.primary, width: 2),
+  boxShadow: const [
+    BoxShadow(color: Color(0x330B4F8F), blurRadius: 16, offset: Offset(0, 6)),
+  ],
+);

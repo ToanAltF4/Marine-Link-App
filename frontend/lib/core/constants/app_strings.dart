@@ -815,6 +815,11 @@ abstract final class AppStrings {
   static const mekongDeltaShort = 'ĐBSCL';
   static const warehouseSummaryMessage =
       'Chọn kho gần nhất để xem vị trí và mở chỉ đường trên Google Maps.';
+  // SimpleAttributionWidget tự thêm tiền tố 'flutter_map | © ' nên chuỗi này
+  // hiển thị thành '© OpenStreetMap contributors' theo đúng Tile Usage Policy.
+  static const openStreetMapAttribution = 'OpenStreetMap contributors';
+  static const warehouseMapHint =
+      'Chạm vào ghim trên bản đồ hoặc thẻ kho bên dưới để xem đúng vị trí kho.';
 
   static const emailAlreadyUsed = 'Email đã được sử dụng.';
   static const phoneAlreadyUsed = 'Số điện thoại đã được sử dụng.';

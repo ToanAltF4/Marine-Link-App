@@ -51,6 +51,8 @@ dependencies:
 
   # Push notification (OneSignal) — ML-72: nhận thông báo khi app tắt/màn khóa
   onesignal_flutter: ^5.3.0
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
 
 dev_dependencies:
   flutter_test:
