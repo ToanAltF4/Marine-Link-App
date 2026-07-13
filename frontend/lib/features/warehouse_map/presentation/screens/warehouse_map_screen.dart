@@ -265,20 +265,37 @@ class _WarehouseLocationPermissionCard extends StatelessWidget {
   }
 }
 
+/// Dựng URL Google Maps **chỉ đường tới đúng toạ độ** của cửa hàng.
+///
+/// Toạ độ (`warehouse.latitude/longitude`) là **nguồn chính xác duy nhất** — lấy
+/// từ đúng đối tượng `Warehouse` mà card đang hiển thị, nên card / marker / nút
+/// "Chỉ đường" luôn trỏ về cùng một điểm.
+///
+/// Luôn dùng endpoint **`/maps/dir/`** (chỉ đường) cho MỌI trường hợp. Khi chưa
+/// biết vị trí người dùng thì bỏ `origin` — Google Maps tự lấy vị trí hiện tại.
+///
+/// Trước đây, khi không có vị trí người dùng, code mở `/maps/search/?query=lat,lng`
+/// — đó là **tìm kiếm**, nên Google Maps hay "hút" sang địa điểm/cửa hàng gần nhất
+/// thay vì ghim đúng toạ độ ⇒ sai điểm đến.
+Uri buildWarehouseDirectionsUri(
+  Warehouse warehouse,
+  WarehouseUserLocation? location,
+) {
+  return Uri.https('www.google.com', '/maps/dir/', {
+    'api': '1',
+    'destination': '${warehouse.latitude},${warehouse.longitude}',
+    if (location != null)
+      'origin': '${location.latitude},${location.longitude}',
+    'travelmode': 'driving',
+  });
+}
+
 Future<bool> _openGoogleMaps(
   Warehouse warehouse,
   WarehouseUserLocation? location,
 ) {
-  final uri = location == null
-      ? Uri.https('www.google.com', '/maps/search/', {
-          'api': '1',
-          'query': '${warehouse.latitude},${warehouse.longitude}',
-        })
-      : Uri.https('www.google.com', '/maps/dir/', {
-          'api': '1',
-          'origin': '${location.latitude},${location.longitude}',
-          'destination': '${warehouse.latitude},${warehouse.longitude}',
-          'travelmode': 'driving',
-        });
-  return launchUrl(uri, mode: LaunchMode.externalApplication);
+  return launchUrl(
+    buildWarehouseDirectionsUri(warehouse, location),
+    mode: LaunchMode.externalApplication,
+  );
 }
