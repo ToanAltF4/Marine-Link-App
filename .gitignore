@@ -61,3 +61,7 @@ lcov.info
 coverage/
 
 frontend/web/
+
+# ── Tài liệu / Deliverables (không commit) ───────────────────────────────────
+*.docx.md
+deliverables/
