@@ -8,14 +8,21 @@ import 'package:marinelink/features/admin_users/presentation/cubit/admin_user_cu
 class _FakeRepo implements AdminUserRepository {
   final Future<ApiResponse<List<AdminUser>>> Function() listResponder;
   final Future<ApiResponse<AdminUser>> Function(String id) approveResponder;
+  final Future<ApiResponse<AdminUser>> Function(String roleCode)
+  createResponder;
 
   _FakeRepo({
     required this.listResponder,
     Future<ApiResponse<AdminUser>> Function(String id)? approveResponder,
+    Future<ApiResponse<AdminUser>> Function(String roleCode)? createResponder,
   }) : approveResponder =
            approveResponder ??
            ((_) async =>
-               const ApiResponse(success: false, message: 'Không duyệt được'));
+               const ApiResponse(success: false, message: 'Không duyệt được')),
+       createResponder =
+           createResponder ??
+           ((_) async =>
+               const ApiResponse(success: false, message: 'Không tạo được'));
 
   @override
   Future<ApiResponse<List<AdminUser>>> getUsers() => listResponder();
@@ -28,6 +35,15 @@ class _FakeRepo implements AdminUserRepository {
 
   @override
   Future<ApiResponse<AdminUser>> unlockUser(String id) => approveResponder(id);
+
+  @override
+  Future<ApiResponse<AdminUser>> createUser({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    String roleCode = 'STAFF',
+  }) => createResponder(roleCode);
 }
 
 const _pendingUser = AdminUser(
@@ -45,6 +61,15 @@ const _activeUser = AdminUser(
   email: 'new@marinelink.demo',
   phone: '0911111111',
   role: AdminUserRole.user,
+  status: AdminUserStatus.active,
+);
+
+const _createdStaff = AdminUser(
+  id: 'staff-999',
+  fullName: 'Nhân viên Mới',
+  email: 'nhanvien@marinelink.demo',
+  phone: '0987654321',
+  role: AdminUserRole.staff,
   status: AdminUserStatus.active,
 );
 
@@ -182,5 +207,98 @@ void main() {
           )
           .having((state) => state.approvingUserId, 'approvingUserId', isNull),
     ],
+  );
+
+  blocTest<AdminUserCubit, AdminUserState>(
+    'createUser prepends the new account and clears the creating flag',
+    seed: () => const AdminUserState(
+      status: AdminUserStatusView.success,
+      users: [_pendingUser],
+    ),
+    build: () => AdminUserCubit(
+      repository: _FakeRepo(
+        listResponder: () async => const ApiResponse(
+          success: true,
+          message: 'OK',
+          data: [_pendingUser],
+        ),
+        createResponder: (roleCode) async {
+          expect(roleCode, 'STAFF');
+          return const ApiResponse(
+            success: true,
+            message: 'OK',
+            data: _createdStaff,
+          );
+        },
+      ),
+    ),
+    act: (cubit) => cubit.createUser(
+      fullName: 'Nhân viên Mới',
+      email: 'nhanvien@marinelink.demo',
+      phone: '0987654321',
+      password: 'matkhau123',
+    ),
+    expect: () => [
+      isA<AdminUserState>().having(
+        (state) => state.creatingUser,
+        'creatingUser',
+        isTrue,
+      ),
+      isA<AdminUserState>()
+          .having(
+            (state) => state.status,
+            'status',
+            AdminUserStatusView.success,
+          )
+          .having((state) => state.users.first, 'first user', _createdStaff)
+          .having((state) => state.users.length, 'users', 2)
+          .having((state) => state.creatingUser, 'creatingUser', isFalse),
+    ],
+  );
+
+  blocTest<AdminUserCubit, AdminUserState>(
+    'createUser keeps the list and exposes the backend message on failure',
+    seed: () => const AdminUserState(
+      status: AdminUserStatusView.success,
+      users: [_pendingUser],
+    ),
+    build: () => AdminUserCubit(
+      repository: _FakeRepo(
+        listResponder: () async => const ApiResponse(
+          success: true,
+          message: 'OK',
+          data: [_pendingUser],
+        ),
+        createResponder: (_) async =>
+            const ApiResponse(success: false, message: 'Email đã tồn tại'),
+      ),
+    ),
+    act: (cubit) => cubit.createUser(
+      fullName: 'Nhân viên Mới',
+      email: 'trung@marinelink.demo',
+      phone: '0987654321',
+      password: 'matkhau123',
+    ),
+    expect: () => [
+      isA<AdminUserState>().having(
+        (state) => state.creatingUser,
+        'creatingUser',
+        isTrue,
+      ),
+      isA<AdminUserState>()
+          .having(
+            (state) => state.status,
+            'status',
+            AdminUserStatusView.success,
+          )
+          .having((state) => state.users, 'users', const [_pendingUser])
+          .having(
+            (state) => state.errorMessage,
+            'errorMessage',
+            'Email đã tồn tại',
+          )
+          .having((state) => state.creatingUser, 'creatingUser', isFalse),
+    ],
+    verify: (cubit) => expect(cubit.state.creatingUser, isFalse),
   );
 }

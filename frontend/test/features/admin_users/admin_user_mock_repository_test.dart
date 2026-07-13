@@ -59,4 +59,45 @@ void main() {
     expect(approveResponse.data!.status, AdminUserStatus.active);
     expect(listResponse.data!.single.status, AdminUserStatus.active);
   });
+
+  test('createUser adds an active staff account to the list', () async {
+    final repository = AdminUserMockRepository(initialUsers: const []);
+
+    final response = await repository.createUser(
+      fullName: 'Nhân viên Mới',
+      email: 'nhanvien@marinelink.demo',
+      phone: '0987654321',
+      password: 'matkhau123',
+    );
+    final listResponse = await repository.getUsers();
+
+    expect(response.success, true);
+    expect(response.data!.role, AdminUserRole.staff);
+    expect(response.data!.status, AdminUserStatus.active);
+    expect(listResponse.data!.single.email, 'nhanvien@marinelink.demo');
+  });
+
+  test('createUser maps the role code and rejects a duplicate email', () async {
+    final repository = AdminUserMockRepository(initialUsers: const []);
+
+    final created = await repository.createUser(
+      fullName: 'Quản trị Mới',
+      email: 'quantri@marinelink.demo',
+      phone: '0987654322',
+      password: 'matkhau123',
+      roleCode: 'ADMIN',
+    );
+    final duplicate = await repository.createUser(
+      fullName: 'Trùng Email',
+      email: 'QuanTri@marinelink.demo',
+      phone: '0987654323',
+      password: 'matkhau123',
+    );
+    final listResponse = await repository.getUsers();
+
+    expect(created.data!.role, AdminUserRole.admin);
+    expect(duplicate.success, false);
+    expect(duplicate.message, 'Email đã được sử dụng.');
+    expect(listResponse.data!.length, 1);
+  });
 }

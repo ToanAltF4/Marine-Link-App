@@ -3,6 +3,7 @@ package com.marinelink.admin;
 import com.marinelink.common.exception.ResourceNotFoundException;
 import com.marinelink.notifications.NotificationService;
 import com.marinelink.notifications.NotificationType;
+import com.marinelink.common.exception.ConflictException;
 import com.marinelink.users.Role;
 import com.marinelink.users.RoleRepository;
 import com.marinelink.users.User;
@@ -33,8 +34,10 @@ class AdminUserServiceTest {
     private final RoleRepository roleRepository = mock(RoleRepository.class);
     private final AdminUserNotificationService notificationService = mock(AdminUserNotificationService.class);
     private final NotificationService appNotificationService = mock(NotificationService.class);
-    private final AdminUserService adminUserService =
-            new AdminUserService(userRepository, roleRepository, notificationService, appNotificationService);
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder =
+            mock(org.springframework.security.crypto.password.PasswordEncoder.class);
+    private final AdminUserService adminUserService = new AdminUserService(
+            userRepository, roleRepository, notificationService, appNotificationService, passwordEncoder);
 
     @Test
     void listUsersMapsPublicFieldsWithoutPasswordHash() {
@@ -134,6 +137,64 @@ class AdminUserServiceTest {
                 () -> adminUserService.getUser(publicId));
 
         assertTrue(exception.getMessage().contains("Không tìm thấy người dùng"));
+    }
+
+    @Test
+    void adminCreatedStaffAccountIsActiveImmediatelyWithHashedPassword() {
+        Role staffRole = Role.builder().id(2L).code("STAFF").name("Nhân viên").build();
+        when(userRepository.existsVerifiedByEmail("staff-moi@marinelink.demo")).thenReturn(false);
+        when(userRepository.existsActiveByPhone("0912000111")).thenReturn(false);
+        when(roleRepository.findByCode("STAFF")).thenReturn(java.util.Optional.of(staffRole));
+        when(passwordEncoder.encode("Staff@123")).thenReturn("bcrypt-hash");
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminUserResponse response = adminUserService.createUser(new AdminUserCreateRequest(
+                "Nhân viên Mới",
+                "Staff-Moi@marinelink.demo",
+                "0912000111",
+                "Staff@123",
+                "STAFF"));
+
+        // Admin tạo => duyệt sẵn, không phải chờ xác thực/duyệt.
+        assertEquals(UserStatus.ACTIVE.name(), response.status());
+        assertEquals("STAFF", response.role());
+        assertEquals("staff-moi@marinelink.demo", response.email()); // email được chuẩn hoá
+        verify(passwordEncoder).encode("Staff@123"); // mật khẩu được hash, không lưu thô
+    }
+
+    @Test
+    void createUserDefaultsToStaffRoleWhenRoleCodeMissing() {
+        Role staffRole = Role.builder().id(2L).code("STAFF").name("Nhân viên").build();
+        when(userRepository.existsVerifiedByEmail(any())).thenReturn(false);
+        when(userRepository.existsActiveByPhone(any())).thenReturn(false);
+        when(roleRepository.findByCode("STAFF")).thenReturn(java.util.Optional.of(staffRole));
+        when(passwordEncoder.encode(any())).thenReturn("bcrypt-hash");
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminUserResponse response = adminUserService.createUser(new AdminUserCreateRequest(
+                "Nhân viên Mới", "nv2@marinelink.demo", "0912000222", "Staff@123", null));
+
+        assertEquals("STAFF", response.role());
+    }
+
+    @Test
+    void createUserRejectsDuplicateEmailOrPhone() {
+        when(userRepository.existsVerifiedByEmail("trung@marinelink.demo")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> adminUserService.createUser(
+                new AdminUserCreateRequest(
+                        "Trùng Email", "trung@marinelink.demo", "0912000333", "Staff@123", "STAFF")));
+
+        when(userRepository.existsVerifiedByEmail("ok@marinelink.demo")).thenReturn(false);
+        when(userRepository.existsActiveByPhone("0912345678")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> adminUserService.createUser(
+                new AdminUserCreateRequest(
+                        "Trùng SĐT", "ok@marinelink.demo", "0912345678", "Staff@123", "STAFF")));
+
+        verify(userRepository, never()).save(any(User.class));
     }
 
     private User user(String roleCode, UserStatus status) {

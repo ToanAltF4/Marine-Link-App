@@ -268,6 +268,11 @@ public class OrderService {
             throw new BusinessException("Don hang chua thanh toan", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
+        // Trừ tồn kho ngay khi đơn được DUYỆT (và chỉ khi đó).
+        if (targetStatus == OrderStatus.CONFIRMED) {
+            deductStockForApprovedOrder(order);
+        }
+
         order.setStatus(targetStatus);
         Instant now = Instant.now();
         switch (targetStatus) {
@@ -350,6 +355,32 @@ public class OrderService {
             orderPaymentNotificationService.notifyPaidOrderWaitingForApproval(savedOrder);
         }
         return OrderPaymentStatusUpdateResponse.from(savedOrder);
+    }
+
+    /**
+     * Trừ số lượng đã đặt vào tồn kho của từng sản phẩm khi đơn được duyệt.
+     *
+     * <p>Chỉ chạy đúng MỘT lần cho mỗi đơn: theo {@code ALLOWED_TRANSITIONS},
+     * trạng thái CONFIRMED chỉ có thể đi từ PENDING, nên không thể trừ kho hai lần.
+     *
+     * <p>Nếu tồn kho không đủ tại thời điểm duyệt (vd đơn khác đã duyệt trước, hoặc
+     * admin đã sửa tồn kho xuống), báo lỗi rõ ràng thay vì để ràng buộc
+     * {@code stock_quantity >= 0} dưới DB ném lỗi 500.
+     */
+    private void deductStockForApprovedOrder(Order order) {
+        for (OrderItem item : order.getItems()) {
+            Product product = item.getProduct();
+            int remaining = product.getStockQuantity() - item.getQuantity();
+            if (remaining < 0) {
+                throw new BusinessException(
+                        "Sản phẩm \"" + product.getName() + "\" không đủ tồn kho để duyệt đơn "
+                                + "(còn " + product.getStockQuantity()
+                                + ", cần " + item.getQuantity() + ")",
+                        HttpStatus.UNPROCESSABLE_ENTITY);
+            }
+            product.setStockQuantity(remaining);
+            productRepository.save(product);
+        }
     }
 
     private void validateItem(Product product, int quantity) {

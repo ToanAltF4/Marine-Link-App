@@ -39,6 +39,39 @@ class AdminUserMockRepository implements AdminUserRepository {
   Future<ApiResponse<AdminUser>> unlockUser(String id) =>
       _setStatus(id, AdminUserStatus.active, AppStrings.adminUserUnlockFailed);
 
+  @override
+  Future<ApiResponse<AdminUser>> createUser({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    String roleCode = 'STAFF',
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final normalizedEmail = email.trim().toLowerCase();
+    final exists = _users.any(
+      (user) => user.email.trim().toLowerCase() == normalizedEmail,
+    );
+    if (exists) {
+      return const ApiResponse(
+        success: false,
+        message: AppStrings.adminCreateUserEmailExists,
+      );
+    }
+
+    final created = AdminUser(
+      id: 'user-${DateTime.now().microsecondsSinceEpoch}',
+      fullName: fullName.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      role: _roleFromCode(roleCode),
+      // Tài khoản do admin tạo được kích hoạt luôn.
+      status: AdminUserStatus.active,
+    );
+    _users.add(created);
+    return ApiResponse(success: true, message: 'OK', data: created);
+  }
+
   Future<ApiResponse<AdminUser>> _setStatus(
     String id,
     AdminUserStatus status,
@@ -54,6 +87,14 @@ class AdminUserMockRepository implements AdminUserRepository {
     _users[index] = updated;
     return ApiResponse(success: true, message: 'OK', data: updated);
   }
+}
+
+AdminUserRole _roleFromCode(String roleCode) {
+  return switch (roleCode.trim().toUpperCase()) {
+    'ADMIN' => AdminUserRole.admin,
+    'USER' => AdminUserRole.user,
+    _ => AdminUserRole.staff,
+  };
 }
 
 const _sampleUsers = [

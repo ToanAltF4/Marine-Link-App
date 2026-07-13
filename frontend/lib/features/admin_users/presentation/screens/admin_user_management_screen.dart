@@ -6,6 +6,7 @@ import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/role_back_to_dashboard_scope.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/role_bottom_nav.dart';
@@ -34,7 +35,17 @@ class _AdminUserView extends StatelessWidget {
       child: Scaffold(
         key: const Key('adminUsersScreen'),
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: const Text(AppStrings.adminUsersTitle)),
+        appBar: AppBar(
+          title: const Text(AppStrings.adminUsersTitle),
+          actions: [
+            IconButton(
+              key: const Key('adminCreateUserButton'),
+              tooltip: AppStrings.adminCreateUserAction,
+              icon: const Icon(Icons.person_add_alt_1_outlined),
+              onPressed: () => _showCreateUserForm(context),
+            ),
+          ],
+        ),
         bottomNavigationBar: const AdminBottomNav(
           currentTab: AdminBottomNavTab.users,
         ),
@@ -384,75 +395,79 @@ class _AdminUserCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _UserAvatar(user: user),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.fullName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w900,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _UserAvatar(user: user),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                    _StatusPill(
+                      label: statusStyle.label,
+                      textColor: statusStyle.textColor,
+                      backgroundColor: statusStyle.backgroundColor,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MetaLine(
+                        icon: Icons.call_outlined,
+                        text: user.phone,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _RoleBadge(role: user.role),
+                  ],
+                ),
+                if (user.status == AdminUserStatus.pendingApproval) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: Key('adminUserApproveButton_${user.id}'),
+                      onPressed: approving
+                          ? null
+                          : () => context.read<AdminUserCubit>().approveUser(
+                              user.id,
                             ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
+                      icon: approving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.verified_user_outlined),
+                      label: const Text(AppStrings.approveDealer),
+                    ),
                   ),
-                ),
-                _StatusPill(
-                  label: statusStyle.label,
-                  textColor: statusStyle.textColor,
-                  backgroundColor: statusStyle.backgroundColor,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetaLine(icon: Icons.call_outlined, text: user.phone),
-                ),
-                const SizedBox(width: 10),
-                _RoleBadge(role: user.role),
-              ],
-            ),
-            if (user.status == AdminUserStatus.pendingApproval) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  key: Key('adminUserApproveButton_${user.id}'),
-                  onPressed: approving
-                      ? null
-                      : () =>
-                            context.read<AdminUserCubit>().approveUser(user.id),
-                  icon: approving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.verified_user_outlined),
-                  label: const Text(AppStrings.approveDealer),
-                ),
-              ),
-            ],
+                ],
               ],
             ),
           ),
@@ -599,6 +614,244 @@ class _StatusPill extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Mở form tạo tài khoản (nhân viên mặc định) trong modal bottom sheet —
+/// cùng cách trình bày với form sản phẩm của admin.
+Future<void> _showCreateUserForm(BuildContext context) {
+  final cubit = context.read<AdminUserCubit>();
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: AppColors.background,
+    builder: (_) =>
+        BlocProvider.value(value: cubit, child: const _CreateUserFormSheet()),
+  );
+}
+
+class _CreateUserFormSheet extends StatefulWidget {
+  const _CreateUserFormSheet();
+
+  @override
+  State<_CreateUserFormSheet> createState() => _CreateUserFormSheetState();
+}
+
+class _CreateUserFormSheetState extends State<_CreateUserFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  String _roleCode = 'STAFF';
+  bool _obscurePassword = true;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            key: const Key('adminCreateUserForm'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.adminCreateUserTitle,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  AppStrings.adminCreateUserActiveNote,
+                  key: const Key('adminCreateUserActiveNote'),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  key: const Key('adminCreateUserFullNameField'),
+                  controller: _fullNameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.fullNameLabel,
+                  ),
+                  validator: (value) => Validators.required(
+                    value,
+                    fieldName: AppStrings.fullNameLabel,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const Key('adminCreateUserEmailField'),
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.emailLabel,
+                  ),
+                  validator: Validators.email,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const Key('adminCreateUserPhoneField'),
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.phoneLabel,
+                  ),
+                  validator: Validators.phone,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const Key('adminCreateUserPasswordField'),
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.passwordLabel,
+                    suffixIcon: IconButton(
+                      key: const Key('adminCreateUserPasswordToggle'),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  validator: _password,
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  key: const Key('adminCreateUserRoleDropdown'),
+                  initialValue: _roleCode,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.adminCreateUserRoleLabel,
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'STAFF',
+                      child: Text(AppStrings.adminCreateUserRoleStaff),
+                    ),
+                    DropdownMenuItem(
+                      value: 'ADMIN',
+                      child: Text(AppStrings.adminCreateUserRoleAdmin),
+                    ),
+                    DropdownMenuItem(
+                      value: 'USER',
+                      child: Text(AppStrings.adminCreateUserRoleUser),
+                    ),
+                  ],
+                  onChanged: _submitting
+                      ? null
+                      : (value) {
+                          if (value != null) setState(() => _roleCode = value);
+                        },
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    key: const Key('adminCreateUserSubmitButton'),
+                    // Vô hiệu hoá khi đang gửi để tránh tạo trùng tài khoản.
+                    onPressed: _submitting ? null : _submit,
+                    icon: _submitting
+                        ? const SizedBox(
+                            key: Key('adminCreateUserSubmitProgress'),
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.person_add_alt_1_outlined),
+                    label: const Text(AppStrings.adminCreateUserSubmit),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!_formKey.currentState!.validate()) {
+      messenger.showSnackBar(
+        const SnackBar(
+          key: Key('adminCreateUserErrorSnackBar'),
+          content: Text(AppStrings.adminCreateUserFormInvalid),
+        ),
+      );
+      return;
+    }
+
+    final cubit = context.read<AdminUserCubit>();
+    final navigator = Navigator.of(context);
+
+    setState(() => _submitting = true);
+    final created = await cubit.createUser(
+      fullName: _fullNameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text,
+      roleCode: _roleCode,
+    );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    if (created) {
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(
+          key: Key('adminCreateUserSuccessSnackBar'),
+          content: Text(AppStrings.adminCreateUserSuccess),
+        ),
+      );
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        key: const Key('adminCreateUserErrorSnackBar'),
+        content: Text(
+          cubit.state.errorMessage ?? AppStrings.adminCreateUserFailed,
+        ),
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
+}
+
+/// Mật khẩu tối thiểu 6 ký tự — khớp ràng buộc của backend cho form này.
+String? _password(String? value) {
+  if (value == null || value.isEmpty) return AppStrings.passwordRequired;
+  if (value.length < 6) return AppStrings.passwordMin6;
+  return null;
 }
 
 String _roleLabel(AdminUserRole role) {

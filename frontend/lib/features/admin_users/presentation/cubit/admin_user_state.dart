@@ -8,6 +8,9 @@ class AdminUserState extends Equatable {
   final AdminUserRole? selectedRole;
   final AdminUserStatus? selectedUserStatus;
   final String? approvingUserId;
+
+  /// Đang gửi request tạo tài khoản mới (khoá nút submit của form).
+  final bool creatingUser;
   final String? errorMessage;
 
   const AdminUserState({
@@ -16,6 +19,7 @@ class AdminUserState extends Equatable {
     this.selectedRole,
     this.selectedUserStatus,
     this.approvingUserId,
+    this.creatingUser = false,
     this.errorMessage,
   });
 
@@ -37,6 +41,7 @@ class AdminUserState extends Equatable {
     bool clearSelectedUserStatus = false,
     String? approvingUserId,
     bool clearApprovingUserId = false,
+    bool? creatingUser,
     String? errorMessage,
   }) {
     return AdminUserState(
@@ -51,6 +56,7 @@ class AdminUserState extends Equatable {
       approvingUserId: clearApprovingUserId
           ? null
           : approvingUserId ?? this.approvingUserId,
+      creatingUser: creatingUser ?? this.creatingUser,
       errorMessage: errorMessage,
     );
   }
@@ -62,6 +68,7 @@ class AdminUserState extends Equatable {
     selectedRole,
     selectedUserStatus,
     approvingUserId,
+    creatingUser,
     errorMessage,
   ];
 }
