@@ -11,36 +11,55 @@ part 'admin_product_state.dart';
 class AdminProductCubit extends Cubit<AdminProductState> {
   final AdminProductRepository repository;
 
+  /// The admin screen searches/filters client-side, so it must hold the whole
+  /// catalogue: the backend list defaults to 20 per page and caps `size` at 100,
+  /// which would leave products #21+ unreachable for edit/delete. We therefore
+  /// request the biggest allowed page and keep paging until the catalogue is in.
+  static const int productPageSize = 100;
+
+  /// Safety net so a misbehaving backend cannot make [load] page forever.
+  static const int maxProductPages = 20;
+
   AdminProductCubit({required this.repository})
     : super(const AdminProductState());
 
   Future<void> load() async {
     emit(state.copyWith(status: AdminProductStatusView.loading));
     try {
-      final response = await repository.getProducts();
-      final categories = await _loadCategories();
-      if (response.success && response.data != null) {
-        final products = response.data!;
-        emit(
-          state.copyWith(
-            status: products.isEmpty
-                ? AdminProductStatusView.empty
-                : AdminProductStatusView.success,
-            products: products,
-            categories: categories,
-          ),
+      final products = <AdminProduct>[];
+      for (var page = 0; page < maxProductPages; page++) {
+        final response = await repository.getProducts(
+          page: page,
+          size: productPageSize,
         );
-      } else {
-        emit(
-          state.copyWith(
-            status: AdminProductStatusView.failure,
-            errorMessage: userFacingResponseMessage(
-              response.message,
-              fallback: AppStrings.adminProductsLoadFailed,
+        if (!response.success || response.data == null) {
+          emit(
+            state.copyWith(
+              status: AdminProductStatusView.failure,
+              errorMessage: userFacingResponseMessage(
+                response.message,
+                fallback: AppStrings.adminProductsLoadFailed,
+              ),
             ),
-          ),
-        );
+          );
+          return;
+        }
+        final pageProducts = response.data!;
+        products.addAll(pageProducts);
+        // A short page means we reached the end of the catalogue.
+        if (pageProducts.length < productPageSize) break;
       }
+
+      final categories = await _loadCategories();
+      emit(
+        state.copyWith(
+          status: products.isEmpty
+              ? AdminProductStatusView.empty
+              : AdminProductStatusView.success,
+          products: products,
+          categories: categories,
+        ),
+      );
     } catch (error) {
       emit(
         state.copyWith(
@@ -51,6 +70,56 @@ class AdminProductCubit extends Cubit<AdminProductState> {
           ),
         ),
       );
+    }
+  }
+
+  /// Fetch the FULL product detail before opening the edit form.
+  ///
+  /// The list item the screen holds has no `description` and no `priceTiers`
+  /// (the backend list DTO omits them), so building the form from it and saving
+  /// would wipe both. Returns null when the detail could not be loaded, leaving
+  /// [AdminProductState.errorMessage] set for the caller to surface.
+  Future<AdminProduct?> loadProductDetail(String id) async {
+    emit(
+      state.copyWith(
+        actionStatus: AdminProductActionStatus.loadingDetail,
+        editingProductId: id,
+      ),
+    );
+    try {
+      final response = await repository.getProductDetail(id);
+      if (response.success && response.data != null) {
+        emit(
+          state.copyWith(
+            actionStatus: AdminProductActionStatus.idle,
+            clearEditingProductId: true,
+          ),
+        );
+        return response.data;
+      }
+      emit(
+        state.copyWith(
+          actionStatus: AdminProductActionStatus.failure,
+          errorMessage: userFacingResponseMessage(
+            response.message,
+            fallback: AppStrings.adminProductDetailLoadFailed,
+          ),
+          clearEditingProductId: true,
+        ),
+      );
+      return null;
+    } catch (error) {
+      emit(
+        state.copyWith(
+          actionStatus: AdminProductActionStatus.failure,
+          errorMessage: userFacingErrorMessage(
+            error,
+            fallback: AppStrings.adminProductDetailLoadUnexpected,
+          ),
+          clearEditingProductId: true,
+        ),
+      );
+      return null;
     }
   }
 

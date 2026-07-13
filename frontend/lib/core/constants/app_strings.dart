@@ -268,6 +268,15 @@ abstract final class AppStrings {
       'Đã xảy ra lỗi khi cập nhật sản phẩm.';
   static const adminProductDeleteFailed = 'Không xoá được sản phẩm.';
   static const adminProductDeleteUnexpected = 'Đã xảy ra lỗi khi xoá sản phẩm.';
+  static const adminProductDetailLoadFailed =
+      'Không tải được chi tiết sản phẩm.';
+  static const adminProductDetailLoadUnexpected =
+      'Đã xảy ra lỗi khi tải chi tiết sản phẩm.';
+  static const adminProductSaveSuccess = 'Đã lưu sản phẩm.';
+  static const adminProductDeleteSuccess = 'Đã xoá sản phẩm.';
+  static const adminProductDeleteConfirmTitle = 'Xoá sản phẩm này?';
+  static const adminProductFormInvalid =
+      'Vui lòng kiểm tra lại thông tin đã nhập.';
   static const productSlugExists = 'Slug sản phẩm đã tồn tại.';
   static const productNotFoundForUpdate =
       'Không tìm thấy sản phẩm cần cập nhật.';
@@ -651,7 +660,11 @@ abstract final class AppStrings {
   static const pickImageFromDevice = 'Chọn ảnh từ thiết bị';
   static const uploadingImage = 'Đang tải ảnh lên...';
   static const imageUploadFailed = 'Không tải được ảnh lên. Vui lòng thử lại.';
-  static const firstWholesalePrice = 'Giá sỉ đầu tiên';
+  static const wholesalePriceTiers = 'Các mức giá sỉ';
+  static const addWholesaleTier = 'Thêm mức giá sỉ';
+  static const removeWholesaleTier = 'Xoá mức giá sỉ';
+  static const noWholesaleTier =
+      'Chưa có mức giá sỉ. Sản phẩm sẽ bán theo giá gốc.';
   static const fromLabel = 'Từ';
   static const toLabel = 'Đến';
   static const unitPriceLabel = 'Đơn giá';
@@ -843,6 +856,11 @@ abstract final class AppStrings {
   static String codeCount(int count) => '$count mã';
 
   static String activeDealerCount(int count) => '$count đại lý';
+
+  static String adminProductDeleteConfirmMessage(String productName) =>
+      'Sản phẩm "$productName" sẽ được gỡ khỏi cửa hàng. Bạn có chắc chắn không?';
+
+  static String wholesaleTierTitle(int index) => 'Mức giá $index';
 
   static String adminProductSummary({
     required int productCount,

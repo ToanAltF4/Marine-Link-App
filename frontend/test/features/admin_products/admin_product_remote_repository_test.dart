@@ -116,6 +116,8 @@ void main() {
         query: '  muc  ',
         status: AdminProductStatus.disabled,
         featured: false,
+        page: 1,
+        size: 100,
       );
 
       expect(response.data, [_product]);
@@ -128,9 +130,90 @@ void main() {
                 ),
               ).captured.single
               as Map<String, dynamic>;
-      expect(captured, {'q': 'muc', 'status': 'DISABLED', 'featured': false});
+      expect(captured, {
+        'q': 'muc',
+        'status': 'DISABLED',
+        'featured': false,
+        'page': 1,
+        'size': 100,
+      });
     },
   );
+
+  test('getProductDetail targets the product detail endpoint', () async {
+    final apiClient = _MockApiClient();
+    when(
+      () => apiClient.get<AdminProduct>(
+        ApiEndpoints.adminProductDetail('product-001'),
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).thenAnswer((_) async => const ApiResponse(success: true, data: _product));
+
+    final repository = AdminProductRemoteRepository(apiClient: apiClient);
+    final response = await repository.getProductDetail('product-001');
+
+    expect(response.data, _product);
+    verify(
+      () => apiClient.get<AdminProduct>(
+        ApiEndpoints.adminProductDetail('product-001'),
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).called(1);
+  });
+
+  test('updateProduct sends every price tier, keeping existing ids', () async {
+    final apiClient = _MockApiClient();
+    when(
+      () => apiClient.put<AdminProduct>(
+        ApiEndpoints.adminProductDetail('product-001'),
+        data: any(named: 'data'),
+        fromJson: any(named: 'fromJson'),
+      ),
+    ).thenAnswer((_) async => const ApiResponse(success: true, data: _product));
+
+    final repository = AdminProductRemoteRepository(apiClient: apiClient);
+    await repository.updateProduct(
+      'product-001',
+      const AdminProductDraft(
+        categoryId: 'category-001',
+        name: 'Muc kho',
+        slug: 'muc-kho',
+        basePrice: 450000,
+        unit: 'kg',
+        minOrderQuantity: 2,
+        stockQuantity: 120,
+        status: AdminProductStatus.active,
+        isFeatured: true,
+        priceTiers: [
+          AdminPriceTier(
+            id: 'tier-001',
+            minQuantity: 2,
+            maxQuantity: 9,
+            unitPrice: 450000,
+          ),
+          AdminPriceTier(id: '', minQuantity: 10, unitPrice: 420000),
+        ],
+      ),
+    );
+
+    final data =
+        verify(
+              () => apiClient.put<AdminProduct>(
+                ApiEndpoints.adminProductDetail('product-001'),
+                data: captureAny(named: 'data'),
+                fromJson: any(named: 'fromJson'),
+              ),
+            ).captured.single
+            as Map<String, dynamic>;
+    final tiers = data['priceTiers'] as List<dynamic>;
+    expect(tiers, hasLength(2));
+    // Mức giá cũ gửi kèm id -> backend cập nhật tại chỗ (không xoá dòng đang
+    // được giỏ hàng tham chiếu); mức giá mới gửi id null.
+    expect(tiers[0]['id'], 'tier-001');
+    expect(tiers[0]['minQuantity'], 2);
+    expect(tiers[1]['id'], isNull);
+    expect(tiers[1]['maxQuantity'], isNull);
+  });
 
   test(
     'createProduct posts draft payload to admin products endpoint',

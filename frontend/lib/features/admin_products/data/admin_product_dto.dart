@@ -60,6 +60,10 @@ Map<String, dynamic> adminProductDraftToJson(AdminProductDraft draft) {
     'priceTiers': draft.priceTiers
         .map(
           (tier) => {
+            // Existing tiers send their public id so the backend updates that
+            // row in place instead of dropping and recreating it (which would
+            // break carts referencing the tier). New tiers send id = null.
+            'id': tier.id.trim().isEmpty ? null : tier.id,
             'minQuantity': tier.minQuantity,
             'maxQuantity': tier.maxQuantity,
             'unitPrice': tier.unitPrice,

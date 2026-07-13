@@ -15,10 +15,12 @@ class AdminProductMockRepository implements AdminProductRepository {
     String? query,
     AdminProductStatus? status,
     bool? featured,
+    int? page,
+    int? size,
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final normalizedQuery = query?.trim().toLowerCase();
-    final result = _products.where((product) {
+    final matches = _products.where((product) {
       final queryMatches =
           normalizedQuery == null ||
           normalizedQuery.isEmpty ||
@@ -31,7 +33,26 @@ class AdminProductMockRepository implements AdminProductRepository {
       return queryMatches && statusMatches && featuredMatches;
     }).toList();
 
+    final pageSize = size ?? matches.length;
+    final start = (page ?? 0) * pageSize;
+    final result = start >= matches.length
+        ? <AdminProduct>[]
+        : matches.sublist(start, (start + pageSize).clamp(0, matches.length));
+
     return ApiResponse(success: true, message: 'OK', data: result);
+  }
+
+  @override
+  Future<ApiResponse<AdminProduct>> getProductDetail(String id) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final index = _products.indexWhere((product) => product.id == id);
+    if (index == -1) {
+      return const ApiResponse(
+        success: false,
+        message: AppStrings.productNotFoundForUpdate,
+      );
+    }
+    return ApiResponse(success: true, message: 'OK', data: _products[index]);
   }
 
   @override
@@ -79,6 +100,7 @@ class AdminProductMockRepository implements AdminProductRepository {
       id: 'product-${_nextId++}',
       name: draft.name,
       slug: draft.slug,
+      shortDescription: draft.shortDescription,
       description: draft.description,
       origin: draft.origin,
       imageUrl: draft.imageUrl,
@@ -127,6 +149,7 @@ class AdminProductMockRepository implements AdminProductRepository {
     final updated = existing.copyWith(
       name: draft.name,
       slug: draft.slug,
+      shortDescription: draft.shortDescription,
       description: draft.description,
       origin: draft.origin,
       imageUrl: draft.imageUrl ?? existing.imageUrl,

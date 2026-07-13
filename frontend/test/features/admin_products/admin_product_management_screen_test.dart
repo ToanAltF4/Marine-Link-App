@@ -11,6 +11,7 @@ import 'package:marinelink/features/admin_products/presentation/screens/admin_pr
 
 class _FakeRepo implements AdminProductRepository {
   final Future<ApiResponse<List<AdminProduct>>> Function() listResponder;
+  final Future<ApiResponse<AdminProduct>> Function(String id) detailResponder;
   final Future<ApiResponse<AdminProduct>> Function(AdminProductDraft draft)
   createResponder;
   final Future<ApiResponse<AdminProduct>> Function(
@@ -22,6 +23,7 @@ class _FakeRepo implements AdminProductRepository {
 
   _FakeRepo({
     required this.listResponder,
+    Future<ApiResponse<AdminProduct>> Function(String id)? detailResponder,
     Future<ApiResponse<AdminProduct>> Function(AdminProductDraft draft)?
     createResponder,
     Future<ApiResponse<AdminProduct>> Function(
@@ -30,7 +32,14 @@ class _FakeRepo implements AdminProductRepository {
     )?
     updateResponder,
     Future<ApiResponse<void>> Function(String id)? deleteResponder,
-  }) : createResponder =
+  }) : detailResponder =
+           detailResponder ??
+           ((id) async => ApiResponse(
+             success: true,
+             message: 'OK',
+             data: _detailProduct.copyWith(id: id),
+           )),
+       createResponder =
            createResponder ??
            ((draft) async => ApiResponse(
              success: true,
@@ -53,7 +62,17 @@ class _FakeRepo implements AdminProductRepository {
     String? query,
     AdminProductStatus? status,
     bool? featured,
-  }) => listResponder();
+    int? page,
+    int? size,
+  }) => page == null || page == 0
+      ? listResponder()
+      : Future.value(
+          const ApiResponse(success: true, message: 'OK', data: []),
+        );
+
+  @override
+  Future<ApiResponse<AdminProduct>> getProductDetail(String id) =>
+      detailResponder(id);
 
   @override
   Future<ApiResponse<List<AdminProductCategory>>> getCategories() async =>
@@ -214,8 +233,394 @@ void main() {
       find.byKey(const Key('adminProductDeleteButton_created-001')),
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adminProductDeleteConfirmButton')));
+    await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('adminProductCard_created-001')), findsNothing);
+  });
+
+  testWidgets(
+    'editing fetches the full detail so description and all tiers survive save',
+    (tester) async {
+      AdminProductDraft? capturedDraft;
+      _registerRepo(
+        _FakeRepo(
+          listResponder: () async => const ApiResponse(
+            success: true,
+            message: 'OK',
+            // Item danh sách: không có description, không có priceTiers.
+            data: [_activeProduct],
+          ),
+          updateResponder: (id, draft) async {
+            capturedDraft = draft;
+            return ApiResponse(
+              success: true,
+              message: 'OK',
+              data: _productFromDraft(id, draft),
+            );
+          },
+        ),
+      );
+
+      await _pumpScreen(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('adminProductEditButton_product-001')),
+      );
+      await tester.pumpAndSettle();
+
+      // Form được dựng từ CHI TIẾT: mô tả và cả 2 mức giá sỉ đã prefill.
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.descendant(
+                of: find.byKey(const Key('adminProductDescriptionField')),
+                matching: find.byType(TextFormField),
+              ),
+            )
+            .controller
+            ?.text,
+        'Mực khô phục vụ đơn sỉ.',
+      );
+      expect(find.byKey(const Key('adminProductTierRow_0')), findsOneWidget);
+      expect(find.byKey(const Key('adminProductTierRow_1')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('adminProductSaveButton')));
+      await tester.pumpAndSettle();
+
+      expect(capturedDraft, isNotNull);
+      expect(capturedDraft!.description, 'Mực khô phục vụ đơn sỉ.');
+      expect(capturedDraft!.priceTiers, hasLength(2));
+      // Id của mức giá cũ được gửi lại -> backend cập nhật tại chỗ, không xoá dòng.
+      expect(
+        capturedDraft!.priceTiers.map((tier) => tier.id),
+        ['tier-001', 'tier-002'],
+      );
+      expect(capturedDraft!.priceTiers.last.minQuantity, 10);
+    },
+  );
+
+  testWidgets('adds and removes price tier rows', (tester) async {
+    AdminProductDraft? capturedDraft;
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: []),
+        createResponder: (draft) async {
+          capturedDraft = draft;
+          return ApiResponse(
+            success: true,
+            message: 'OK',
+            data: _productFromDraft('created-003', draft),
+          );
+        },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductAddButton')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('adminProductNameField')),
+      'Mực khô mới',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductSlugField')),
+      'muc-kho-moi',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductBasePriceField')),
+      '450000',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductStockField')),
+      '20',
+    );
+
+    // Mức giá 1.
+    await tester.enterText(
+      find.byKey(const Key('adminProductTierMinField_0')),
+      '2',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductTierMaxField_0')),
+      '9',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductTierPriceField_0')),
+      '450000',
+    );
+
+    // Thêm 2 mức nữa rồi xoá mức cuối -> còn 2 mức được gửi đi.
+    await tester.tap(find.byKey(const Key('adminProductAddTierButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adminProductAddTierButton')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('adminProductTierRow_2')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('adminProductRemoveTierButton_2')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('adminProductTierRow_2')), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const Key('adminProductTierMinField_1')),
+      '10',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductTierPriceField_1')),
+      '420000',
+    );
+
+    await tester.tap(find.byKey(const Key('adminProductSaveButton')));
+    await tester.pumpAndSettle();
+
+    expect(capturedDraft, isNotNull);
+    expect(capturedDraft!.priceTiers, hasLength(2));
+    expect(capturedDraft!.priceTiers.first.minQuantity, 2);
+    expect(capturedDraft!.priceTiers.first.maxQuantity, 9);
+    expect(capturedDraft!.priceTiers.last.minQuantity, 10);
+    expect(capturedDraft!.priceTiers.last.maxQuantity, isNull);
+    // Mức giá mới chưa có id -> backend sẽ tạo mới.
+    expect(capturedDraft!.priceTiers.last.id, '');
+  });
+
+  testWidgets('updates successfully when optional fields are left blank', (
+    tester,
+  ) async {
+    AdminProductDraft? capturedDraft;
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_activeProduct]),
+        updateResponder: (id, draft) async {
+          capturedDraft = draft;
+          return ApiResponse(
+            success: true,
+            message: 'OK',
+            data: _productFromDraft(id, draft),
+          );
+        },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const Key('adminProductEditButton_product-001')),
+    );
+    await tester.pumpAndSettle();
+
+    for (final key in const [
+      'adminProductShortDescriptionField',
+      'adminProductDescriptionField',
+      'adminProductOriginField',
+      'adminProductImageUrlField',
+    ]) {
+      await tester.enterText(find.byKey(Key(key)), '   ');
+    }
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductSaveButton')));
+    await tester.pumpAndSettle();
+
+    // Trường tuỳ chọn để trống -> gửi null, không chặn cập nhật.
+    expect(capturedDraft, isNotNull);
+    expect(capturedDraft!.shortDescription, isNull);
+    expect(capturedDraft!.description, isNull);
+    expect(capturedDraft!.origin, isNull);
+    expect(capturedDraft!.imageUrl, isNull);
+    expect(find.byKey(const Key('adminProductFormSheet')), findsNothing);
+    expect(find.byKey(const Key('adminProductSuccessSnackBar')), findsOneWidget);
+  });
+
+  testWidgets('disables the save button and shows a spinner while submitting', (
+    tester,
+  ) async {
+    final completer = Completer<ApiResponse<AdminProduct>>();
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: []),
+        createResponder: (_) => completer.future,
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductAddButton')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('adminProductNameField')),
+      'Tôm khô mới',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductSlugField')),
+      'tom-kho-moi',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductBasePriceField')),
+      '680000',
+    );
+
+    await tester.tap(find.byKey(const Key('adminProductSaveButton')));
+    await tester.pump();
+
+    final saveButton = tester.widget<FilledButton>(
+      find.ancestor(
+        of: find.byKey(const Key('adminProductSaveProgress')),
+        matching: find.byType(FilledButton),
+      ),
+    );
+    expect(saveButton.onPressed, isNull, reason: 'không cho bấm lưu 2 lần');
+    expect(find.byKey(const Key('adminProductSaveProgress')), findsOneWidget);
+
+    completer.complete(
+      const ApiResponse(success: true, message: 'OK', data: _activeProduct),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('adminProductFormSheet')), findsNothing);
+  });
+
+  testWidgets('shows an error snack bar when saving fails', (tester) async {
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: []),
+        createResponder: (_) async =>
+            const ApiResponse(success: false, message: 'Slug sản phẩm đã tồn tại.'),
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('adminProductAddButton')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('adminProductNameField')),
+      'Tôm khô mới',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductSlugField')),
+      'tom-kho-moi',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminProductBasePriceField')),
+      '680000',
+    );
+
+    await tester.tap(find.byKey(const Key('adminProductSaveButton')));
+    await tester.pumpAndSettle();
+
+    // Form vẫn mở và người dùng thấy lý do thất bại.
+    expect(find.byKey(const Key('adminProductFormSheet')), findsOneWidget);
+    expect(find.byKey(const Key('adminProductErrorSnackBar')), findsOneWidget);
+    expect(find.text('Slug sản phẩm đã tồn tại.'), findsOneWidget);
+  });
+
+  testWidgets('asks for confirmation before deleting', (tester) async {
+    var deleteCalls = 0;
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_activeProduct]),
+        deleteResponder: (_) async {
+          deleteCalls++;
+          return const ApiResponse(success: true, message: 'OK');
+        },
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    // Huỷ xác nhận -> không xoá.
+    await tester.tap(
+      find.byKey(const Key('adminProductDeleteButton_product-001')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('adminProductDeleteConfirmDialog')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('adminProductDeleteCancelButton')));
+    await tester.pumpAndSettle();
+
+    expect(deleteCalls, 0);
+    expect(
+      find.byKey(const Key('adminProductCard_product-001')),
+      findsOneWidget,
+    );
+
+    // Xác nhận -> xoá và báo thành công.
+    await tester.tap(
+      find.byKey(const Key('adminProductDeleteButton_product-001')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adminProductDeleteConfirmButton')));
+    await tester.pumpAndSettle();
+
+    expect(deleteCalls, 1);
+    expect(find.byKey(const Key('adminProductCard_product-001')), findsNothing);
+    expect(find.byKey(const Key('adminProductSuccessSnackBar')), findsOneWidget);
+  });
+
+  testWidgets('shows an error snack bar when deleting fails', (tester) async {
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_activeProduct]),
+        deleteResponder: (_) async =>
+            const ApiResponse(success: false, message: 'Không xoá được sản phẩm.'),
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const Key('adminProductDeleteButton_product-001')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adminProductDeleteConfirmButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminProductErrorSnackBar')), findsOneWidget);
+    expect(
+      find.byKey(const Key('adminProductCard_product-001')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows an error snack bar when the detail fetch fails', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        listResponder: () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_activeProduct]),
+        detailResponder: (_) async =>
+            const ApiResponse(success: false, message: 'Không tìm thấy sản phẩm'),
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const Key('adminProductEditButton_product-001')),
+    );
+    await tester.pumpAndSettle();
+
+    // Không mở form với dữ liệu thiếu -> tránh lưu đè mất mô tả và giá sỉ.
+    expect(find.byKey(const Key('adminProductFormSheet')), findsNothing);
+    expect(find.byKey(const Key('adminProductErrorSnackBar')), findsOneWidget);
   });
 
   testWidgets('submits the selected category from the dropdown', (
@@ -418,6 +823,7 @@ void main() {
 
 const _category = AdminProductCategory(id: 'category-001', name: 'Mực khô');
 
+/// Item danh sách như backend trả về: KHÔNG có description, KHÔNG có priceTiers.
 const _activeProduct = AdminProduct(
   id: 'product-001',
   name: 'Mực khô loại 1',
@@ -429,6 +835,32 @@ const _activeProduct = AdminProduct(
   status: AdminProductStatus.active,
   isFeatured: true,
   category: _category,
+);
+
+/// Chi tiết đầy đủ trả về từ GET /api/admin/products/{id}.
+const _detailProduct = AdminProduct(
+  id: 'product-001',
+  name: 'Mực khô loại 1',
+  slug: 'muc-kho-loai-1',
+  shortDescription: 'Mực size lớn',
+  description: 'Mực khô phục vụ đơn sỉ.',
+  origin: 'Cà Mau',
+  basePrice: 450000,
+  unit: 'kg',
+  minOrderQuantity: 2,
+  stockQuantity: 120,
+  status: AdminProductStatus.active,
+  isFeatured: true,
+  category: _category,
+  priceTiers: [
+    AdminPriceTier(
+      id: 'tier-001',
+      minQuantity: 2,
+      maxQuantity: 9,
+      unitPrice: 450000,
+    ),
+    AdminPriceTier(id: 'tier-002', minQuantity: 10, unitPrice: 420000),
+  ],
 );
 
 const _disabledProduct = AdminProduct(
@@ -449,6 +881,7 @@ AdminProduct _productFromDraft(String id, AdminProductDraft draft) {
     id: id,
     name: draft.name,
     slug: draft.slug,
+    shortDescription: draft.shortDescription,
     description: draft.description,
     origin: draft.origin,
     basePrice: draft.basePrice,
