@@ -1,11 +1,34 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:marinelink/features/cart/domain/cart.dart';
+import 'package:marinelink/features/cart/domain/cart_repository.dart';
 import 'package:marinelink/features/products/domain/product.dart';
 
-/// CartCubit manages the local cart state.
+/// CartCubit manages cart UI state and reconciles remote carts from the API.
 class CartCubit extends Cubit<CartState> {
-  CartCubit() : super(const CartState(cart: Cart()));
+  final CartRepository? cartRepository;
+  bool _remoteLoadAttempted = false;
+  int _remoteRevision = 0;
+
+  CartCubit({this.cartRepository}) : super(const CartState(cart: Cart()));
+
+  Future<void> loadCart({bool force = false}) async {
+    final repository = cartRepository;
+    if (repository == null) return;
+    if (!force && (_remoteLoadAttempted || state.cart.isNotEmpty)) return;
+
+    _remoteLoadAttempted = true;
+    try {
+      final remoteCart = await repository.loadCart();
+      if (isClosed) return;
+      emit(CartState(cart: remoteCart));
+    } catch (_) {
+      _remoteLoadAttempted = false;
+      // Leave the current cart visible; checkout will surface server errors.
+    }
+  }
 
   void addItem({required ProductDetail product, int quantity = 1}) {
     final existingIndex = state.cart.items.indexWhere(
@@ -29,7 +52,7 @@ class CartCubit extends Cubit<CartState> {
       productName: product.name,
       productImageUrl: product.imageUrl ?? '',
       unit: product.unit,
-      quantity: clamped,
+      quantity: clamped, // Giao diện hiển thị tổng số lượng sau khi cộng
       baseUnitPrice: product.basePrice,
       unitPrice: unitPrice,
       selectedPriceTierId: tier?.id,
@@ -38,7 +61,21 @@ class CartCubit extends Cubit<CartState> {
       stockQuantity: product.stockQuantity,
     );
 
-    emit(CartState(cart: state.cart.upsertItem(item)));
+    final nextCart = state.cart.upsertItem(item);
+    final repository = cartRepository;
+    if (repository == null) {
+      emit(CartState(cart: nextCart));
+      return;
+    }
+
+    _emitAndReconcile(
+      nextCart,
+      () => repository.addItem(
+        productId: product.id,
+        quantity: item.quantity,
+        selected: item.selected,
+      ),
+    );
   }
 
   void updateQuantity(String productId, int quantity) {
@@ -46,7 +83,21 @@ class CartCubit extends Cubit<CartState> {
     if (index < 0) return;
 
     final item = state.cart.items[index];
-    emit(CartState(cart: state.cart.upsertItem(item.withQuantity(quantity))));
+    final updatedItem = item.withQuantity(quantity);
+    final nextCart = state.cart.upsertItem(updatedItem);
+    final repository = cartRepository;
+    if (repository == null) {
+      emit(CartState(cart: nextCart));
+      return;
+    }
+
+    _emitAndReconcile(
+      nextCart,
+      () => repository.updateItem(
+        productId: productId,
+        quantity: updatedItem.quantity,
+      ),
+    );
   }
 
   void toggleSelected(String productId) {
@@ -54,19 +105,66 @@ class CartCubit extends Cubit<CartState> {
     if (index < 0) return;
 
     final item = state.cart.items[index];
-    emit(
-      CartState(
-        cart: state.cart.upsertItem(item.copyWith(selected: !item.selected)),
+    final updatedItem = item.copyWith(selected: !item.selected);
+    final nextCart = state.cart.upsertItem(updatedItem);
+    final repository = cartRepository;
+    if (repository == null) {
+      emit(CartState(cart: nextCart));
+      return;
+    }
+
+    _emitAndReconcile(
+      nextCart,
+      () => repository.updateItem(
+        productId: productId,
+        selected: updatedItem.selected,
       ),
     );
   }
 
   void removeItem(String productId) {
-    emit(CartState(cart: state.cart.removeItem(productId)));
+    final nextCart = state.cart.removeItem(productId);
+    final repository = cartRepository;
+    if (repository == null) {
+      emit(CartState(cart: nextCart));
+      return;
+    }
+
+    _emitAndReconcile(nextCart, () => repository.removeItem(productId));
   }
 
   void clearCart() {
-    emit(const CartState(cart: Cart()));
+    final repository = cartRepository;
+    if (repository == null) {
+      emit(const CartState(cart: Cart()));
+      return;
+    }
+
+    _emitAndReconcile(const Cart(), repository.clear);
+  }
+
+  void _emitAndReconcile(Cart optimisticCart, Future<Cart> Function() request) {
+    final previousCart = state.cart;
+    emit(CartState(cart: optimisticCart));
+    final revision = ++_remoteRevision;
+    unawaited(_reconcileRemote(request, previousCart, revision));
+  }
+
+  Future<void> _reconcileRemote(
+    Future<Cart> Function() request,
+    Cart previousCart,
+    int revision,
+  ) async {
+    try {
+      final remoteCart = await request();
+      if (isClosed) return;
+      if (revision != _remoteRevision) return;
+      emit(CartState(cart: remoteCart));
+    } catch (_) {
+      if (isClosed) return;
+      if (revision != _remoteRevision) return;
+      emit(CartState(cart: previousCart));
+    }
   }
 }
 

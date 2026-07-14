@@ -63,17 +63,37 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                    "/api/auth/login",
+                    "/api/auth/google",
+                    "/api/auth/register",
+                    "/api/auth/verify-email",
+                    "/api/auth/resend-otp",
+                    "/api/auth/forgot-password",
+                    "/api/auth/reset-password").permitAll()
+                // WebSocket handshake (STOMP auth happens on the CONNECT frame)
+                .requestMatchers("/ws/**", "/ws").permitAll()
                 .requestMatchers(HttpMethod.GET,
+                    "/api/auth/email-availability",
+                    "/api/auth/phone-availability",
                     "/api/products", "/api/products/**",
+                    "/api/payments/vnpay/return",
+                    "/api/payments/vnpay/ipn",
                     "/api/warehouses",
                     "/swagger-ui/**", "/swagger-ui.html",
                     "/api-docs/**", "/api-docs",
                     "/actuator/health").permitAll()
+                // Product management: staff can also update stock / add products
+                .requestMatchers("/api/admin/products", "/api/admin/products/**")
+                    .hasAnyRole("STAFF", "ADMIN")
                 // Admin-only
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Staff workspace
+                .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                 // Staff + Admin for order status updates
                 .requestMatchers(HttpMethod.PUT, "/api/orders/*/status")
+                    .hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/orders/*/payment-status")
                     .hasAnyRole("STAFF", "ADMIN")
                 // Everything else requires authentication
                 .anyRequest().authenticated()
@@ -87,19 +107,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        // Support all localhost ports for easy development
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:[*]",
             "http://127.0.0.1:[*]",
             "https://localhost:[*]",
             "https://127.0.0.1:[*]"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L); // Cache preflight response for 1 hour
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config); // Apply to all paths including /ws
         return source;
     }
 }

@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../domain/auth_repository.dart';
 import '../domain/user.dart';
 
@@ -35,7 +36,7 @@ class AuthMockRepository implements AuthRepository {
     status: 'ACTIVE',
     roles: ['USER'],
     storeName: 'Hải Sản A Cần Thơ',
-    businessAddress: 'Cần Thơ',
+    businessAddress: AppStrings.originCanTho,
     taxCode: '0312345678',
   );
 
@@ -60,7 +61,7 @@ class AuthMockRepository implements AuthRepository {
         _demoPasswords[emailOrPhone];
 
     if (expectedPassword == null || expectedPassword != password) {
-      throw Exception('Email/số điện thoại hoặc mật khẩu không đúng');
+      throw Exception(AppStrings.invalidCredentials);
     }
 
     final user = _userForCredential(emailOrPhone);
@@ -84,7 +85,7 @@ class AuthMockRepository implements AuthRepository {
 
     // Check for duplicates
     if (_demoPasswords.containsKey(email.toLowerCase())) {
-      throw Exception('Email đã được sử dụng');
+      throw Exception(AppStrings.emailAlreadyUsedNoPeriod);
     }
 
     return User(
@@ -101,10 +102,86 @@ class AuthMockRepository implements AuthRepository {
   }
 
   @override
+  Future<bool> isEmailAvailable({required String email}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return !_demoPasswords.containsKey(email.toLowerCase());
+  }
+
+  @override
+  Future<bool> isPhoneAvailable({required String phone, String? email}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return !_demoPasswords.containsKey(phone.trim());
+  }
+
+  @override
+  Future<({String token, User user})> loginWithGoogle() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    const user = User(
+      id: '550e8400-e29b-41d4-a716-4466554400a0',
+      fullName: 'Google Demo User',
+      email: 'google-demo@gmail.com',
+      phone: '',
+      status: 'ACTIVE',
+      roles: ['USER'],
+    );
+    const token = 'mock-jwt-token-google';
+    _currentUser = user;
+    _currentToken = token;
+    return (token: token, user: user);
+  }
+
+  @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 100));
     _currentUser = null;
     _currentToken = null;
+  }
+
+  @override
+  Future<void> verifyEmail({
+    required String email,
+    required String otpCode,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: accept any 6-digit code
+    if (otpCode.length != 6) {
+      throw Exception(AppStrings.otpInvalidAlt);
+    }
+  }
+
+  @override
+  Future<void> resendOtp({required String email}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    // Backend always returns 204 to avoid email enumeration — mock mirrors that.
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: treat "000000" as an invalid/expired OTP to exercise the error path.
+    if (otpCode == '000000') {
+      throw Exception(AppStrings.otpInvalidOrUsed);
+    }
+  }
+
+  @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (oldPassword == 'wrong') {
+      throw Exception(AppStrings.currentPasswordIncorrect);
+    }
   }
 
   @override

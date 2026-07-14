@@ -2,13 +2,15 @@ name: marinelink
 description: "MarineLink — B2B Seafood Ordering for Đại lý (MVP)"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.6+8
 
 environment:
   sdk: ^3.12.0
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_web_plugins:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
@@ -32,11 +34,25 @@ dependencies:
   # Formatting
   intl: ^0.20.1
 
-  # Shared preferences (for non-sensitive local data)
-  shared_preferences: ^2.3.3
+  # Pick product images from the device gallery/camera
+  image_picker: ^1.1.2
+
+  # Realtime chat over STOMP/WebSocket (ML-63)
+  stomp_dart_client: ^2.0.0
 
   # JSON serialization
   json_annotation: ^4.9.0
+  url_launcher: ^6.3.2
+  geolocator: ^14.0.2
+
+  # Google Sign-In (OAuth) — ML-62
+  google_sign_in: ^6.2.1
+  flutter_local_notifications: ^22.0.1
+
+  # Push notification (OneSignal) — ML-72: nhận thông báo khi app tắt/màn khóa
+  onesignal_flutter: ^5.3.0
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
 
 dev_dependencies:
   flutter_test:

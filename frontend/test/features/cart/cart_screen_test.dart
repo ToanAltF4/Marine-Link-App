@@ -79,8 +79,7 @@ void main() {
       final imageSurface = tester.widget<Container>(
         find.byKey(const Key('cartProductImageSurface-prod-001')),
       );
-      final imageSurfaceDecoration =
-          imageSurface.decoration as BoxDecoration;
+      final imageSurfaceDecoration = imageSurface.decoration as BoxDecoration;
       expect(imageSurfaceDecoration.borderRadius, BorderRadius.circular(16));
       expect(imageSurface.clipBehavior, Clip.antiAlias);
       expect(
@@ -89,9 +88,10 @@ void main() {
       );
       expect(cartCubit.state.subtotalAmount, 180000);
       expect(find.text('T\u1ed5ng \u0111\u01a1n h\u00e0ng'), findsOneWidget);
-      expect(find.text('Gi\u1ea3m gi\u00e1 s\u1ec9 (5%):'), findsOneWidget);
+      expect(find.text('Khuyến mãi mua nhiều:'), findsOneWidget);
+      expect(find.text('Chưa áp dụng'), findsOneWidget);
       expect(find.text('Mi\u1ec5n ph\u00ed'), findsOneWidget);
-      expect(find.text('171.000\u0111'), findsOneWidget);
+      expect(find.text('180.000\u0111'), findsWidgets);
 
       await tester.tap(find.byKey(const Key('cartIncreaseButton-prod-001')));
       await tester.pump();
@@ -113,6 +113,59 @@ void main() {
         findsOneWidget,
       );
       expect(cartCubit.state.cart.isEmpty, isTrue);
+    });
+
+    testWidgets('applies bulk discount when selected quantity reaches tier', (
+      tester,
+    ) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 50);
+
+      await tester.pumpWidget(_wrap(cartCubit: cartCubit));
+
+      expect(cartCubit.state.subtotalAmount, 4000000);
+      expect(find.text('Khuyến mãi mua nhiều (2%):'), findsOneWidget);
+      expect(find.text('-80.000\u0111'), findsOneWidget);
+      expect(find.text('3.920.000\u0111'), findsOneWidget);
+    });
+
+    testWidgets('allows entering item quantity directly', (tester) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+
+      await tester.pumpWidget(_wrap(cartCubit: cartCubit));
+
+      await tester.enterText(
+        find.byKey(const Key('cartQuantityInput-prod-001')),
+        '50',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
+      expect(find.text('Khuyến mãi mua nhiều (2%):'), findsOneWidget);
+      expect(find.text('-80.000\u0111'), findsOneWidget);
+      expect(find.text('3.920.000\u0111'), findsOneWidget);
+    });
+
+    testWidgets('uses typed item quantity for stepper actions', (tester) async {
+      final cartCubit = CartCubit()..addItem(product: _product(), quantity: 2);
+
+      await tester.pumpWidget(_wrap(cartCubit: cartCubit));
+
+      await tester.enterText(
+        find.byKey(const Key('cartQuantityInput-prod-001')),
+        '50',
+      );
+      await tester.tap(find.byKey(const Key('cartIncreaseButton-prod-001')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 51);
+      expect(_cartQuantityText(tester), '51');
+
+      await tester.tap(find.byKey(const Key('cartDecreaseButton-prod-001')));
+      await tester.pump();
+
+      expect(cartCubit.state.cart.items.single.quantity, 50);
+      expect(_cartQuantityText(tester), '50');
     });
 
     testWidgets('toggles selected item out of totals and checkout state', (
@@ -178,6 +231,13 @@ bool _isSystemSurfaceCard(Widget widget) {
       border.top.color == const Color(0xFFE4EEF5);
 }
 
+String _cartQuantityText(WidgetTester tester) {
+  final quantityTextField = tester.widget<TextField>(
+    find.byKey(const Key('cartQuantityInput-prod-001')),
+  );
+  return quantityTextField.controller?.text ?? '';
+}
+
 ProductDetail _product() {
   return const ProductDetail(
     id: 'prod-001',
@@ -187,7 +247,7 @@ ProductDetail _product() {
     basePrice: 100000,
     unit: 'kg',
     minOrderQuantity: 2,
-    stockQuantity: 10,
+    stockQuantity: 600,
     status: ProductStatus.active,
     priceTiers: [
       PriceTier(

@@ -1,5 +1,8 @@
 package com.marinelink.auth;
 
+import com.marinelink.auth.google.GoogleTokenVerifier;
+import com.marinelink.auth.google.GoogleUserInfo;
+import com.marinelink.auth.otp.EmailOtpService;
 import com.marinelink.common.exception.BusinessException;
 import com.marinelink.common.security.JwtTokenProvider;
 import com.marinelink.users.Role;
@@ -10,6 +13,7 @@ import com.marinelink.users.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +25,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +45,12 @@ class AuthServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private EmailOtpService emailOtpService;
+
+    @Mock
+    private GoogleTokenVerifier googleTokenVerifier;
 
     @InjectMocks
     private AuthService authService;
@@ -77,11 +90,11 @@ class AuthServiceTest {
     @Test
     void registerCreatesPendingUserWithDefaultUserRoleAndHashedPassword() {
         Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
-        when(userRepository.existsActiveByEmail("daily-new@example.com")).thenReturn(false);
+        when(userRepository.existsVerifiedByEmail("daily-new@example.com")).thenReturn(false);
         when(userRepository.existsActiveByPhone("0912345678")).thenReturn(false);
         when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
         when(passwordEncoder.encode("StrongPassword123")).thenReturn("bcrypt-hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RegisterResponse response = authService.register(
                 new RegisterRequest(
@@ -93,9 +106,347 @@ class AuthServiceTest {
                         "Can Tho",
                         "0312345678"));
 
-        assertThat(response.status()).isEqualTo(UserStatus.PENDING_APPROVAL.name());
+        assertThat(response.status()).isEqualTo(UserStatus.PENDING_VERIFICATION.name());
         assertThat(response.roles()).containsExactly("USER");
+        verify(userRepository).saveAndFlush(any(User.class));
+    }
+
+    @Test
+    void registerRefreshesExistingPendingVerificationAccountAndSendsNewOtp() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        UUID publicId = UUID.randomUUID();
+        User pendingUser = User.builder()
+                .id(42L)
+                .publicId(publicId)
+                .role(userRole)
+                .fullName("Old Name")
+                .email("daily-new@example.com")
+                .phone("0900000000")
+                .passwordHash("old-hash")
+                .status(UserStatus.PENDING_VERIFICATION)
+                .storeName("Old Store")
+                .businessAddress("Old Address")
+                .taxCode("000")
+                .build();
+
+        when(userRepository.findByEmailAndStatus("daily-new@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(pendingUser));
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0912345678", publicId)).thenReturn(false);
+        when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+        when(passwordEncoder.encode("StrongPassword123")).thenReturn("new-bcrypt-hash");
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RegisterResponse response = authService.register(
+                new RegisterRequest(
+                        "Nguyen Van A",
+                        "DAILY-NEW@example.com",
+                        "0912345678",
+                        "StrongPassword123",
+                        "Hai San A",
+                        "Can Tho",
+                        "0312345678"));
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).saveAndFlush(userCaptor.capture());
+        User refreshedUser = userCaptor.getValue();
+        assertThat(refreshedUser).isSameAs(pendingUser);
+        assertThat(refreshedUser.getPublicId()).isEqualTo(publicId);
+        assertThat(refreshedUser.getFullName()).isEqualTo("Nguyen Van A");
+        assertThat(refreshedUser.getEmail()).isEqualTo("daily-new@example.com");
+        assertThat(refreshedUser.getPhone()).isEqualTo("0912345678");
+        assertThat(refreshedUser.getPasswordHash()).isEqualTo("new-bcrypt-hash");
+        assertThat(refreshedUser.getStoreName()).isEqualTo("Hai San A");
+        assertThat(refreshedUser.getBusinessAddress()).isEqualTo("Can Tho");
+        assertThat(refreshedUser.getTaxCode()).isEqualTo("0312345678");
+        assertThat(response.status()).isEqualTo(UserStatus.PENDING_VERIFICATION.name());
+        verify(emailOtpService).sendOtp("daily-new@example.com");
+    }
+
+    @Test
+    void registerRejectsEmailThatHasAlreadyBeenVerified() {
+        when(userRepository.findByEmailAndStatus("used@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.empty());
+        when(userRepository.existsVerifiedByEmail("used@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(
+                new RegisterRequest(
+                        "Nguyen Van A",
+                        "used@example.com",
+                        "0912345678",
+                        "StrongPassword123",
+                        "Hai San A",
+                        "Can Tho",
+                        "0312345678")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Email đã được sử dụng");
+
+        verify(roleRepository, never()).findByCode(anyString());
+        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(emailOtpService, never()).sendOtp(anyString());
+    }
+
+    @Test
+    void emailAvailabilityOnlyBlocksVerifiedEmails() {
+        when(userRepository.existsVerifiedByEmail("used@example.com")).thenReturn(true);
+        when(userRepository.existsVerifiedByEmail("pending@example.com")).thenReturn(false);
+
+        EmailAvailabilityResponse used = authService.emailAvailability(" Used@Example.com ");
+        EmailAvailabilityResponse pending = authService.emailAvailability("pending@example.com");
+
+        assertThat(used.available()).isFalse();
+        assertThat(used.message()).isEqualTo("Email đã được sử dụng");
+        assertThat(pending.available()).isTrue();
+        assertThat(pending.message()).isEqualTo("Email có thể sử dụng");
+    }
+
+    @Test
+    void phoneAvailabilityAllowsSamePendingRegistrationPhoneButBlocksOtherActivePhone() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        UUID publicId = UUID.randomUUID();
+        User pendingUser = User.builder()
+                .id(42L)
+                .publicId(publicId)
+                .role(userRole)
+                .fullName("Pending User")
+                .email("pending@example.com")
+                .phone("0912345678")
+                .passwordHash("hash")
+                .status(UserStatus.PENDING_VERIFICATION)
+                .build();
+        when(userRepository.findByEmailAndStatus("pending@example.com", UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(pendingUser));
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0912345678", publicId)).thenReturn(false);
+        when(userRepository.existsActiveByPhoneAndPublicIdNot("0900000000", publicId)).thenReturn(true);
+        when(userRepository.existsActiveByPhone("0900000000")).thenReturn(true);
+
+        PhoneAvailabilityResponse samePendingPhone = authService.phoneAvailability(
+                "0912345678",
+                "pending@example.com");
+        PhoneAvailabilityResponse otherActivePhone = authService.phoneAvailability(
+                "0900000000",
+                "pending@example.com");
+
+        assertThat(samePendingPhone.available()).isTrue();
+        assertThat(samePendingPhone.message()).isEqualTo("Số điện thoại có thể sử dụng");
+        assertThat(otherActivePhone.available()).isFalse();
+        assertThat(otherActivePhone.message()).isEqualTo("Số điện thoại đã được sử dụng");
+    }
+
+    @Test
+    void googleLoginCreatesPendingApprovalUserWhenEmailIsNew() {
+        Role userRole = Role.builder().id(3L).code("USER").name("Đại lý").build();
+        when(googleTokenVerifier.verify("google-id-token"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub-1", "newuser@gmail.com", true, "New User", "http://pic"));
+        when(userRepository.findActiveByEmailOrPhone("newuser@gmail.com"))
+                .thenReturn(Optional.empty());
+        when(roleRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+        when(passwordEncoder.encode(anyString())).thenReturn("random-hash");
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtTokenProvider.generateToken(any(UUID.class), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.googleLogin(
+                new GoogleLoginRequest("google-id-token"));
+
+        // Đăng nhập được (có token) nhưng phải chờ admin duyệt -> FE ẩn giá / chặn đặt hàng.
+        assertThat(response.token()).isEqualTo("jwt-token");
+        assertThat(response.user().email()).isEqualTo("newuser@gmail.com");
+        assertThat(response.user().status()).isEqualTo(UserStatus.PENDING_APPROVAL.name());
+        assertThat(response.user().roles()).containsExactly("USER");
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginLetsPendingApprovalUserInWithoutApprovingThem() {
+        User user = activeUser("USER");
+        user.setStatus(UserStatus.PENDING_APPROVAL);
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Pending", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(jwtTokenProvider.generateToken(eq(user.getPublicId()), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.googleLogin(new GoogleLoginRequest("tok"));
+
+        // Vào được app nhưng trạng thái vẫn chờ duyệt (không tự nâng lên ACTIVE).
+        assertThat(response.token()).isEqualTo("jwt-token");
+        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_APPROVAL);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginMovesPendingVerificationToPendingApprovalNotActive() {
+        User user = activeUser("USER");
+        user.setStatus(UserStatus.PENDING_VERIFICATION);
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Pending", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtTokenProvider.generateToken(eq(user.getPublicId()), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        authService.googleLogin(new GoogleLoginRequest("tok"));
+
+        // Google đã xác thực email (bỏ qua OTP) nhưng KHÔNG bỏ qua bước admin duyệt.
+        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_APPROVAL);
+    }
+
+    @Test
+    void googleLoginRejectsDisabledAccount() {
+        User user = activeUser("USER");
+        user.setStatus(UserStatus.DISABLED);
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Disabled", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequest("tok")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không hoạt động");
+    }
+
+    @Test
+    void googleLoginLogsInExistingActiveUserWithoutCreatingAccount() {
+        User user = activeUser("USER");
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "admin@marinelink.demo", true, "Existing", null));
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(jwtTokenProvider.generateToken(eq(user.getPublicId()), eq(List.of("USER"))))
+                .thenReturn("jwt-token");
+        when(jwtTokenProvider.getExpirationSeconds()).thenReturn(3600L);
+
+        LoginResponse response = authService.googleLogin(new GoogleLoginRequest("tok"));
+
+        assertThat(response.token()).isEqualTo("jwt-token");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void googleLoginRejectsUnverifiedGoogleEmail() {
+        when(googleTokenVerifier.verify("tok"))
+                .thenReturn(new GoogleUserInfo(
+                        "sub", "x@gmail.com", false, "X", null));
+
+        assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequest("tok")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("chưa được xác thực");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void changePasswordUpdatesPasswordWhenOldMatches() {
+        User user = activeUser("USER");
+        UUID publicId = user.getPublicId();
+        when(userRepository.findActiveByPublicId(publicId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPass123", user.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.encode("NewPass123")).thenReturn("new-bcrypt-hash");
+
+        authService.changePassword(publicId, new ChangePasswordRequest("OldPass123", "NewPass123"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-bcrypt-hash");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void changePasswordThrowsWhenOldPasswordIncorrect() {
+        User user = activeUser("USER");
+        UUID publicId = user.getPublicId();
+        when(userRepository.findActiveByPublicId(publicId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("WrongPass", user.getPasswordHash())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.changePassword(
+                publicId, new ChangePasswordRequest("WrongPass", "NewPass123")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không chính xác");
+    }
+
+    @Test
+    void verifyEmailTransitionsUserToPendingApprovalOnValidOtp() {
+        String email = "pending@example.com";
+        String otp = "123456";
+        VerifyEmailRequest request = new VerifyEmailRequest(email, otp);
+
+        User user = User.builder()
+                .id(12L)
+                .email(email)
+                .status(UserStatus.PENDING_VERIFICATION)
+                .role(Role.builder().code("USER").build())
+                .build();
+
+        when(userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.of(user));
+
+        authService.verifyEmail(request);
+
+        verify(emailOtpService).verifyOtp(email, otp);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.PENDING_APPROVAL);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void verifyEmailThrowsWhenPendingUserNotFound() {
+        String email = "notfound@example.com";
+        String otp = "123456";
+        VerifyEmailRequest request = new VerifyEmailRequest(email, otp);
+
+        when(userRepository.findByEmailAndStatus(email, UserStatus.PENDING_VERIFICATION))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.verifyEmail(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Không tìm thấy tài khoản đang chờ xác thực");
+
+        verify(emailOtpService).verifyOtp(email, otp);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void forgotPasswordSendsOtpWhenUserExists() {
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(activeUser("USER")));
+
+        authService.forgotPassword(new ForgotPasswordRequest("admin@marinelink.demo"));
+
+        verify(emailOtpService).sendOtp("admin@marinelink.demo");
+    }
+
+    @Test
+    void forgotPasswordIgnoresUnknownEmailSilently() {
+        when(userRepository.findActiveByEmailOrPhone("nobody@example.com"))
+                .thenReturn(Optional.empty());
+
+        authService.forgotPassword(new ForgotPasswordRequest("nobody@example.com"));
+
+        verify(emailOtpService, never()).sendOtp(anyString());
+    }
+
+    @Test
+    void resetPasswordVerifiesOtpAndUpdatesHash() {
+        User user = activeUser("USER");
+        when(userRepository.findActiveByEmailOrPhone("admin@marinelink.demo"))
+                .thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("NewPass123")).thenReturn("new-hash");
+
+        authService.resetPassword(
+                new ResetPasswordRequest("admin@marinelink.demo", "123456", "NewPass123"));
+
+        verify(emailOtpService).verifyOtp("admin@marinelink.demo", "123456");
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+        verify(userRepository).save(user);
     }
 
     private User activeUser(String roleCode) {

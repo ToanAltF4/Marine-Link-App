@@ -2,6 +2,8 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 
@@ -40,7 +42,14 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(ProductListError(response.message ?? 'Lỗi tải danh sách sản phẩm'));
+        emit(
+          ProductListError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: AppStrings.productListLoadError,
+            ),
+          ),
+        );
         return;
       }
 
@@ -54,13 +63,18 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
             products: products,
             currentPage: pagination?.page ?? 0,
             totalPages: pagination?.totalPages ?? 1,
-            hasMore: pagination != null &&
+            hasMore:
+                pagination != null &&
                 pagination.page < pagination.totalPages - 1,
           ),
         );
       }
     } catch (e) {
-      emit(ProductListError(e.toString()));
+      emit(
+        ProductListError(
+          userFacingErrorMessage(e, fallback: AppStrings.productListLoadError),
+        ),
+      );
     }
   }
 
@@ -70,19 +84,29 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   ) async {
     emit(const ProductDetailLoading());
     try {
-      final response =
-          await _productRepository.getProductDetail(event.productId);
+      final response = await _productRepository.getProductDetail(
+        event.productId,
+      );
 
       if (!response.success || response.data == null) {
-        emit(ProductDetailError(
-          response.message ?? 'Không tìm thấy sản phẩm',
-        ));
+        emit(
+          ProductDetailError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: AppStrings.productDetailNotFound,
+            ),
+          ),
+        );
         return;
       }
 
       emit(ProductDetailLoaded(response.data!));
     } catch (e) {
-      emit(ProductDetailError(e.toString()));
+      emit(
+        ProductDetailError(
+          userFacingErrorMessage(e, fallback: AppStrings.productDetailNotFound),
+        ),
+      );
     }
   }
 

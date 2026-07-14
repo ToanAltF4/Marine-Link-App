@@ -34,5 +34,16 @@ class User extends Equatable {
   bool get isActive => status == 'ACTIVE';
 
   @override
-  List<Object?> get props => [id, fullName, email, phone, status, roles];
+  List<Object?> get props => [
+    id,
+    fullName,
+    email,
+    phone,
+    status,
+    roles,
+    storeName,
+    businessAddress,
+    taxCode,
+    avatarUrl,
+  ];
 }

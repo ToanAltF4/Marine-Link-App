@@ -4,17 +4,39 @@ import '../domain/product.dart';
 class CategoryDto {
   final String id;
   final String name;
+  final String? parentId;
+  final String? parentName;
+  final List<CategoryDto> children;
 
-  const CategoryDto({required this.id, required this.name});
+  const CategoryDto({
+    required this.id,
+    required this.name,
+    this.parentId,
+    this.parentName,
+    this.children = const [],
+  });
 
   factory CategoryDto.fromJson(Map<String, dynamic> json) {
     return CategoryDto(
       id: json['id'] as String,
       name: json['name'] as String,
+      parentId: json['parentId'] as String?,
+      parentName: json['parentName'] as String?,
+      children:
+          (json['children'] as List<dynamic>?)
+              ?.map((e) => CategoryDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 
-  Category toDomain() => Category(id: id, name: name);
+  Category toDomain() => Category(
+    id: id,
+    name: name,
+    parentId: parentId,
+    parentName: parentName,
+    children: children.map((e) => e.toDomain()).toList(),
+  );
 }
 
 /// DTO: ProductImageDto.
@@ -84,6 +106,7 @@ class ProductDto {
   final String id;
   final String name;
   final String slug;
+  final String? shortDescription;
   final String? origin;
   final String? imageUrl;
   final double basePrice;
@@ -98,6 +121,7 @@ class ProductDto {
     required this.id,
     required this.name,
     required this.slug,
+    this.shortDescription,
     this.origin,
     this.imageUrl,
     required this.basePrice,
@@ -114,6 +138,7 @@ class ProductDto {
       id: json['id'] as String,
       name: json['name'] as String,
       slug: json['slug'] as String? ?? '',
+      shortDescription: json['shortDescription'] as String?,
       origin: json['origin'] as String?,
       imageUrl: json['imageUrl'] as String?,
       basePrice: (json['basePrice'] as num).toDouble(),
@@ -132,6 +157,7 @@ class ProductDto {
     id: id,
     name: name,
     slug: slug,
+    shortDescription: shortDescription,
     origin: origin,
     imageUrl: imageUrl,
     basePrice: basePrice,
@@ -154,6 +180,7 @@ class ProductDetailDto extends ProductDto {
     required super.id,
     required super.name,
     required super.slug,
+    super.shortDescription,
     super.origin,
     super.imageUrl,
     required super.basePrice,
@@ -174,6 +201,7 @@ class ProductDetailDto extends ProductDto {
       id: base.id,
       name: base.name,
       slug: base.slug,
+      shortDescription: base.shortDescription,
       origin: base.origin,
       imageUrl: base.imageUrl,
       basePrice: base.basePrice,
@@ -184,14 +212,14 @@ class ProductDetailDto extends ProductDto {
       isFeatured: base.isFeatured,
       category: base.category,
       description: json['description'] as String?,
-      images: (json['images'] as List<dynamic>?)
-              ?.map((e) =>
-                  ProductImageDto.fromJson(e as Map<String, dynamic>))
+      images:
+          (json['images'] as List<dynamic>?)
+              ?.map((e) => ProductImageDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      priceTiers: (json['priceTiers'] as List<dynamic>?)
-              ?.map((e) =>
-                  PriceTierDto.fromJson(e as Map<String, dynamic>))
+      priceTiers:
+          (json['priceTiers'] as List<dynamic>?)
+              ?.map((e) => PriceTierDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
@@ -202,6 +230,7 @@ class ProductDetailDto extends ProductDto {
     id: id,
     name: name,
     slug: slug,
+    shortDescription: shortDescription,
     origin: origin,
     imageUrl: imageUrl,
     basePrice: basePrice,
@@ -221,6 +250,13 @@ class ProductDetailDto extends ProductDto {
 List<Product> productListFromJson(dynamic json) {
   return (json as List<dynamic>)
       .map((e) => ProductDto.fromJson(e as Map<String, dynamic>).toDomain())
+      .toList();
+}
+
+/// Helper to parse category tree from GET /api/products/categories.
+List<Category> categoryListFromJson(dynamic json) {
+  return (json as List<dynamic>)
+      .map((e) => CategoryDto.fromJson(e as Map<String, dynamic>).toDomain())
       .toList();
 }
 

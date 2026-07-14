@@ -56,106 +56,270 @@ Ngô Việt Hoàng – SE172524
 
 **Mục đích**
 
-Mô tả cấu trúc cơ sở dữ liệu và API phục vụ ứng dụng MarineLink B2B. Hệ thống sử dụng REST API để kết nối giữa Flutter frontend và backend server. Dữ liệu được lưu trữ trên cloud database.
+Mô tả cấu trúc cơ sở dữ liệu và API phục vụ ứng dụng MarineLink (B2B đặt hải sản khô cho đại lý). Hệ thống dùng **REST API** kết nối Flutter frontend với backend **Spring Boot**, dữ liệu lưu trên **PostgreSQL (Supabase)**, schema quản lý bằng **Flyway** (30 migration: V001–V030). Realtime chat dùng thêm **WebSocket (STOMP)**.
 
-**Các bảng dữ liệu chính**
+**Quy ước chung của toàn bộ schema**
 
-|  |  |  |  |
+| | |
+| --- | --- |
+| **Hạng mục** | **Quy ước** |
+| ID strategy | Mỗi bảng có `id` (bigint, khóa chính nội bộ) và `public_id` (UUID) — **chỉ `public_id` được lộ ra API**, tránh đoán ID tuần tự. |
+| Xóa dữ liệu | **Soft delete** bằng cột `deleted_at` (sản phẩm, người dùng, địa chỉ) — dữ liệu lịch sử (đơn hàng) không bị mất. |
+| Thời gian | `created_at`, `updated_at` kiểu `timestamptz` (UTC); frontend quy đổi sang giờ Việt Nam (GMT+7) khi hiển thị. |
+| Kiểu liệt kê | 8 ENUM ở tầng DB: `user_status`, `product_status`, `order_status`, `payment_status`, `payment_method`, `notification_type`, `chat_sender_type`, `complaint_status`. |
+| Xác thực | **JWT Bearer token** gửi kèm header `Authorization` ở mọi request cần đăng nhập. |
+
+**Ánh xạ nhóm dữ liệu yêu cầu sang bảng thực tế của MarineLink**
+
+| | |
+| --- | --- |
+| **Nhóm dữ liệu** | **Bảng trong hệ thống** |
+| User / Customer | `users`, `roles`, `shipping_addresses`, `email_otp` |
+| Product | `products`, `product_images`, `price_tiers` |
+| Category / Brand | `categories` (có `parent_id` → danh mục phân cấp) |
+| Cart | `carts`, `cart_items` |
+| Order | `orders`, `order_items`, `order_status_history`, `payments`, `payment_methods` |
+| Notification | `notifications` (gom nhóm broadcast qua `broadcast_id`) |
+| Store Location | `warehouses` |
+| Message / Chat | `chat_rooms`, `chat_messages`, `chat_attachments`, `complaints` |
+
+**Các bảng dữ liệu (21 bảng)**
+
+| | | | |
 | --- | --- | --- | --- |
-| **Bảng** | **Mô tả** | **Khóa chính / ID strategy** | **Liên kết/Quan hệ** |
-| users | Thông tin tài khoản người dùng, liên kết trực tiếp với bảng roles qua cột role\_id. | id (PK nội bộ), public\_id (UUIDv4 API), role\_id (FK) | n-1 role, 1-n orders, 1-n carts, 1-n chat\_rooms, 1-n chat\_messages, 1-n complaints, 1-n notifications |
-| roles | Danh sách vai trò mặc định và mở rộng như ADMIN, STAFF, USER. | id (PK nội bộ), public\_id (UUIDv4 API) | 1-n users |
-| categories | Danh mục: Mực khô, Tôm khô, Cá khô, Nước mắm. | id (PK nội bộ), public\_id (UUIDv4 API) | 1-n products |
-| products | Sản phẩm hải sản khô/nước mắm. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 categories, 1-n product\_images, 1-n price\_tiers, 1-n cart\_items, 1-n order\_items |
-| product\_images | Ảnh phụ hoặc gallery của sản phẩm. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 products |
-| price\_tiers | Bảng giá sỉ theo số lượng. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 products, 1-n cart\_items qua selected\_price |
-| carts | Giỏ hàng hiện tại của từng đại lý. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, 1-n cart\_items |
-| cart\_items | Sản phẩm trong giỏ hàng, có thể lưu mức giá đã chọn. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 carts, n-1 products, n-1 price\_tiers |
-| orders | Đơn hàng sỉ của đại lý. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, 1-n order\_items, 1-n order\_status\_history, 1-n complaints, 1-n notifications |
-| order\_items | Chi tiết từng sản phẩm trong đơn, có snapshot giá. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 orders, n-1 products |
-| order\_status\_history | Lịch sử thay đổi trạng thái đơn hàng. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 orders, n-1 users qua changed\_by |
-| chat\_rooms | Phòng chat giữa đại lý và Staff. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, n-1 users qua assigned\_staff\_id, 1-n chat\_messages |
-| chat\_messages | Lịch sử chat giữa Đại lý và Nhân viên hỗ trợ. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 chat\_rooms, n-1 users qua sender\_id, 1-n chat\_attachments, 1-n complaints |
-| chat\_attachments | Metadata file đính kèm của tin nhắn chat. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 chat\_messages, n-1 users qua uploaded\_by |
-| complaints | Khiếu nại từ đại lý, phát sinh từ đơn hàng hoặc chat message. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, n-1 orders, n-1 chat\_rooms, n-1 chat\_messages |
-| notifications | Thông báo push/in-app cho người dùng. | id (PK nội bộ), public\_id (UUIDv4 API) | n-1 users, có thể liên kết orders/products/chat\_rooms |
-| warehouses | Kho hàng và điểm lấy hàng. | id (PK nội bộ), public\_id (UUIDv4 API) | Độc lập; dùng cho Map |
+| **Bảng** | **Mô tả** | **Cột chính** | **Liên kết / Quan hệ** |
+| roles | Vai trò hệ thống: ADMIN, STAFF, USER. | `code`, `name`, `is_system` | 1-n `users` |
+| users | Tài khoản người dùng (đại lý, nhân viên, quản trị). Lưu thông tin doanh nghiệp của đại lý. | `full_name`, `email`, `phone`, `password_hash`, `status`, `store_name`, `business_address`, `tax_code`, `avatar_url`, `role_id` (FK) | n-1 `roles`; 1-n `orders`, `carts`, `chat_rooms`, `notifications`, `shipping_addresses` |
+| email_otp | Mã OTP 6 số gửi qua email (xác thực đăng ký, quên mật khẩu). | `email`, `otp_code`, `expires_at`, `used` | Độc lập, đối chiếu theo `email` |
+| shipping_addresses | Sổ địa chỉ giao hàng của đại lý. | `label`, `receiver_name`, `receiver_phone`, `address_line`, `is_default`, `user_id` (FK) | n-1 `users` |
+| categories | Danh mục sản phẩm, **có phân cấp** qua `parent_id`. | `name`, `slug`, `display_order`, `is_active`, `parent_id` (FK tự trỏ) | Tự tham chiếu (cha–con); 1-n `products` |
+| products | Sản phẩm hải sản khô/nước mắm. | `name`, `slug`, `description`, `origin`, `image_url`, `base_price`, `unit`, `min_order_quantity`, `stock_quantity`, `status`, `is_featured`, `category_id` (FK) | n-1 `categories`; 1-n `product_images`, `price_tiers`, `cart_items`, `order_items` |
+| product_images | Ảnh phụ (gallery) của sản phẩm. | `image_url`, `alt_text`, `display_order`, `product_id` (FK) | n-1 `products` |
+| price_tiers | Bậc giá sỉ theo số lượng của **từng sản phẩm**. | `min_quantity`, `max_quantity`, `unit_price`, `product_id` (FK) | n-1 `products`; 1-n `cart_items` |
+| carts | Giỏ hàng đang hoạt động của đại lý (mỗi user 1 giỏ). | `user_id` (FK, unique) | 1-1 `users`; 1-n `cart_items` |
+| cart_items | Dòng sản phẩm trong giỏ, ghi nhớ bậc giá đã chọn. | `quantity`, `is_selected`, `cart_id` (FK), `product_id` (FK), `price_tier_id` (FK, ON DELETE SET NULL) | n-1 `carts`, `products`, `price_tiers` |
+| orders | Đơn hàng sỉ. Lưu mốc thời gian từng trạng thái. | `order_code`, `status`, `payment_status`, `subtotal_amount`, `discount_amount`, `shipping_fee`, `total_amount`, `receiver_name`, `receiver_phone`, `shipping_address`, `confirmed_at`, `shipped_at`, `completed_at`, `cancelled_at`, `user_id` (FK), `payment_method_id` (FK) | n-1 `users`, `payment_methods`; 1-n `order_items`, `order_status_history`, `payments` |
+| order_items | Chi tiết đơn — **snapshot** tên/giá tại thời điểm đặt (không đổi khi sản phẩm bị sửa sau này). | `product_name_snapshot`, `product_unit_snapshot`, `unit_price`, `quantity`, `line_total`, `order_id` (FK), `product_id` (FK) | n-1 `orders`, `products` |
+| order_status_history | Nhật ký chuyển trạng thái đơn (ai đổi, khi nào, ghi chú). | `from_status`, `to_status`, `note`, `order_id` (FK), `changed_by` (FK users) | n-1 `orders`, `users` |
+| payment_methods | Danh mục phương thức thanh toán: COD, VNPAY, BANK_TRANSFER. | `code`, `name`, `is_active` | 1-n `orders`, `payments` |
+| payments | Giao dịch thanh toán của đơn (đặc biệt cho VNPAY). | `amount`, `status`, `txn_ref`, `transaction_code`, `bank_code`, `response_code`, `raw_response`, `order_id` (FK), `payment_method_id` (FK) | n-1 `orders`, `payment_methods` |
+| notifications | Thông báo in-app/push cho từng người dùng. Thông báo phát cho toàn bộ đại lý (broadcast) được nhân bản mỗi user 1 dòng, gom nhóm qua `broadcast_id`. | `type`, `title`, `body`, `is_read`, `broadcast_id`, `user_id` (FK), `related_order_id` (FK), `related_product_id` (FK), `related_chat_room_id` | n-1 `users`; tham chiếu tùy chọn tới `orders`, `products`, `chat_rooms` |
+| warehouses | Kho hàng / điểm nhận hàng, có **tọa độ** để hiển thị bản đồ. | `name`, `address`, `phone`, `opening_hours`, `latitude`, `longitude` (numeric(10,7)), `is_active` | Độc lập; dùng cho màn Bản đồ kho |
+| chat_rooms | Phòng chat giữa đại lý và nhân viên; có thể gắn với 1 đơn hàng. | `status` (OPEN/CLOSED), `user_id` (FK), `assigned_staff_id` (FK users), `order_id` (FK) | n-1 `users` (đại lý), `users` (staff), `orders`; 1-n `chat_messages` |
+| chat_messages | Tin nhắn trong phòng chat. | `sender_type`, `content`, `is_read`, `chat_room_id` (FK), `sender_id` (FK users) | n-1 `chat_rooms`, `users`; 1-n `chat_attachments` |
+| chat_attachments | File/ảnh đính kèm tin nhắn (URL lưu trên Supabase Storage). | `file_url`, `file_name`, `file_type`, `chat_message_id` (FK), `uploaded_by` (FK users) | n-1 `chat_messages`, `users` |
+| complaints | Khiếu nại của đại lý, phát sinh từ đơn hàng hoặc tin nhắn chat. | `title`, `content`, `status`, `user_id` (FK), `order_id` (FK), `chat_room_id` (FK), `chat_message_id` (FK) | n-1 `users`, `orders`, `chat_rooms`, `chat_messages` |
 
-**API endpoints chính**
+**Sơ đồ quan hệ (ERD rút gọn)**
 
-|  |  |  |  |
-| --- | --- | --- | --- |
-| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
-| POST | /api/auth/logout | Logout hoặc token cleanup nếu backend lưu refresh token/denylist. | Authenticated |
-| POST | /api/auth/login | Đăng nhập, trả JWT kèm roles của user. | Công khai |
-| POST | /api/auth/register | Đăng ký đại lý và gán role USER mặc định. | Công khai |
-| GET | /api/products | Lấy danh sách sản phẩm, tìm kiếm, lọc, sắp xếp. | Tất cả role |
-| GET | /api/products/{id} | Chi tiết sản phẩm + ảnh + giá sỉ. | Tất cả role |
-| GET | /api/cart | Lấy active cart server-side của đại lý. | Đại lý |
-| POST | /api/cart/items | Thêm/cộng dồn sản phẩm vào giỏ hàng server-side. | Đại lý |
-| PATCH | /api/cart/items/{productId} | Cập nhật số lượng hoặc selected state của cart item. | Đại lý |
-| DELETE | /api/cart/items/{productId} | Xóa một sản phẩm khỏi giỏ hàng. | Đại lý |
-| DELETE | /api/cart/items | Clear toàn bộ giỏ hàng. | Đại lý |
-| POST | /api/cart/sync | Endpoint phụ để merge cart local/offline/pre-login lên carts/cart\_items. | Đại lý |
-| GET | /api/orders/{id} | Chi tiết đơn hàng, items và lịch sử trạng thái. | Owner, Staff, Admin |
-| POST | /api/orders | Tạo đơn hàng mới từ cart\_items. | Đại lý |
-| GET | /api/orders | Danh sách đơn hàng theo role/trạng thái; Đại lý chỉ thấy đơn của mình. | Đại lý, Staff, Admin |
-| PUT | /api/orders/{id}/status | Cập nhật trạng thái đơn hàng và ghi order\_status\_history. | Admin, Staff |
-| POST | /api/chat/send | Gửi tin nhắn chat, có thể kèm metadata file đính kèm. | Tất cả role |
-| PUT | /api/notifications/{id}/read | Đánh dấu thông báo đã đọc. | Owner |
-| GET | /api/chat/{roomId} | Lấy lịch sử chat, bao gồm chat\_attachments. | Participant, Staff, Admin |
-| GET/PUT | /api/users/me | Xem và cập nhật hồ sơ hiện tại. | Authenticated |
-| GET | /api/notifications | Lấy thông báo. | Tất cả role |
-| GET | /api/warehouses | Danh sách kho hàng. | Tất cả role |
-| GET | /api/admin/dashboard | Thống kê tổng quan. | Admin |
-| CRUD | /api/admin/products | Quản lý sản phẩm, ảnh, tồn kho, giá sỉ. | Admin |
-| CRUD | /api/admin/users | Quản lý tài khoản và vai trò. | Admin |
+```
+roles ──1:n──> users ──1:1──> carts ──1:n──> cart_items ──n:1──> products
+                 │                               └──n:1──> price_tiers
+                 ├──1:n──> shipping_addresses
+                 ├──1:n──> orders ──1:n──> order_items ──n:1──> products
+                 │            ├──1:n──> order_status_history
+                 │            ├──1:n──> payments ──n:1──> payment_methods
+                 │            └──n:1──> payment_methods
+                 ├──1:n──> notifications ──(tùy chọn)──> orders / products / chat_rooms
+                 ├──1:n──> chat_rooms ──1:n──> chat_messages ──1:n──> chat_attachments
+                 └──1:n──> complaints ──(nguồn)──> orders / chat_messages
 
-**Quan hệ giữa các bảng/collection**
+categories ──tự tham chiếu (parent_id)──> categories
+categories ──1:n──> products ──1:n──> product_images
+                             └──1:n──> price_tiers
 
-|  |  |  |  |
+warehouses  (bảng độc lập — dữ liệu cho bản đồ)
+email_otp   (bảng độc lập — đối chiếu theo email)
+```
+
+**Quan hệ giữa các bảng**
+
+| | | | |
 | --- | --- | --- | --- |
 | **Bảng nguồn** | **Quan hệ** | **Bảng đích** | **Ý nghĩa** |
-| users | 1-n | orders | Một đại lý có thể tạo nhiều đơn hàng. |
-| users | 1-n | carts | Mỗi user có một cart active trong MVP. |
-| categories | 1-n | products | Một danh mục có nhiều sản phẩm. |
-| products | 1-n | product\_images | Một sản phẩm có nhiều ảnh. |
-| products | 1-n | price\_tiers | Một sản phẩm có nhiều mức giá sỉ theo số lượng. |
-| carts | 1-n | cart\_items | Một giỏ hàng gồm nhiều dòng sản phẩm. |
-| products | 1-n | cart\_items | Một sản phẩm có thể nằm trong nhiều giỏ hàng. |
-| orders | 1-n | order\_items | Một đơn hàng gồm nhiều dòng sản phẩm. |
-| orders | 1-n | order\_status\_history | Một đơn hàng có nhiều lần thay đổi trạng thái. |
+| roles | 1-n | users | Một vai trò gán cho nhiều người dùng. |
+| users | 1-1 | carts | Mỗi đại lý có một giỏ hàng đang hoạt động. |
+| users | 1-n | shipping_addresses | Một đại lý lưu nhiều địa chỉ giao hàng. |
+| users | 1-n | orders | Một đại lý tạo nhiều đơn hàng. |
 | users | 1-n | notifications | Mỗi người dùng nhận nhiều thông báo. |
-| orders | 1-n | complaints | Một đơn hàng có thể phát sinh nhiều khiếu nại. |
-| chat\_rooms | 1-n | chat\_messages | Một phòng chat có nhiều tin nhắn. |
-| chat\_messages | 1-n | chat\_attachments | Một tin nhắn có thể có nhiều file đính kèm. |
-| price\_tiers | 1-n | cart\_items | Một mức giá có thể được chọn bởi nhiều cart item sau khi validate số lượng. |
-| chat\_messages | 1-n | complaints | Một tin nhắn chat có thể phát sinh khiếu nại. |
+| categories | 1-n | categories | Danh mục cha chứa nhiều danh mục con (`parent_id`). |
+| categories | 1-n | products | Một danh mục có nhiều sản phẩm. |
+| products | 1-n | product_images | Một sản phẩm có nhiều ảnh. |
+| products | 1-n | price_tiers | Một sản phẩm có nhiều bậc giá sỉ theo số lượng. |
+| carts | 1-n | cart_items | Một giỏ hàng gồm nhiều dòng sản phẩm. |
+| price_tiers | 1-n | cart_items | Bậc giá được chọn cho dòng giỏ hàng (xóa bậc giá → `price_tier_id` về NULL, giỏ hàng không hỏng). |
+| orders | 1-n | order_items | Một đơn gồm nhiều dòng sản phẩm (snapshot giá). |
+| orders | 1-n | order_status_history | Một đơn có nhiều lần đổi trạng thái. |
+| orders | 1-n | payments | Một đơn có thể có nhiều lần giao dịch thanh toán (retry VNPAY). |
+| payment_methods | 1-n | orders / payments | Một phương thức dùng cho nhiều đơn/giao dịch. |
+| chat_rooms | 1-n | chat_messages | Một phòng chat có nhiều tin nhắn. |
+| chat_messages | 1-n | chat_attachments | Một tin nhắn có thể kèm nhiều file. |
+| orders / chat_messages | 1-n | complaints | Khiếu nại phát sinh từ đơn hàng hoặc tin nhắn. |
 
-**CRUD/API theo từng màn hình**
+**API endpoints (REST — 64 endpoint)**
 
-Các thao tác đọc, ghi, cập nhật và xóa dữ liệu được gom theo từng màn hình để dễ đối chiếu với quá trình triển khai Flutter.
+*Xác thực & tài khoản*
 
-|  |  |  |  |
+| | | | |
 | --- | --- | --- | --- |
-| **Màn hình** | **Đọc dữ liệu (Read)** | **Ghi/Cập nhật/Xóa** | **Dữ liệu sử dụng** |
-| Đăng nhập | - | POST /api/auth/login | users, roles, JWT token |
-| Đăng ký | - | POST /api/auth/register | users, roles |
-| Trang chủ | GET /api/products, GET /api/notifications | - | categories, products, product\_images, price\_tiers, notifications |
-| Danh sách sản phẩm | GET /api/products | - | products, categories, product\_images, price\_tiers |
-| Chi tiết sản phẩm | GET /api/products/{id} | - | products, product\_images, price\_tiers |
-| Giỏ hàng | Server-side Cart API + local UI cache | Sau login, backend là source of truth cho giỏ hàng; FE dùng local state/cache để thao tác nhanh; `/api/cart/sync` chỉ dùng merge local/offline/pre-login | carts, cart\_items, products, price\_tiers |
-| Checkout | - | POST /api/orders | carts, cart\_items, orders, order\_items, users, products |
-| Orders | GET /api/orders | PUT /api/orders/{id}/status | orders, order\_items, order\_status\_history, notifications |
-| Chat & Hỗ trợ | GET /api/chat/{roomId} | POST /api/chat/send | chat\_rooms, chat\_messages, chat\_attachments, complaints |
-| Thông báo | GET /api/notifications | PUT /api/notifications/{id}/read | notifications |
-| Bản đồ kho hàng | GET /api/warehouses | - | warehouses |
-| Hồ sơ cá nhân | GET /api/users/me | PUT /api/users/me, POST /api/auth/logout | users, roles |
-| Admin Dashboard | GET /api/admin/dashboard | CRUD /api/admin/products, CRUD /api/admin/users, PUT /api/orders/{id}/status | users, roles, products, product\_images, price\_tiers, orders, complaints |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| POST | /api/auth/register | Đăng ký đại lý, gửi OTP về email, trạng thái PENDING_VERIFICATION. | Công khai |
+| POST | /api/auth/verify-email | Xác thực OTP → chuyển sang PENDING_APPROVAL (chờ admin duyệt). | Công khai |
+| POST | /api/auth/resend-otp | Gửi lại mã OTP. | Công khai |
+| POST | /api/auth/login | Đăng nhập, trả JWT + thông tin user/role. | Công khai |
+| POST | /api/auth/google | Đăng nhập bằng Google (xác thực idToken, kiểm tra audience). | Công khai |
+| POST | /api/auth/forgot-password | Gửi OTP đặt lại mật khẩu về email. | Công khai |
+| POST | /api/auth/reset-password | Đặt lại mật khẩu bằng OTP. | Công khai |
+| POST | /api/auth/change-password | Đổi mật khẩu (biết mật khẩu cũ). | Đã đăng nhập |
+| POST | /api/auth/logout | Đăng xuất (client xóa token). | Đã đăng nhập |
+| GET | /api/auth/email-availability | Kiểm tra email đã tồn tại (validate realtime lúc đăng ký). | Công khai |
+| GET | /api/auth/phone-availability | Kiểm tra số điện thoại đã tồn tại. | Công khai |
+| GET / PUT | /api/users/me | Xem / cập nhật hồ sơ cá nhân. | Đã đăng nhập |
+| GET / POST | /api/users/me/shipping-addresses | Xem / thêm địa chỉ giao hàng. | Đại lý |
+| PUT / DELETE | /api/users/me/shipping-addresses/{id} | Sửa / xóa địa chỉ giao hàng. | Đại lý |
 
-**3 role mặc định: Admin (quản lý toàn bộ), Staff/Nhân viên (xử lý đơn, chat, khiếu nại), User/Đại lý (đặt hàng, xem sản phẩm, chat). Role được liên kết trực tiếp với bảng users qua cột role\_id.**
+*Sản phẩm & danh mục*
 
-Hệ thống sử dụng JWT token để xác thực. Mọi request API đều cần gửi kèm Bearer token trong header.
+| | | | |
+| --- | --- | --- | --- |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| GET | /api/products | Danh sách sản phẩm: tìm kiếm, lọc danh mục/trạng thái, phân trang. | Tất cả role |
+| GET | /api/products/{id} | Chi tiết sản phẩm + ảnh + bậc giá sỉ. | Tất cả role |
+| GET | /api/products/categories | Cây danh mục (cha–con). | Tất cả role |
+
+*Giỏ hàng*
+
+| | | | |
+| --- | --- | --- | --- |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| GET | /api/cart | Lấy giỏ hàng hiện tại (server là nguồn dữ liệu chính). | Đại lý |
+| POST | /api/cart/items | Thêm / cộng dồn sản phẩm vào giỏ. | Đại lý |
+| PATCH | /api/cart/items/{productId} | Cập nhật số lượng hoặc trạng thái chọn của một dòng. | Đại lý |
+| DELETE | /api/cart/items/{productId} | Xóa một sản phẩm khỏi giỏ. | Đại lý |
+| DELETE | /api/cart/items | Xóa toàn bộ giỏ hàng. | Đại lý |
+| POST | /api/cart/sync | Gộp giỏ hàng local (thao tác khi chưa đăng nhập) lên server. | Đại lý |
+
+*Đơn hàng & thanh toán*
+
+| | | | |
+| --- | --- | --- | --- |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| POST | /api/orders | Tạo đơn từ giỏ hàng (tính bậc giá + chiết khấu số lượng, sinh mã đơn). | Đại lý |
+| GET | /api/orders | Danh sách đơn theo role (đại lý chỉ thấy đơn của mình). | Đại lý, Staff, Admin |
+| GET | /api/orders/{id} | Chi tiết đơn: items, thanh toán, lịch sử trạng thái. | Chủ đơn, Staff, Admin |
+| PUT | /api/orders/{id}/status | Đổi trạng thái đơn; **duyệt đơn (CONFIRMED) sẽ trừ tồn kho**; ghi lịch sử; gửi thông báo. | Staff, Admin |
+| PUT | /api/orders/{id}/payment-status | Cập nhật trạng thái thanh toán của đơn. | Staff, Admin |
+| POST | /api/payments/vnpay/payment-url | Sinh link thanh toán VNPAY đã ký (HMAC-SHA512) cho đơn. | Đại lý |
+| POST | /api/payments/vnpay/cancel | Hủy giao dịch VNPAY đang chờ. | Đại lý |
+| GET | /api/payments/vnpay/return | VNPAY chuyển hướng về sau thanh toán; verify chữ ký, cập nhật đơn. | Công khai (VNPAY gọi) |
+| GET | /api/payments/vnpay/ipn | VNPAY gọi server-to-server xác nhận kết quả. | Công khai (VNPAY gọi) |
+
+*Chat & khiếu nại*
+
+| | | | |
+| --- | --- | --- | --- |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| GET | /api/chat/rooms | Danh sách phòng chat của người dùng. | Đại lý |
+| POST | /api/chat/rooms | Tạo phòng chat mới. | Đại lý |
+| GET | /api/chat/room | Lấy/khởi tạo phòng chat hỗ trợ chung. | Đại lý |
+| GET | /api/chat/orders/{orderId}/room | Phòng chat gắn với một đơn hàng. | Chủ đơn, Staff |
+| GET | /api/chat/{roomId} | Lịch sử tin nhắn của phòng. | Thành viên phòng, Staff, Admin |
+| POST | /api/chat/send | Gửi tin nhắn (đẩy realtime qua WebSocket). | Tất cả role |
+| GET | /api/staff/chat/rooms | Danh sách phòng chat cần xử lý. | Staff, Admin |
+| PUT | /api/staff/chat/rooms/{roomId}/status | Đánh dấu phòng đã xử lý / mở lại. | Staff, Admin |
+| POST | /api/staff/chat/rooms/{roomId}/complaints | Tạo khiếu nại từ phòng chat. | Staff, Admin |
+
+*Thông báo, kho hàng, lưu trữ*
+
+| | | | |
+| --- | --- | --- | --- |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| GET | /api/notifications | Thông báo của người dùng đang đăng nhập. | Đã đăng nhập |
+| PUT | /api/notifications/{id}/read | Đánh dấu đã đọc. | Chủ thông báo |
+| POST | /api/notifications | Gửi thông báo hàng loạt tới toàn bộ đại lý (kèm push OneSignal). | Staff, Admin |
+| GET | /api/notifications/broadcasts | Lịch sử thông báo đã gửi. | Staff, Admin |
+| DELETE | /api/notifications/broadcasts/{broadcastId} | Thu hồi/xóa một broadcast. | Staff, Admin |
+| GET | /api/warehouses | Danh sách kho kèm tọa độ (cho bản đồ). | Tất cả role |
+| POST | /api/storage/upload | Upload ảnh (multipart) lên Supabase Storage, trả về URL công khai. | Đã đăng nhập |
+| GET | /api/health | Kiểm tra tình trạng server. | Công khai |
+
+*Quản trị (Admin)*
+
+| | | | |
+| --- | --- | --- | --- |
+| **Phương thức** | **Endpoint** | **Mô tả** | **Phân quyền** |
+| GET | /api/admin/dashboard | Số liệu tổng quan (doanh thu tháng, đơn chờ, tồn kho thấp, số đại lý). | Admin |
+| GET | /api/admin/revenue | Báo cáo doanh thu theo khoảng ngày + top sản phẩm bán chạy. | Admin |
+| GET / POST | /api/admin/products | Danh sách / tạo sản phẩm. | Admin |
+| GET / PUT / DELETE | /api/admin/products/{id} | Chi tiết / sửa / xóa mềm sản phẩm (kèm bậc giá). | Admin |
+| GET / POST | /api/admin/users | Danh sách / **tạo tài khoản nhân viên** (kích hoạt sẵn). | Admin |
+| GET / PUT | /api/admin/users/{id} | Chi tiết / cập nhật (duyệt, khóa/mở khóa) tài khoản. | Admin |
+| PUT | /api/admin/users/{id}/role | Đổi vai trò người dùng. | Admin |
+
+**Kênh realtime (WebSocket)**
+
+| | |
+| --- | --- |
+| **Thành phần** | **Mô tả** |
+| Handshake | `/ws` (STOMP over WebSocket). |
+| Kênh nhận tin | `/topic/chat.{roomPublicId}` — client subscribe để nhận tin nhắn mới ngay lập tức. |
+| Cách dùng | Tin nhắn vẫn **gửi qua REST** (`POST /api/chat/send`) để đảm bảo lưu DB; server đẩy bản sao qua WebSocket cho các thành viên đang mở phòng. |
+
+**Cách ứng dụng đọc, ghi, cập nhật và xóa dữ liệu**
+
+| | |
+| --- | --- |
+| **Bước** | **Mô tả** |
+| 1. Tầng giao diện | Màn hình (Screen) chỉ hiển thị; mọi thao tác phát sự kiện tới **Bloc/Cubit** tương ứng. |
+| 2. Tầng nghiệp vụ | Bloc/Cubit gọi **Repository** (interface trong `domain/`). |
+| 3. Tầng dữ liệu | Repository có 2 bản cài đặt: **RemoteRepository** (gọi REST API thật) và **MockRepository** (dữ liệu giả, chạy offline khi demo). Chọn bản nào do cờ `USE_REMOTE_REPOSITORIES` lúc build. |
+| 4. Gọi HTTP | `ApiClient` (dựa trên **Dio**) tự đính kèm `Authorization: Bearer <JWT>`, xử lý timeout và chuyển lỗi backend thành thông báo tiếng Việt. |
+| 5. Chuyển đổi dữ liệu | **DTO** (`data/*_dto.dart`) parse JSON → **Entity** (`domain/`) để tầng giao diện không phụ thuộc định dạng API. |
+| 6. Phản hồi | Repository trả `ApiResponse<T>` (`success`, `message`, `data`); Bloc/Cubit đổi trạng thái → giao diện vẽ lại. |
+
+Quy ước thao tác dữ liệu:
+
+* **Đọc (Read)** — `GET`, ví dụ `GET /api/products`, `GET /api/orders`. Danh sách dài dùng phân trang (`page`, `size`).
+* **Ghi (Create)** — `POST`, ví dụ `POST /api/orders` (đặt hàng), `POST /api/cart/items` (thêm giỏ).
+* **Cập nhật (Update)** — `PUT` khi thay toàn bộ (`PUT /api/admin/products/{id}`), `PATCH` khi sửa một phần (`PATCH /api/cart/items/{productId}`).
+* **Xóa (Delete)** — `DELETE`. Sản phẩm/người dùng dùng **xóa mềm** (`deleted_at`) để không phá vỡ đơn hàng đã phát sinh; dòng giỏ hàng thì xóa thật.
+* **Giao dịch (Transaction)** — các thao tác nhiều bước (tạo đơn, duyệt đơn + trừ tồn kho, sửa bậc giá) chạy trong **một transaction** ở backend; gửi email/push chạy **nền (@Async)** nên không làm chậm request.
+
+**CRUD / API theo từng màn hình**
+
+| | | | |
+| --- | --- | --- | --- |
+| **Màn hình** | **Đọc (Read)** | **Ghi / Cập nhật / Xóa** | **Dữ liệu sử dụng** |
+| Đăng nhập | — | POST /api/auth/login, POST /api/auth/google | users, roles, JWT |
+| Đăng ký | GET /api/auth/email-availability, /phone-availability | POST /api/auth/register | users, roles, email_otp |
+| Nhập OTP | — | POST /api/auth/verify-email, POST /api/auth/resend-otp | email_otp, users |
+| Quên mật khẩu | — | POST /api/auth/forgot-password | email_otp, users |
+| Đặt lại mật khẩu | — | POST /api/auth/reset-password | email_otp, users |
+| Đổi mật khẩu | — | POST /api/auth/change-password | users |
+| Trang chủ | GET /api/products (nổi bật), GET /api/products/categories | — | products, categories, price_tiers |
+| Danh sách sản phẩm | GET /api/products (tìm kiếm, lọc, phân trang) | — | products, categories, price_tiers |
+| Chi tiết sản phẩm | GET /api/products/{id} | POST /api/cart/items | products, product_images, price_tiers, cart_items |
+| Giỏ hàng | GET /api/cart | PATCH/DELETE /api/cart/items, POST /api/cart/sync | carts, cart_items, products, price_tiers |
+| Thanh toán (Checkout) | GET /api/users/me/shipping-addresses | POST /api/orders, POST /api/payments/vnpay/payment-url | orders, order_items, payments, payment_methods, shipping_addresses |
+| Kết quả VNPAY | GET /api/orders/{id} | POST /api/payments/vnpay/cancel | orders, payments |
+| Danh sách đơn hàng | GET /api/orders | — | orders, order_items |
+| Chi tiết đơn hàng | GET /api/orders/{id} | PUT /api/orders/{id}/status *(Staff/Admin)* | orders, order_items, order_status_history, payments |
+| Chat (đại lý) | GET /api/chat/rooms, GET /api/chat/{roomId}, WebSocket `/topic/chat.{id}` | POST /api/chat/send, POST /api/chat/rooms | chat_rooms, chat_messages, chat_attachments |
+| Quản lý chat (Staff) | GET /api/staff/chat/rooms, GET /api/chat/{roomId} | POST /api/chat/send, PUT /api/staff/chat/rooms/{id}/status, POST .../complaints | chat_rooms, chat_messages, complaints |
+| Thông báo | GET /api/notifications, GET /api/notifications/broadcasts | PUT /api/notifications/{id}/read, POST /api/notifications, DELETE /api/notifications/broadcasts/{id} | notifications |
+| Bản đồ kho hàng | GET /api/warehouses | — *(mở Google Maps chỉ đường bằng tọa độ)* | warehouses |
+| Hồ sơ cá nhân | GET /api/users/me, GET /api/users/me/shipping-addresses | PUT /api/users/me, POST/PUT/DELETE địa chỉ, POST /api/auth/logout | users, roles, shipping_addresses |
+| Dashboard Admin | GET /api/admin/dashboard | — | orders, products, users |
+| Doanh thu (Admin) | GET /api/admin/revenue | — | orders, order_items, products |
+| Quản lý sản phẩm (Admin) | GET /api/admin/products, GET /api/admin/products/{id}, GET /api/products/categories | POST/PUT/DELETE /api/admin/products, POST /api/storage/upload | products, product_images, price_tiers, categories |
+| Quản lý tài khoản (Admin) | GET /api/admin/users, GET /api/admin/users/{id} | POST /api/admin/users, PUT /api/admin/users/{id}, PUT .../role | users, roles |
+| Dashboard Staff | GET /api/orders, GET /api/staff/chat/rooms | PUT /api/orders/{id}/status | orders, chat_rooms |
+
+**Phân quyền**
+
+Ba vai trò: **Admin** (toàn quyền: sản phẩm, tài khoản, doanh thu, thông báo), **Staff** (xử lý đơn, chat, khiếu nại), **User/Đại lý** (xem sản phẩm, đặt hàng, chat, theo dõi đơn). Vai trò gắn với `users.role_id`; backend chặn ở tầng `SecurityConfig` (theo đường dẫn) và frontend chặn bằng route guard (`AdminRoleGuard`, `StaffRoleGuard`).
+
+Trạng thái tài khoản quyết định quyền xem giá: đại lý ở trạng thái `PENDING_APPROVAL` **đăng nhập và xem sản phẩm được nhưng không thấy giá và không đặt hàng được**, cho tới khi Admin duyệt (`ACTIVE`).
 
 ## 2. Đăng nhập (Login)
 

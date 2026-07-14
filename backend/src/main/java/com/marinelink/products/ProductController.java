@@ -19,6 +19,11 @@ public class ProductController {
 
     private final ProductService productService;
 
+    @GetMapping("/categories")
+    public ApiResponse<List<CategoryResponse>> listCategories() {
+        return ApiResponse.ok(productService.listCategories());
+    }
+
     @GetMapping
     public ApiResponse<List<ProductListItemResponse>> listProducts(
             @RequestParam(defaultValue = "0") int page,

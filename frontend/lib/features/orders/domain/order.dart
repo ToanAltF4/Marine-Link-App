@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
-/// Order status matching the API contract.
 enum OrderStatus {
   pending,
   confirmed,
@@ -22,14 +22,13 @@ enum OrderStatus {
   String get apiValue => name.toUpperCase();
 
   String get displayLabel => switch (this) {
-    OrderStatus.pending => 'Chờ duyệt',
-    OrderStatus.confirmed => 'Đã xác nhận',
-    OrderStatus.shipping => 'Đang giao',
-    OrderStatus.completed => 'Hoàn tất',
-    OrderStatus.cancelled => 'Đã hủy',
+    OrderStatus.pending => AppStrings.orderPendingApproval,
+    OrderStatus.confirmed => AppStrings.orderStatusConfirmed,
+    OrderStatus.shipping => AppStrings.orderShipping,
+    OrderStatus.completed => AppStrings.orderStatusCompleted,
+    OrderStatus.cancelled => AppStrings.orderCancelledAlt,
   };
 
-  /// Returns allowed next statuses from this one (matches API doc).
   List<OrderStatus> get allowedTransitions => switch (this) {
     OrderStatus.pending => [OrderStatus.confirmed, OrderStatus.cancelled],
     OrderStatus.confirmed => [OrderStatus.shipping, OrderStatus.cancelled],
@@ -39,42 +38,45 @@ enum OrderStatus {
   };
 }
 
-/// Payment method values.
 enum PaymentMethod {
   cod,
-  bankTransfer;
+  bankTransfer,
+  vnpay;
 
   static PaymentMethod fromString(String value) {
     return switch (value.toUpperCase()) {
       'BANK_TRANSFER' => PaymentMethod.bankTransfer,
+      AppStrings.paymentVnpay => PaymentMethod.vnpay,
       _ => PaymentMethod.cod,
     };
   }
 
   String get apiValue => switch (this) {
-    PaymentMethod.cod => 'COD',
+    PaymentMethod.cod => AppStrings.paymentCod,
     PaymentMethod.bankTransfer => 'BANK_TRANSFER',
+    PaymentMethod.vnpay => AppStrings.paymentVnpay,
   };
 
   String get displayLabel => switch (this) {
-    PaymentMethod.cod => 'Thanh toán khi nhận hàng (COD)',
-    PaymentMethod.bankTransfer => 'Chuyển khoản ngân hàng',
+    PaymentMethod.cod => AppStrings.cashOnDelivery,
+    PaymentMethod.bankTransfer => AppStrings.bankTransfer,
+    PaymentMethod.vnpay => 'VNPAY QR',
   };
 }
 
-/// Domain entity: OrderItem.
-/// Snapshot of product at time of order (productNameSnapshot, unitPrice).
 class OrderItem extends Equatable {
   final String productId;
   final String productNameSnapshot;
   final String productUnitSnapshot;
-  final double unitPrice; // VND
+  final String? productImageUrl;
+  final double unitPrice;
   final int quantity;
 
   const OrderItem({
     required this.productId,
     required this.productNameSnapshot,
     required this.productUnitSnapshot,
+    this.productImageUrl,
     required this.unitPrice,
     required this.quantity,
   });
@@ -82,10 +84,16 @@ class OrderItem extends Equatable {
   double get lineTotal => unitPrice * quantity;
 
   @override
-  List<Object?> get props => [productId, quantity, unitPrice];
+  List<Object?> get props => [
+    productId,
+    productNameSnapshot,
+    productUnitSnapshot,
+    productImageUrl,
+    unitPrice,
+    quantity,
+  ];
 }
 
-/// Domain entity: OrderStatusHistory — one step in the status timeline.
 class OrderStatusHistory extends Equatable {
   final String? fromStatus;
   final String toStatus;
@@ -100,36 +108,57 @@ class OrderStatusHistory extends Equatable {
   });
 
   @override
-  List<Object?> get props => [fromStatus, toStatus, createdAt];
+  List<Object?> get props => [fromStatus, toStatus, note, createdAt];
 }
 
-/// Domain entity: Order (list-view variant — no items/history).
 class Order extends Equatable {
   final String id;
   final String orderCode;
   final OrderStatus status;
-  final double totalAmount; // VND
+  final PaymentMethod paymentMethod;
+  final String paymentStatus;
+  final double totalAmount;
   final DateTime createdAt;
 
   const Order({
     required this.id,
     required this.orderCode,
     required this.status,
+    this.paymentMethod = PaymentMethod.cod,
+    this.paymentStatus = 'UNPAID',
     required this.totalAmount,
     required this.createdAt,
   });
 
+  bool get isWaitingForPayment {
+    if (status != OrderStatus.pending) {
+      return false;
+    }
+    final methodRequiresPayment =
+        paymentMethod == PaymentMethod.bankTransfer ||
+        paymentMethod == PaymentMethod.vnpay;
+    return methodRequiresPayment && paymentStatus.toUpperCase() != 'PAID';
+  }
+
+  String get displayStatusLabel =>
+      isWaitingForPayment ? AppStrings.waitingForPayment : status.displayLabel;
+
   @override
-  List<Object?> get props => [id, orderCode, status];
+  List<Object?> get props => [
+    id,
+    orderCode,
+    status,
+    paymentMethod,
+    paymentStatus,
+    totalAmount,
+    createdAt,
+  ];
 }
 
-/// Domain entity: OrderDetail — full order with items and status history.
 class OrderDetail extends Order {
   final String receiverName;
   final String receiverPhone;
   final String shippingAddress;
-  final PaymentMethod paymentMethod;
-  final String paymentStatus; // UNPAID | PAID
   final double subtotalAmount;
   final double shippingFee;
   final double discountAmount;
@@ -141,13 +170,13 @@ class OrderDetail extends Order {
     required super.id,
     required super.orderCode,
     required super.status,
+    required super.paymentMethod,
+    required super.paymentStatus,
     required super.totalAmount,
     required super.createdAt,
     required this.receiverName,
     required this.receiverPhone,
     required this.shippingAddress,
-    required this.paymentMethod,
-    required this.paymentStatus,
     required this.subtotalAmount,
     required this.shippingFee,
     required this.discountAmount,
@@ -157,5 +186,18 @@ class OrderDetail extends Order {
   });
 
   @override
-  List<Object?> get props => [...super.props, paymentMethod, paymentStatus];
+  List<Object?> get props => [
+    ...super.props,
+    receiverName,
+    receiverPhone,
+    shippingAddress,
+    paymentMethod,
+    paymentStatus,
+    subtotalAmount,
+    shippingFee,
+    discountAmount,
+    note,
+    items,
+    statusHistory,
+  ];
 }

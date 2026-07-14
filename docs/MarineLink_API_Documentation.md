@@ -127,7 +127,7 @@ Product list:
 | Param | Type | Note |
 |---|---|---|
 | `q` | string | Search theo name/origin/description |
-| `categoryId` | uuid | Lọc theo category |
+| `categoryId` | uuid | Lọc theo category; nếu là category cha thì backend trả cả sản phẩm thuộc các category con trực tiếp |
 | `status` | `ACTIVE`, `OUT_OF_STOCK`, `DISABLED` | Public MVP mặc định gửi `ACTIVE`; chỉ expose `OUT_OF_STOCK` nếu business cho phép |
 | `featured` | boolean | Home featured products |
 | `sort` | string | Whitelist: `newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc` |
@@ -147,7 +147,11 @@ Orders:
 | Method | Endpoint | Role |
 |---|---|---|
 | POST | `/api/auth/login` | Public |
+| GET | `/api/auth/email-availability` | Public |
+| GET | `/api/auth/phone-availability` | Public |
 | POST | `/api/auth/register` | Public |
+| POST | `/api/auth/forgot-password` | Public |
+| POST | `/api/auth/reset-password` | Public |
 | POST | `/api/auth/logout` | Authenticated |
 | GET | `/api/users/me` | Authenticated |
 | PUT | `/api/users/me` | Authenticated |
@@ -156,6 +160,7 @@ Orders:
 | PUT | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | DELETE | `/api/users/me/shipping-addresses/{id}` | USER owner |
 | GET | `/api/products` | All roles |
+| GET | `/api/products/categories` | All roles |
 | GET | `/api/products/{id}` | All roles |
 | GET | `/api/cart` | USER |
 | POST | `/api/cart/items` | USER |
@@ -167,17 +172,33 @@ Orders:
 | GET | `/api/orders` | USER own orders, STAFF, ADMIN |
 | GET | `/api/orders/{id}` | Owner, STAFF, ADMIN |
 | PUT | `/api/orders/{id}/status` | STAFF, ADMIN |
+| PUT | `/api/orders/{id}/payment-status` | STAFF, ADMIN |
+| POST | `/api/payments/vnpay/payment-url` | USER owner |
+| POST | `/api/payments/vnpay/cancel` | USER owner |
+| GET | `/api/payments/vnpay/return` | Public VNPAY redirect |
+| GET | `/api/payments/vnpay/ipn` | Public VNPAY server callback |
 | POST | `/api/chat/send` | All roles |
+| GET | `/api/chat/room` | USER (get-or-create phòng hỗ trợ của chính mình) |
+| GET | `/api/chat/rooms` | USER (danh sách lịch sử chat của chính mình; title = tin nhắn đầu) |
+| POST | `/api/chat/rooms` | USER (tạo cuộc trò chuyện hỗ trợ mới) |
+| GET | `/api/chat/orders/{orderId}/room` | USER owner, order `COMPLETED` |
 | GET | `/api/chat/{roomId}` | Participant, STAFF, ADMIN |
+| GET | `/api/staff/chat/rooms` | STAFF, ADMIN |
+| PUT | `/api/staff/chat/rooms/{roomId}/status` | STAFF, ADMIN |
+| POST | `/api/staff/chat/rooms/{roomId}/complaints` | STAFF, ADMIN |
 | GET | `/api/notifications` | Authenticated |
 | PUT | `/api/notifications/{id}/read` | Owner |
+| POST | `/api/notifications` | STAFF, ADMIN |
+| GET | `/api/notifications/broadcasts` | STAFF, ADMIN |
+| DELETE | `/api/notifications/broadcasts/{broadcastId}` | STAFF, ADMIN |
 | GET | `/api/warehouses` | All roles |
 | GET | `/api/admin/dashboard` | ADMIN |
-| GET | `/api/admin/products` | ADMIN |
-| POST | `/api/admin/products` | ADMIN |
-| GET | `/api/admin/products/{id}` | ADMIN |
-| PUT | `/api/admin/products/{id}` | ADMIN |
-| DELETE | `/api/admin/products/{id}` | ADMIN |
+| GET | `/api/admin/revenue` | ADMIN |
+| GET | `/api/admin/products` | STAFF, ADMIN |
+| POST | `/api/admin/products` | STAFF, ADMIN |
+| GET | `/api/admin/products/{id}` | STAFF, ADMIN |
+| PUT | `/api/admin/products/{id}` | STAFF, ADMIN |
+| DELETE | `/api/admin/products/{id}` | STAFF, ADMIN |
 | GET | `/api/admin/users` | ADMIN |
 | GET | `/api/admin/users/{id}` | ADMIN |
 | PUT | `/api/admin/users/{id}` | ADMIN |
@@ -227,6 +248,65 @@ Validation/business rules:
 - User `PENDING_APPROVAL` có thể bị chặn hoặc chỉ vào màn hình chờ duyệt tùy rule triển khai.
 - Login/register nên có rate limit.
 
+### GET `/api/auth/email-availability`
+
+Kiểm tra nhanh email đã thuộc tài khoản đã xác thực hay chưa để frontend hiển thị inline validation. Endpoint này chỉ dùng cho UX; `POST /api/auth/register` vẫn phải validate lại và là nguồn quyết định cuối cùng.
+
+Query:
+
+| Param | Type | Required | Note |
+|---|---|---|---|
+| `email` | string/email | Yes | Email đã trim/lowercase ở backend |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "available": true,
+    "message": "Email có thể sử dụng"
+  }
+}
+```
+
+Validation/business rules:
+
+- Email sai format trả `400` qua validation envelope.
+- Email đang `PENDING_VERIFICATION` vẫn được xem là available vì đăng ký lại sẽ refresh pending account và gửi OTP mới.
+- Email đã xác thực hoặc đang chờ duyệt sau xác thực trả `available: false`.
+
+### GET `/api/auth/phone-availability`
+
+Kiểm tra số điện thoại đã thuộc tài khoản chưa soft delete hay chưa để frontend hiển thị inline validation. Endpoint này chỉ dùng cho UX; `POST /api/auth/register` vẫn validate lại.
+
+Query:
+
+| Param | Type | Required | Note |
+|---|---|---|---|
+| `phone` | string | Yes | Format `0xxxxxxxxx` hoặc `+84xxxxxxxxx` |
+| `email` | string/email | No | Nếu email đang `PENDING_VERIFICATION`, backend loại trừ chính pending user đó khi check phone |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "available": false,
+    "message": "Số điện thoại đã được sử dụng"
+  }
+}
+```
+
+Validation/business rules:
+
+- Phone sai format trả `400` qua validation envelope.
+- Phone của chính pending account theo email hiện tại vẫn được xem là available để người dùng đăng ký lại và nhận OTP mới.
+- Phone thuộc account khác chưa soft delete trả `available: false`.
+
 ### POST `/api/auth/register`
 
 Đăng ký đại lý mới.
@@ -264,6 +344,25 @@ Validation/business rules:
 - `email` và `phone` phải unique theo user chưa soft delete.
 - Password không trả về response.
 - Backend gán role mặc định `USER` qua cột `role_id` của `users`.
+
+### POST `/api/auth/forgot-password`
+
+Gửi mã OTP đặt lại mật khẩu tới email của tài khoản đang hoạt động. Luôn trả `204 No Content` (không tiết lộ email có tồn tại hay không).
+
+Request:
+```json
+{ "email": "daily-a@marinelink.demo" }
+```
+
+### POST `/api/auth/reset-password`
+
+Đặt lại mật khẩu bằng OTP hợp lệ đã gửi qua email. Thành công trả `204 No Content`; OTP sai/hết hạn trả lỗi (`success:false`, message tiếng Việt).
+
+Request:
+```json
+{ "email": "daily-a@marinelink.demo", "otpCode": "123456", "newPassword": "MatKhauMoi123" }
+```
+> Xác nhận mật khẩu (nhập 2 lần) được kiểm ở client; server chỉ nhận `newPassword`.
 
 ### POST `/api/auth/logout`
 
@@ -380,6 +479,8 @@ backend promotes another active address when one exists.
 
 Query params: `page`, `size`, `q`, `categoryId`, `status`, `featured`, `sort`.
 
+`categoryId` nhận cả danh mục cha và danh mục con. Ví dụ gửi ID của `Cá` sẽ trả sản phẩm trong `Cá khô`, `Cá đông lạnh`; gửi ID của `Cá khô` chỉ trả sản phẩm thuộc chính nhánh đó.
+
 Frontend Product List gửi `status=ACTIVE` cho catalog đại lý trong MVP. `sort=price_asc` là giá tăng dần, `sort=price_desc` là giá giảm dần; backend cũng hỗ trợ `newest`, `name_asc`, `name_desc`. Backend phải validate `sort` theo whitelist để tránh truyền trực tiếp field tùy ý vào query.
 
 Demo data hiện tại được seed bởi `V010__seed_dried_seafood_catalog.sql`: 21 sản phẩm đồ khô, mỗi sản phẩm có ảnh public trong Supabase Storage bucket `product-images`.
@@ -405,7 +506,10 @@ Response `200`:
       "isFeatured": true,
       "category": {
         "id": "550e8400-e29b-41d4-a716-446655440004",
-        "name": "Muc kho"
+        "name": "Muc kho",
+        "parentId": "550e8400-e29b-41d4-a716-446655460103",
+        "parentName": "Mực",
+        "children": []
       }
     }
   ],
@@ -438,7 +542,10 @@ Response `200`:
     "status": "ACTIVE",
     "category": {
       "id": "550e8400-e29b-41d4-a716-446655440004",
-      "name": "Muc kho"
+      "name": "Muc kho",
+      "parentId": "550e8400-e29b-41d4-a716-446655460103",
+      "parentName": "Mực",
+      "children": []
     },
     "images": [
       {
@@ -466,6 +573,43 @@ Response `200`:
 }
 ```
 
+### GET `/api/products/categories`
+
+Trả cây danh mục active cho product filters. Root categories hiện gồm `Cá`, `Tôm`, `Mực`, `Hải sản`, `Gia vị`; các sản phẩm vẫn gắn vào category con như `Cá khô`, `Cá đông lạnh`, `Tôm khô`, `Mực khô`.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655460101",
+      "name": "Cá",
+      "parentId": null,
+      "parentName": null,
+      "children": [
+        {
+          "id": "550e8400-e29b-41d4-a716-446655450103",
+          "name": "Cá khô",
+          "parentId": "550e8400-e29b-41d4-a716-446655460101",
+          "parentName": "Cá",
+          "children": []
+        },
+        {
+          "id": "550e8400-e29b-41d4-a716-446655440103",
+          "name": "Cá đông lạnh",
+          "parentId": "550e8400-e29b-41d4-a716-446655460101",
+          "parentName": "Cá",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## 11. Cart API
 
 Cart API lưu active cart theo user hiện tại. Khi user đã đăng nhập, backend là source of truth để đổi thiết bị vẫn thấy giỏ hàng. FE vẫn có thể dùng `CartCubit` làm UI cache/optimistic state, nhưng thao tác cart chính phải gọi `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/{productId}`, `DELETE /api/cart/items/{productId}` và `DELETE /api/cart/items`.
@@ -490,8 +634,19 @@ Cart response chuẩn:
         "quantity": 10,
         "selected": true,
         "selectedPriceTierId": "550e8400-e29b-41d4-a716-446655440007",
+        "baseUnitPrice": 450000,
         "unitPrice": 420000,
-        "lineTotal": 4200000
+        "lineTotal": 4200000,
+        "minOrderQuantity": 2,
+        "stockQuantity": 120,
+        "priceTiers": [
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440007",
+            "minQuantity": 10,
+            "maxQuantity": null,
+            "unitPrice": 420000
+          }
+        ]
       }
     ],
     "totalItemCount": 10,
@@ -613,7 +768,7 @@ Rules:
 
 ### POST `/api/orders`
 
-Tạo đơn hàng từ active server-side cart của user hiện tại. Nếu FE có cart local/offline/pre-login thì gọi `POST /api/cart/sync` để merge trước; order endpoint không nhận line items và không tin tổng tiền client trong MVP.
+Tạo đơn hàng từ active server-side cart của user hiện tại. Nếu FE có cart local/offline/pre-login thì gọi `POST /api/cart/sync` để merge trước. Trong giai đoạn Cart API chính chưa làm source of truth, endpoint cũng nhận `items` gồm `productId` và `quantity`; backend vẫn tính lại giá, validate tồn kho/min quantity và không tin tổng tiền client.
 
 Request:
 
@@ -623,7 +778,13 @@ Request:
   "receiverPhone": "0912345678",
   "shippingAddress": "Can Tho",
   "paymentMethod": "COD",
-  "note": "Giao buoi sang"
+  "note": "Giao buoi sang",
+  "items": [
+    {
+      "productId": "550e8400-e29b-41d4-a716-446655440012",
+      "quantity": 2
+    }
+  ]
 }
 ```
 
@@ -650,11 +811,16 @@ Response `201`:
 
 Rules:
 
-- Active server-side cart không rỗng và có ít nhất một item `selected = true`.
+- Nếu request có `items`, backend tạo dòng đơn từ request items sau khi revalidate sản phẩm.
+- Nếu request không có `items`, active server-side cart không rỗng và có ít nhất một item `selected = true`.
 - Product còn hàng và quantity hợp lệ.
 - Snapshot `productName`, `unit`, `unitPrice` vào `order_items`.
 - Tạo notification khi order được tạo hoặc đổi trạng thái.
-- Clear `cart_items` trong cùng transaction sau khi checkout thành công.
+- Với `COD`, clear `cart_items` selected trong cùng transaction sau khi tạo order thành công.
+- Với `BANK_TRANSFER` và `VNPAY`, không clear giỏ ở thời điểm tạo order vì đơn chưa thanh toán; FE phải giữ giỏ để user có thể hủy/quay lại.
+- `paymentMethod` hỗ trợ `COD`, `BANK_TRANSFER`, `VNPAY`. Với `VNPAY`, order bắt đầu với `paymentStatus = PENDING`; IPN của VNPAY cập nhật sang `PAID` hoặc `FAILED`.
+- Với `BANK_TRANSFER` và `VNPAY`, hệ thống chỉ gửi thông báo/email “đơn hàng sẽ được duyệt trong thời gian sớm nhất” sau khi `paymentStatus = PAID`.
+- FE hiển thị `status = PENDING` + `paymentMethod = BANK_TRANSFER|VNPAY` + `paymentStatus != PAID` là “Chờ thanh toán”, không hiển thị “Chờ duyệt”.
 
 ### GET `/api/orders`
 
@@ -677,6 +843,8 @@ Response `200`:
       "id": "550e8400-e29b-41d4-a716-446655440009",
       "orderCode": "ML-20260528-0001",
       "status": "PENDING",
+      "paymentMethod": "VNPAY",
+      "paymentStatus": "PENDING",
       "totalAmount": 4200000,
       "createdAt": "2026-05-28T08:30:00Z"
     }
@@ -710,6 +878,7 @@ Response `200`:
         "productId": "550e8400-e29b-41d4-a716-446655440003",
         "productNameSnapshot": "Muc kho loai 1",
         "productUnitSnapshot": "kg",
+        "productImageUrl": "https://storage.example.com/products/muc.png",
         "unitPrice": 420000,
         "quantity": 10,
         "lineTotal": 4200000
@@ -729,7 +898,7 @@ Response `200`:
 
 ### PUT `/api/orders/{id}/status`
 
-Staff/Admin cập nhật trạng thái đơn.
+Staff/Admin cập nhật trạng thái đơn. Với `BANK_TRANSFER` và `VNPAY`, chỉ được chuyển `PENDING -> CONFIRMED` sau khi `paymentStatus = PAID`; trước đó đơn vẫn là “Chờ thanh toán”.
 
 Request:
 
@@ -763,9 +932,132 @@ Allowed transitions:
 | `COMPLETED` | Không đổi |
 | `CANCELLED` | Không đổi |
 
-Invalid transition trả `409` hoặc `422`.
+Invalid transition hoặc xác nhận đơn chưa thanh toán trả `409` hoặc `422`.
 
-## 13. Messaging APIs
+### PUT `/api/orders/{id}/payment-status`
+
+Staff/Admin cập nhật trạng thái thanh toán thủ công, dùng cho đối soát chuyển khoản ngân hàng.
+Khi chuyển sang `PAID` lần đầu, backend gửi notification và email cho user rằng đơn hàng sẽ được duyệt trong thời gian sớm nhất.
+
+Request:
+
+```json
+{
+  "status": "PAID",
+  "note": "Da nhan chuyen khoan"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Order payment status updated",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440009",
+    "paymentStatus": "PAID"
+  }
+}
+```
+
+## 13. Payment APIs
+
+### POST `/api/payments/vnpay/payment-url`
+
+Tạo URL thanh toán VNPAY cho đơn hàng của user hiện tại. Chỉ dùng cho order có `paymentMethod = "VNPAY"`.
+
+Request:
+
+```json
+{
+  "orderId": "550e8400-e29b-41d4-a716-446655440009",
+  "bankCode": "VNPAYQR"
+}
+```
+
+`bankCode` optional. Nếu không gửi, người dùng chọn phương thức/ngân hàng trên cổng VNPAY.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "orderId": "550e8400-e29b-41d4-a716-446655440009",
+    "orderCode": "ML-20260528-0001",
+    "txnRef": "8d9b7f2b3cc94b4cbac2d98f5e1d8a21",
+    "paymentUrl": "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?..."
+  }
+}
+```
+
+### GET `/api/payments/vnpay/return`
+
+Return URL nhận redirect từ VNPAY sau khi người dùng hoàn tất thanh toán. Backend verify checksum, cập nhật payment/order, sau đó trả HTTP `302` về app frontend thay vì hiển thị JSON backend.
+
+Default frontend redirect:
+
+```text
+marinelink:///payments/vnpay/result
+```
+
+Cấu hình bằng env:
+
+```text
+VNPAY_FRONTEND_RETURN_URL=marinelink:///payments/vnpay/result
+```
+
+Query FE nhận sau redirect:
+
+```text
+marinelink:///payments/vnpay/result?success=true&txnRef=...&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00&transactionStatus=00&message=Confirm%20Success
+```
+
+Khi `paymentStatus = PAID`, Android mở lại app qua deep link, FE hiển thị thanh toán thành công, clear cart local/server sync, và cho user mở danh sách đơn hàng. Nếu chạy web, override `VNPAY_FRONTEND_RETURN_URL=http://localhost:3000/payments/vnpay/result` hoặc domain frontend thật.
+
+Khi test trên Android emulator, `VNPAY_RETURN_URL` cũng phải là địa chỉ browser trong emulator gọi được backend, ví dụ `http://10.0.2.2:8080/api/payments/vnpay/return`. Production nên dùng HTTPS public backend URL.
+
+### POST `/api/payments/vnpay/cancel`
+
+User hủy giao dịch VNPAY đang chờ thanh toán. FE gọi endpoint này khi user bấm hủy hoặc khi bộ đếm 15 phút hết hạn. Backend chỉ cho hủy nếu order thuộc user hiện tại, `paymentMethod = "VNPAY"`, order còn `PENDING`, và payment chưa `PAID`. Khi hủy thành công, order chuyển `CANCELLED`, payment chuyển `FAILED`; giỏ hàng của user không bị xóa ở bước tạo VNPAY nên user có thể quay lại giỏ.
+
+Request:
+
+```json
+{
+  "orderId": "550e8400-e29b-41d4-a716-446655440009"
+}
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "VNPAY payment cancelled",
+  "data": {
+    "txnRef": "8d9b7f2b3cc94b4cbac2d98f5e1d8a21",
+    "orderCode": "ML-20260528-0001",
+    "paymentStatus": "FAILED",
+    "responseCode": "USER_CANCELLED",
+    "message": "Payment cancelled"
+  }
+}
+```
+
+### GET `/api/payments/vnpay/ipn`
+
+IPN URL server-to-server cần gửi cho VNPAY khi cấu hình merchant sandbox/production:
+
+```text
+https://<backend-domain>/api/payments/vnpay/ipn
+```
+
+Backend verify `vnp_SecureHash`, kiểm tra `vnp_TxnRef`, đối chiếu `vnp_Amount`, rồi cập nhật `payments.status` và `orders.payment_status`.
+
+## 14. Messaging APIs
 
 ### POST `/api/chat/send`
 
@@ -809,6 +1101,73 @@ Rules:
 - `senderType` là `USER`, `STAFF`, hoặc `AI_SAMPLE`.
 - Demo phase dùng sample response theo keyword, chưa gọi LLM thật.
 
+### GET `/api/chat/room`
+
+Buyer opens the Chat tab with this endpoint to get the current user's general
+support room. If the room does not exist yet, backend creates it and returns an
+empty thread instead of `404`.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+    "isClosed": false,
+    "messages": []
+  }
+}
+```
+
+Rules:
+
+- Only the authenticated `USER` uses this endpoint for the general support room
+  that is not tied to an order or product.
+- A room with no chat history is valid and returns `messages: []`.
+- After receiving `roomId`, client sends messages through `POST /api/chat/send`.
+
+### GET `/api/chat/orders/{orderId}/room`
+
+Buyer opens a complaint chat room from a completed order detail screen. Backend
+gets or creates one open room linked to that order and its first product so
+Staff/Admin inbox can immediately show order code, product context, amount, and
+customer information.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "roomId": "550e8400-e29b-41d4-a716-4466554400dd",
+    "isClosed": false,
+    "messages": [
+      {
+        "id": "550e8400-e29b-41d4-a716-4466554400de",
+        "roomId": "550e8400-e29b-41d4-a716-4466554400dd",
+        "senderType": "AI_SAMPLE",
+        "content": "Khiếu nại đơn hàng ML-20260528-0001\nSản phẩm: Muc kho loai 1\nTổng tiền: 4200000 VND\nTrạng thái: COMPLETED\nVui lòng mô tả vấn đề cần hỗ trợ.",
+        "createdAt": "2026-05-28T08:30:00Z",
+        "attachments": []
+      }
+    ]
+  }
+}
+```
+
+Rules:
+
+- Only authenticated `USER` can use this endpoint.
+- User can only open complaint room for their own order.
+- Order must be `COMPLETED`; other statuses return `422`.
+- Existing room is reused and reopened if needed; seed context message is only
+  created when the room has no messages.
+- After receiving `roomId`, client sends complaint details through
+  `POST /api/chat/send`.
+
 ### GET `/api/chat/{roomId}`
 
 Response `200`:
@@ -833,7 +1192,126 @@ Response `200`:
 }
 ```
 
-## 14. Notification APIs
+### GET `/api/staff/chat/rooms`
+
+Query params:
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `status` | `OPEN` \| `CLOSED` \| `ALL` | `OPEN` | `OPEN` = chưa xử lý, `CLOSED` = đã xử lý |
+| `q` | string | optional | Tìm theo tên/email/số điện thoại đại lý, mã đơn hoặc tên sản phẩm |
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440003",
+        "fullName": "Đại lý A",
+        "email": "daily-a@marinelink.demo",
+        "phone": "0901000001"
+      },
+      "assignedStaff": {
+        "id": "550e8400-e29b-41d4-a716-446655440004",
+        "fullName": "Staff Demo"
+      },
+      "isClosed": false,
+      "lastMessageAt": "2026-05-28T08:30:00Z",
+      "createdAt": "2026-05-28T08:00:00Z",
+      "updatedAt": "2026-05-28T08:30:00Z",
+      "messageCount": 3,
+      "lastMessage": {
+        "id": "550e8400-e29b-41d4-a716-44665544000b",
+        "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+        "senderType": "USER",
+        "content": "Cho tôi hỏi đơn hàng...",
+        "createdAt": "2026-05-28T08:30:00Z",
+        "attachments": []
+      },
+      "context": {
+        "orderId": "550e8400-e29b-41d4-a716-446655440009",
+        "orderCode": "ML-20260528-0001",
+        "orderStatus": "PENDING",
+        "orderTotalAmount": 4200000,
+        "productId": "550e8400-e29b-41d4-a716-446655440003",
+        "productName": "Muc kho loai 1",
+        "productImageUrl": "https://example.com/product.png"
+      },
+      "summary": "Đại lý hỏi thời gian giao đơn; staff cần kiểm tra trạng thái vận chuyển."
+    }
+  ]
+}
+```
+
+Rules:
+
+- STAFF/ADMIN xem được danh sách phòng chat để xử lý hỗ trợ.
+- Staff trả lời một phòng chưa assign sẽ tự được gán làm `assignedStaff`.
+- `context` là object optional, trả ngữ cảnh đơn hàng/sản phẩm nếu phòng chat được tạo từ đơn hoặc sản phẩm; field không có ngữ cảnh sẽ là `null`.
+- `summary` là tóm tắt ngắn từ vài tin mới nhất, phục vụ inbox; không phải phản hồi AI thật.
+
+### PUT `/api/staff/chat/rooms/{roomId}/status`
+
+Request:
+
+```json
+{ "isClosed": true }
+```
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Chat room status updated",
+  "data": {
+    "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+    "isClosed": true
+  }
+}
+```
+
+Rules:
+
+- `isClosed = true` tương ứng "Đã xử lý".
+- `isClosed = false` mở lại phòng khi cần trao đổi tiếp.
+
+### POST `/api/staff/chat/rooms/{roomId}/complaints`
+
+Request:
+
+```json
+{
+  "title": "Khách báo giao thiếu hàng",
+  "description": "Tạo khiếu nại từ đoạn chat để staff theo dõi xử lý.",
+  "messageId": "550e8400-e29b-41d4-a716-44665544000b"
+}
+```
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "message": "Complaint created",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440077",
+    "roomId": "550e8400-e29b-41d4-a716-44665544000a",
+    "messageId": "550e8400-e29b-41d4-a716-44665544000b",
+    "title": "Khách báo giao thiếu hàng",
+    "description": "Tạo khiếu nại từ đoạn chat để staff theo dõi xử lý.",
+    "status": "OPEN",
+    "createdAt": "2026-05-28T08:40:00Z"
+  }
+}
+```
+
+## 15. Notification APIs
 
 ### GET `/api/notifications`
 
@@ -879,7 +1357,75 @@ Response `200`:
 
 Only owner can mark notification read.
 
-## 15. Warehouse API
+### POST `/api/notifications` (STAFF, ADMIN)
+
+Admin/staff broadcast một thông báo đến toàn bộ đại lý (role `USER`). Hệ thống fan-out một notification cho mỗi đại lý, gắn chung `broadcastId` + `createdBy`.
+
+Request body:
+
+```json
+{
+  "title": "Bảo trì hệ thống",
+  "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay."
+}
+```
+
+`title` bắt buộc (tối đa 200 ký tự), `body` bắt buộc.
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "message": "Đã gửi thông báo đến các đại lý",
+  "data": {
+    "broadcastId": "550e8400-e29b-41d4-a716-4466554400aa",
+    "title": "Bảo trì hệ thống",
+    "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay.",
+    "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+    "createdAt": "2026-05-28T08:30:00Z",
+    "recipientCount": 12
+  }
+}
+```
+
+### GET `/api/notifications/broadcasts` (STAFF, ADMIN)
+
+Lịch sử các thông báo do admin/staff tạo, mới nhất trước.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "broadcastId": "550e8400-e29b-41d4-a716-4466554400aa",
+      "title": "Bảo trì hệ thống",
+      "body": "Hệ thống sẽ bảo trì lúc 22:00 hôm nay.",
+      "createdBy": "550e8400-e29b-41d4-a716-446655440001",
+      "createdAt": "2026-05-28T08:30:00Z",
+      "recipientCount": 12
+    }
+  ]
+}
+```
+
+### DELETE `/api/notifications/broadcasts/{broadcastId}` (STAFF, ADMIN)
+
+Xóa một thông báo broadcast (xóa toàn bộ các bản fan-out của nó). Trả `404` nếu không tồn tại.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "Đã xóa thông báo"
+}
+```
+
+## 16. Warehouse API
 
 ### GET `/api/warehouses`
 
@@ -904,7 +1450,7 @@ Response `200`:
 }
 ```
 
-## 16. Admin APIs
+## 17. Admin APIs
 
 ### GET `/api/admin/dashboard`
 
@@ -931,6 +1477,50 @@ Response `200`:
   }
 }
 ```
+
+### GET `/api/admin/revenue`
+
+Báo cáo doanh thu (ADMIN). Doanh thu = tổng `totalAmount` của các đơn `COMPLETED`,
+gom nhóm theo ngày **giờ Việt Nam (GMT+7)**.
+
+Query params (đều tùy chọn):
+
+| Param | Kiểu | Ghi chú |
+| --- | --- | --- |
+| `from` | LocalDate (`yyyy-MM-dd`) | Ngày bắt đầu, bao gồm. |
+| `to` | LocalDate (`yyyy-MM-dd`) | Ngày kết thúc, bao gồm. |
+
+Nếu thiếu `from` hoặc `to`, mặc định lấy **tháng hiện tại** (ngày 1 → ngày cuối tháng).
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "from": "2026-06-01",
+    "to": "2026-06-03",
+    "totalRevenue": 1750000,
+    "dailySeries": [
+      { "date": "2026-06-01", "revenue": 0 },
+      { "date": "2026-06-02", "revenue": 1500000 },
+      { "date": "2026-06-03", "revenue": 250000 }
+    ],
+    "topProducts": [
+      {
+        "productId": "550e8400-e29b-41d4-a716-446655440777",
+        "productName": "Mực khô loại 1",
+        "quantitySold": 42,
+        "revenue": 8400000
+      }
+    ]
+  }
+}
+```
+
+- `dailySeries`: mỗi ngày trong khoảng (kể cả ngày doanh thu 0), sắp xếp tăng dần.
+- `topProducts`: tối đa 10 sản phẩm bán chạy nhất theo số lượng, giảm dần.
 
 ### Product management
 
@@ -1019,7 +1609,7 @@ Rules:
 - Không trả password hash.
 - Ghi audit cho thay đổi role/status nếu backend có audit module.
 
-## 17. API To Database Mapping
+## 18. API To Database Mapping
 
 | API | Tables chính |
 |---|---|
@@ -1037,6 +1627,8 @@ Rules:
 | `GET /api/orders/{id}` | `orders`, `order_items`, `products`, `order_status_history` |
 | `PUT /api/orders/{id}/status` | `orders`, `order_status_history`, `notifications` |
 | `POST /api/chat/send` | `chat_rooms`, `chat_messages`, `chat_attachments`, `notifications` |
+| `GET /api/chat/room` | `chat_rooms`, `chat_messages`, `chat_attachments` |
+| `GET /api/chat/orders/{orderId}/room` | `orders`, `order_items`, `products`, `chat_rooms`, `chat_messages`, `chat_attachments` |
 | `GET /api/chat/{roomId}` | `chat_rooms`, `chat_messages`, `chat_attachments` |
 | `GET /api/notifications` | `notifications` |
 | `PUT /api/notifications/{id}/read` | `notifications` |
@@ -1045,17 +1637,17 @@ Rules:
 | `CRUD /api/admin/products` | `products`, `categories`, `price_tiers`, `product_images` |
 | `CRUD /api/admin/users` | `users`, `roles` |
 
-## 18. Security Checklist
+## 19. Security Checklist
 
 - Không hardcode JWT secret, DB password, Supabase service role key hoặc API key trong source.
 - Không trả `passwordHash`, stack trace, SQL error raw, hoặc internal exception class cho client.
 - Validate input bằng DTO/schema ở controller boundary.
-- Check ownership cho `/api/orders/{id}`, `/api/notifications/{id}/read`, `/api/chat/{roomId}`.
+- Check ownership cho `/api/orders/{id}`, `/api/notifications/{id}/read`, `/api/chat/{roomId}`, `/api/chat/orders/{orderId}/room`.
 - Rate limit `/api/auth/login` và `/api/auth/register`.
 - File chat attachment chỉ dùng bucket private hoặc signed URL/backend proxy.
 - Admin endpoints phải require role `ADMIN`; Staff không được truy cập nhầm full admin CRUD.
 
-## 19. Contract Test Checklist
+## 20. Contract Test Checklist
 
 - Login success/failure.
 - Register duplicate email/phone.

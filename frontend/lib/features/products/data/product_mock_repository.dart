@@ -1,3 +1,4 @@
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../../../core/api/api_response.dart';
 import '../domain/product.dart';
 import '../domain/product_repository.dart';
@@ -8,11 +9,90 @@ class ProductMockRepository implements ProductRepository {
   static const _driedFish = 'assets/products/dried_yellowstripe_scad.png';
   static const _semiDriedSquid = 'assets/products/semi_dried_squid.png';
 
+  static const _driedFishCategory = Category(
+    id: 'cat-003',
+    name: 'Ca kho',
+    parentId: 'cat-fish',
+    parentName: AppStrings.fish,
+  );
+  static const _frozenFishCategory = Category(
+    id: 'cat-006',
+    name: 'Ca dong lanh',
+    parentId: 'cat-fish',
+    parentName: AppStrings.fish,
+  );
+  static const _driedShrimpCategory = Category(
+    id: 'cat-002',
+    name: 'Tom kho',
+    parentId: 'cat-shrimp',
+    parentName: AppStrings.shrimp,
+  );
+  static const _frozenShrimpCategory = Category(
+    id: 'cat-007',
+    name: 'Tom dong lanh',
+    parentId: 'cat-shrimp',
+    parentName: AppStrings.shrimp,
+  );
+  static const _driedSquidCategory = Category(
+    id: 'cat-001',
+    name: 'Muc kho',
+    parentId: 'cat-squid',
+    parentName: AppStrings.squid,
+  );
+  static const _frozenSquidCategory = Category(
+    id: 'cat-008',
+    name: 'Muc dong lanh',
+    parentId: 'cat-squid',
+    parentName: AppStrings.squid,
+  );
+  static const _premiumSeafoodCategory = Category(
+    id: 'cat-004',
+    name: 'Hai san kho cao cap',
+    parentId: 'cat-seafood',
+    parentName: AppStrings.seafood,
+  );
+  static const _fishSauceCategory = Category(
+    id: 'cat-005',
+    name: 'Nuoc mam',
+    parentId: 'cat-seasoning',
+    parentName: AppStrings.seasoning,
+  );
+
+  static const List<Category> _categories = [
+    Category(
+      id: 'cat-fish',
+      name: AppStrings.fish,
+      children: [_driedFishCategory, _frozenFishCategory],
+    ),
+    Category(
+      id: 'cat-shrimp',
+      name: AppStrings.shrimp,
+      children: [_driedShrimpCategory, _frozenShrimpCategory],
+    ),
+    Category(
+      id: 'cat-squid',
+      name: AppStrings.squid,
+      children: [_driedSquidCategory, _frozenSquidCategory],
+    ),
+    Category(
+      id: 'cat-seafood',
+      name: AppStrings.seafood,
+      children: [_premiumSeafoodCategory],
+    ),
+    Category(
+      id: 'cat-seasoning',
+      name: AppStrings.seasoning,
+      children: [_fishSauceCategory],
+    ),
+  ];
+
   static final List<Product> _products = [
     Product(
       id: 'prod-001',
       name: 'Muc kho loai 1',
       slug: 'muc-kho-loai-1',
+      shortDescription:
+          'Size lon, kho deu mau, phu hop dai ly can nguon hang on dinh.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 450000,
@@ -21,12 +101,14 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 300,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-002',
       name: 'Tom kho dac biet',
       slug: 'tom-kho-dac-biet',
+      shortDescription:
+          'Tom kho mau dep, tien dong goi combo qua bieu va ke dac san.',
       origin: 'Ca Mau',
       imageUrl: _driedShrimp,
       basePrice: 680000,
@@ -35,12 +117,14 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 180,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-002', name: 'Tom kho'),
+      category: _driedShrimpCategory,
     ),
     Product(
       id: 'prod-003',
       name: 'Ca chi vang',
       slug: 'ca-chi-vang',
+      shortDescription:
+          'Ca phoi kho vua do, vi dam, de trung bay cho cua hang dac san.',
       origin: 'Phan Thiet',
       imageUrl: _driedFish,
       basePrice: 280000,
@@ -49,12 +133,14 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 70,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-003', name: 'Ca kho'),
+      category: _driedFishCategory,
     ),
     Product(
       id: 'prod-004',
       name: 'Muc mot nang',
       slug: 'muc-mot-nang',
+      shortDescription:
+          'Muc thit day, phu hop nha hang va khach san can dong premium.',
       origin: 'Ca Mau',
       imageUrl: _semiDriedSquid,
       basePrice: 380000,
@@ -63,12 +149,14 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 60,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-004', name: 'Muc mot nang'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-005',
       name: 'Muc kho xe soi',
       slug: 'muc-kho-xe-soi',
+      shortDescription:
+          'Dang xe soi tien ban le, hop kenh qua tang va dac san cao cap.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 520000,
@@ -77,12 +165,14 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 50,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-006',
       name: 'Muc kho loai 2',
       slug: 'muc-kho-loai-2',
+      shortDescription:
+          'Gia tot cho kenh phan phoi, chat luong on dinh khi trung bay.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 380000,
@@ -91,12 +181,14 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 120,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
     ),
     Product(
       id: 'prod-007',
       name: 'Nuoc mam nhi Phu Quoc',
       slug: 'nuoc-mam-nhi-phu-quoc',
+      shortDescription:
+          'Dong chai tien loi cho sieu thi mini va cua hang dac san.',
       origin: 'Phu Quoc',
       imageUrl: null,
       basePrice: 180000,
@@ -105,7 +197,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 160,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-005', name: 'Nuoc mam'),
+      category: _fishSauceCategory,
     ),
   ];
 
@@ -114,6 +206,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-001',
       name: 'Muc kho loai 1',
       slug: 'muc-kho-loai-1',
+      shortDescription:
+          'Size lon, kho deu mau, phu hop dai ly can nguon hang on dinh.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 450000,
@@ -122,9 +216,9 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 300,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
       description:
-          'M\u1ef1c kh\u00f4 lo\u1ea1i 1, size l\u1edbn (6-8 con/kg), ph\u01a1i \u0111\u1ee7 n\u1eafng, th\u1ecbt ng\u1ecdt v\u00e0 th\u01a1m. \u0110\u00f3ng g\u00f3i h\u00fat ch\u00e2n kh\u00f4ng 1kg/t\u00fai.',
+          'Mực khô loại 1, size lớn (6-8 con/kg), phơi đủ nắng, thịt ngọt và thơm. Đóng gói hút chân không 1kg/túi.',
       images: const [
         ProductImage(
           id: 'img-001-a',
@@ -158,6 +252,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-002',
       name: 'Tom kho dac biet',
       slug: 'tom-kho-dac-biet',
+      shortDescription:
+          'Tom kho mau dep, tien dong goi combo qua bieu va ke dac san.',
       origin: 'Ca Mau',
       imageUrl: _driedShrimp,
       basePrice: 680000,
@@ -166,11 +262,11 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 180,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-002', name: 'Tom kho'),
+      category: _driedShrimpCategory,
       description:
-          'T\u00f4m kh\u00f4 \u0111\u1eb7c bi\u1ec7t m\u00e0u s\u1eafc '
-          '\u0111\u1ed3ng \u0111\u1ec1u, ph\u00f9 h\u1ee3p \u0111\u01a1n '
-          '\u0111\u1ea1i l\u00fd v\u00e0 k\u1ec7 combo qu\u00e0 bi\u1ebfu.',
+          'Tôm khô đặc biệt màu sắc '
+          'đồng đều, phù hợp đơn '
+          'đại lý và kệ combo quà biếu.',
       images: const [
         ProductImage(
           id: 'img-002-a',
@@ -204,6 +300,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-003',
       name: 'Ca chi vang',
       slug: 'ca-chi-vang',
+      shortDescription:
+          'Ca phoi kho vua do, vi dam, de trung bay cho cua hang dac san.',
       origin: 'Phan Thiet',
       imageUrl: _driedFish,
       basePrice: 280000,
@@ -212,7 +310,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 70,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-003', name: 'Ca kho'),
+      category: _driedFishCategory,
       description:
           'Ca chi vang phoi kho vua do, hop cho qua an va cua hang dac san.',
       images: const [
@@ -248,6 +346,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-004',
       name: 'Muc mot nang',
       slug: 'muc-mot-nang',
+      shortDescription:
+          'Muc thit day, phu hop nha hang va khach san can dong premium.',
       origin: 'Ca Mau',
       imageUrl: _semiDriedSquid,
       basePrice: 380000,
@@ -256,11 +356,11 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 60,
       status: ProductStatus.active,
       isFeatured: true,
-      category: const Category(id: 'cat-004', name: 'Muc mot nang'),
+      category: _driedSquidCategory,
       description:
-          'M\u1ef1c m\u1ed9t n\u1eafng th\u1ecbt d\u00e0y, ph\u00f9 '
-          'h\u1ee3p k\u00eanh nh\u00e0 h\u00e0ng v\u00e0 kh\u00e1ch '
-          's\u1ea1n c\u1ea7n lo\u1ea1i premium.',
+          'Mực một nắng thịt dày, phù '
+          'hợp kênh nhà hàng và khách '
+          'sạn cần loại premium.',
       images: const [
         ProductImage(
           id: 'img-004-a',
@@ -294,6 +394,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-005',
       name: 'Muc kho xe soi',
       slug: 'muc-kho-xe-soi',
+      shortDescription:
+          'Dang xe soi tien ban le, hop kenh qua tang va dac san cao cap.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 520000,
@@ -302,11 +404,11 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 50,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
       description:
-          'M\u1ef1c kh\u00f4 x\u00e9 s\u1ee3i ph\u00f9 h\u1ee3p k\u00eanh '
-          'qu\u00e0 t\u1eb7ng v\u00e0 c\u1eeda h\u00e0ng \u0111\u1eb7c '
-          's\u1ea3n cao c\u1ea5p.',
+          'Mực khô xé sợi phù hợp kênh '
+          'quà tặng và cửa hàng đặc '
+          'sản cao cấp.',
       images: const [
         ProductImage(
           id: 'img-005-a',
@@ -340,6 +442,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-006',
       name: 'Muc kho loai 2',
       slug: 'muc-kho-loai-2',
+      shortDescription:
+          'Gia tot cho kenh phan phoi, chat luong on dinh khi trung bay.',
       origin: 'Phan Thiet',
       imageUrl: _driedSquid,
       basePrice: 380000,
@@ -348,11 +452,11 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 120,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-001', name: 'Muc kho'),
+      category: _driedSquidCategory,
       description:
-          'M\u1ef1c kh\u00f4 lo\u1ea1i 2 cho k\u00eanh ph\u00e2n '
-          'ph\u1ed1i gi\u00e1 t\u1ed1t, v\u1eabn gi\u1eef \u0111\u01b0\u1ee3c '
-          '\u0111\u1ed9 \u0111\u1ed3ng \u0111\u1ec1u khi tr\u01b0ng b\u00e0y.',
+          'Mực khô loại 2 cho kênh phân '
+          'phối giá tốt, vẫn giữ được '
+          'độ đồng đều khi trưng bày.',
       images: const [
         ProductImage(
           id: 'img-006-a',
@@ -386,6 +490,8 @@ class ProductMockRepository implements ProductRepository {
       id: 'prod-007',
       name: 'Nuoc mam nhi Phu Quoc',
       slug: 'nuoc-mam-nhi-phu-quoc',
+      shortDescription:
+          'Dong chai tien loi cho sieu thi mini va cua hang dac san.',
       origin: 'Phu Quoc',
       imageUrl: null,
       basePrice: 180000,
@@ -394,7 +500,7 @@ class ProductMockRepository implements ProductRepository {
       stockQuantity: 160,
       status: ProductStatus.active,
       isFeatured: false,
-      category: const Category(id: 'cat-005', name: 'Nuoc mam'),
+      category: _fishSauceCategory,
       description:
           'Nuoc mam nhi dong chai cho kenh sieu thi mini va cua hang dac san.',
       images: const [],
@@ -448,7 +554,9 @@ class ProductMockRepository implements ProductRepository {
     }
 
     if (categoryId != null) {
-      filtered = filtered.where((p) => p.category?.id == categoryId).toList();
+      filtered = filtered
+          .where((p) => _matchesCategory(p.category, categoryId))
+          .toList();
     }
 
     if (featured == true) {
@@ -481,6 +589,16 @@ class ProductMockRepository implements ProductRepository {
   }
 
   @override
+  Future<ApiResponse<List<Category>>> getCategories() async {
+    await Future.delayed(const Duration(milliseconds: 10));
+    return const ApiResponse<List<Category>>(
+      success: true,
+      message: 'OK',
+      data: _categories,
+    );
+  }
+
+  @override
   Future<ApiResponse<ProductDetail>> getProductDetail(String productId) async {
     await Future.delayed(const Duration(milliseconds: 10));
 
@@ -488,7 +606,7 @@ class ProductMockRepository implements ProductRepository {
     if (detail == null) {
       return const ApiResponse<ProductDetail>(
         success: false,
-        message: 'Kh\u00f4ng t\u00ecm th\u1ea5y s\u1ea3n ph\u1ea9m',
+        message: AppStrings.productNotFound,
         data: null,
       );
     }
@@ -500,13 +618,17 @@ class ProductMockRepository implements ProductRepository {
     );
   }
 
+  bool _matchesCategory(Category? category, String categoryId) {
+    return category?.id == categoryId || category?.parentId == categoryId;
+  }
+
   List<Product> _sortProducts(List<Product> products, String? sort) {
     final sorted = List<Product>.from(products);
     switch (sort) {
-      case 'price':
+      case 'price_asc':
         sorted.sort((left, right) => left.basePrice.compareTo(right.basePrice));
         break;
-      case '-price':
+      case 'price_desc':
         sorted.sort((left, right) => right.basePrice.compareTo(left.basePrice));
         break;
       case 'name':

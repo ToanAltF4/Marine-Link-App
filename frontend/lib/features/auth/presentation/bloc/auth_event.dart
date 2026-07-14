@@ -48,6 +48,42 @@ class AuthRegisterRequested extends AuthEvent {
   List<Object?> get props => [email, phone];
 }
 
+class AuthVerifyEmailRequested extends AuthEvent {
+  final String email;
+  final String otpCode;
+
+  const AuthVerifyEmailRequested({required this.email, required this.otpCode});
+
+  @override
+  List<Object?> get props => [email, otpCode];
+}
+
+class AuthResendOtpRequested extends AuthEvent {
+  final String email;
+
+  const AuthResendOtpRequested({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}
+
+class AuthGoogleLoginRequested extends AuthEvent {
+  const AuthGoogleLoginRequested();
+}
+
 class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
+}
+
+class AuthChangePasswordRequested extends AuthEvent {
+  final String oldPassword;
+  final String newPassword;
+
+  const AuthChangePasswordRequested({
+    required this.oldPassword,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [oldPassword, newPassword];
 }

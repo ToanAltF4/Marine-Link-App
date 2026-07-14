@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
@@ -14,9 +14,11 @@ import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 import '../bloc/product_bloc.dart';
+import '../widgets/product_active_filter_bar.dart';
+import '../widgets/product_filter_sheet.dart';
+import '../widgets/product_list_card.dart';
+import '../widgets/product_scrollable_state.dart';
 import '../widgets/product_visuals.dart';
-
-enum _ProductStockFilter { all, available, low }
 
 class ProductListScreen extends StatefulWidget {
   static const productListScrollKey = PageStorageKey<String>(
@@ -41,15 +43,15 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  static const _allFilterValue = '__all__';
-
   late final TextEditingController _searchController;
   late final ProductRepository _productRepository;
   late final ProductBloc _productBloc;
   List<Category> _categories = const [];
+  List<String> _allOriginOptions = const [];
   String? _selectedCategoryId;
-  String _selectedVariant = _allFilterValue;
-  _ProductStockFilter _stockFilter = _ProductStockFilter.all;
+  ProductStockFilter _stockFilter = ProductStockFilter.all;
+  ProductPriceFilter _priceFilter = ProductPriceFilter.all;
+  String? _originFilter;
   bool _sortAscending = true;
   bool _hasCustomSort = false;
 
@@ -61,6 +63,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _productBloc = ProductBloc(productRepository: _productRepository);
     _selectedCategoryId = widget.initialCategoryId;
     _loadCategories();
+    _loadAllOrigins();
     _requestProducts();
   }
 
@@ -69,6 +72,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _searchController.dispose();
     _productBloc.close();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProductListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final queryChanged = widget.initialQuery != oldWidget.initialQuery;
+    final categoryChanged =
+        widget.initialCategoryId != oldWidget.initialCategoryId;
+    if (!queryChanged && !categoryChanged) {
+      return;
+    }
+
+    _searchController.text = widget.initialQuery ?? '';
+    setState(() {
+      _selectedCategoryId = widget.initialCategoryId;
+      _stockFilter = ProductStockFilter.all;
+      _priceFilter = ProductPriceFilter.all;
+      _originFilter = null;
+      _sortAscending = true;
+      _hasCustomSort = false;
+    });
+    _requestProducts();
   }
 
   @override
@@ -90,9 +115,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 final baseProducts = state is ProductListLoaded
                     ? state.products
                     : const <Product>[];
-                final variantOptions = _selectedCategoryId == null
-                    ? const <String>[]
-                    : _buildVariantOptions(baseProducts);
                 final visibleProducts = state is ProductListLoaded
                     ? _applyLocalFilters(baseProducts)
                     : const <Product>[];
@@ -147,8 +169,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
                                 hintText: _selectedCategoryId == null
-                                    ? 'T\u00ecm s\u1ea3n ph\u1ea9m, xu\u1ea5t x\u1ee9...'
-                                    : 'T\u00ecm trong danh m\u1ee5c...',
+                                    ? AppStrings.productSearchHint
+                                    : AppStrings.productCategorySearchHint,
                                 prefixIcon: const Icon(
                                   Icons.search_rounded,
                                   color: AppColors.textSecondary,
@@ -187,13 +209,23 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 fillColor: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            _buildTopFilters(variantOptions),
+                            const SizedBox(height: 8),
+                            ActiveFilterBar(
+                              labels: _activeFilterLabels(),
+                              activeCount: _activeFilterCount(),
+                              onFilterTap: () =>
+                                  _openAdvancedFilters(_allOriginOptions),
+                            ),
                           ],
                         ),
                       ),
                     ),
-                    _buildBody(theme, state, visibleProducts),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _handleRefresh,
+                        child: _buildBody(theme, state, visibleProducts),
+                      ),
+                    ),
                   ],
                 );
               },
@@ -205,6 +237,43 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _loadCategories() async {
+    final response = await _productRepository.getCategories();
+    var categories = response.data ?? const <Category>[];
+
+    if (categories.isEmpty) {
+      categories = await _loadCategoriesFromProducts();
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _categories = categories;
+    });
+  }
+
+  Future<void> _loadAllOrigins() async {
+    final response = await _productRepository.getProducts(
+      page: 0,
+      size: 200,
+      status: 'ACTIVE',
+    );
+    final origins = <String>{};
+    for (final product in response.data ?? const <Product>[]) {
+      final origin = product.origin?.trim();
+      if (origin != null && origin.isNotEmpty) {
+        origins.add(origin);
+      }
+    }
+    final sorted = origins.toList()
+      ..sort((a, b) => displayOrigin(a).compareTo(displayOrigin(b)));
+    if (!mounted) return;
+    setState(() {
+      _allOriginOptions = sorted;
+    });
+  }
+
+  Future<List<Category>> _loadCategoriesFromProducts() async {
     final response = await _productRepository.getProducts(
       page: 0,
       size: 100,
@@ -217,17 +286,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
         uniqueCategories.putIfAbsent(category.id, () => category);
       }
     }
-    final categories = uniqueCategories.values.toList()
-      ..sort(
-        (a, b) => displayCategoryName(a).compareTo(displayCategoryName(b)),
-      );
-
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _categories = categories;
-    });
+    return uniqueCategories.values.toList()..sort(
+      (a, b) => displayCategoryName(a).compareTo(displayCategoryName(b)),
+    );
   }
 
   Widget _buildBody(
@@ -236,233 +297,97 @@ class _ProductListScreenState extends State<ProductListScreen> {
     List<Product> visibleProducts,
   ) {
     if (state is ProductInitial || state is ProductListLoading) {
-      return const Expanded(
-        child: _ScrollableState(
-          child: AppLoadingIndicator(message: 'Đang tải danh sách sản phẩm'),
-        ),
+      return const ProductScrollableState(
+        child: AppLoadingIndicator(message: AppStrings.loadingProductList),
       );
     }
 
     if (state is ProductListError) {
-      return Expanded(
-        child: _ScrollableState(
-          child: AppErrorState(
-            message: state.message,
-            onRetry: _requestProducts,
-          ),
-        ),
+      return ProductScrollableState(
+        child: AppErrorState(message: state.message, onRetry: _requestProducts),
       );
     }
 
     if (visibleProducts.isEmpty) {
-      return Expanded(
-        child: _ScrollableState(
-          child: AppEmptyState(
-            key: const Key('productListEmptyState'),
-            message: 'Không tìm thấy sản phẩm phù hợp',
-            actionLabel: 'Xóa lọc',
-            onAction: _resetProductFilters,
-            icon: Icons.search_off_outlined,
-          ),
+      return ProductScrollableState(
+        child: AppEmptyState(
+          key: const Key('productListEmptyState'),
+          message: AppStrings.noMatchingProducts,
+          actionLabel: AppStrings.clearFilters,
+          onAction: _resetProductFilters,
+          icon: Icons.search_off_outlined,
         ),
       );
     }
 
-    return Expanded(
-      child: ClipRect(
-        child: ListView.separated(
-          key: ProductListScreen.productListScrollKey,
-          clipBehavior: Clip.hardEdge,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
-          itemCount: visibleProducts.length + 1,
-          separatorBuilder: (_, index) => index == 0
-              ? const SizedBox(height: 8)
-              : const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _WholesalePolicyCard(
-                    categoryName: _selectedCategoryId == null
-                        ? null
-                        : _screenTitle(),
-                  ),
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${visibleProducts.length} mặt hàng',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.w800,
-                          ),
+    return ClipRect(
+      child: ListView.separated(
+        key: ProductListScreen.productListScrollKey,
+        clipBehavior: Clip.hardEdge,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+        itemCount: visibleProducts.length + 1,
+        separatorBuilder: (_, index) =>
+            index == 0 ? const SizedBox(height: 8) : const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        AppStrings.productCount(visibleProducts.length),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.w800,
                         ),
-                        const Spacer(),
-                        Text(
-                          _sortLabel(),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF006A7C),
-                            fontWeight: FontWeight.w700,
-                          ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _sortLabel(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF006A7C),
+                          fontWeight: FontWeight.w700,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              );
-            }
-            final product = visibleProducts[index - 1];
-            return _ProductListCard(
-              product: product,
-              onTap: () => _openProductDetail(product.id),
+                ),
+              ],
             );
-          },
-        ),
+          }
+          final product = visibleProducts[index - 1];
+          return ProductListCard(
+            product: product,
+            onTap: () => _openProductDetail(product.id),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTopFilters(List<String> variantOptions) {
-    final scrollingFilters = _buildScrollableTopFilters(variantOptions);
-
-    return KeyedSubtree(
-      key: const Key('productTopFilterBar'),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChipButton(
-              key: const Key('productFilterAllChip'),
-              label: 'T\u1ea5t c\u1ea3',
-              selected:
-                  _selectedCategoryId == null &&
-                  _selectedVariant == _allFilterValue &&
-                  _stockFilter == _ProductStockFilter.all,
-              onTap: _resetProductFilters,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _AdvancedFilterButton(
-              activeCount: _activeFilterCount(),
-              onTap: _openAdvancedFilters,
-            ),
-          ),
-          Expanded(
-            child: ClipRect(
-              child: SingleChildScrollView(
-                key: const Key('productScrollableFilters'),
-                clipBehavior: Clip.hardEdge,
-                restorationId:
-                    'productTopFilters-${_selectedCategoryId ?? 'all'}-$_stockFilter',
-                scrollDirection: Axis.horizontal,
-                child: Row(children: scrollingFilters),
-              ),
-            ),
-          ),
-        ],
-      ),
+  Future<void> _handleRefresh() async {
+    _requestProducts();
+    await _productBloc.stream.firstWhere(
+      (state) => state is! ProductListLoading,
     );
-  }
-
-  List<Widget> _buildScrollableTopFilters(List<String> variantOptions) {
-    final widgets = <Widget>[];
-
-    if (_selectedCategoryId == null) {
-      for (final category in _categories) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChipButton(
-              label: displayCategoryName(category),
-              selected: _selectedCategoryId == category.id,
-              onTap: () => _selectCategory(category.id),
-            ),
-          ),
-        );
-      }
-    } else {
-      for (final option in variantOptions) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _FilterChipButton(
-              label: option,
-              selected: _selectedVariant == option,
-              onTap: () {
-                setState(() {
-                  _selectedVariant = option;
-                });
-              },
-            ),
-          ),
-        );
-      }
-    }
-
-    widgets.addAll([
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _FilterChipButton(
-          label: 'Còn hàng',
-          selected: _stockFilter == _ProductStockFilter.available,
-          onTap: () => _selectStockFilter(_ProductStockFilter.available),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _FilterChipButton(
-          label: 'Sắp hết',
-          selected: _stockFilter == _ProductStockFilter.low,
-          onTap: () => _selectStockFilter(_ProductStockFilter.low),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: _SortChipButton(
-          label: _sortLabel(),
-          ascending: _sortAscending,
-          active: _hasCustomSort,
-          onTap: () {
-            setState(() {
-              _sortAscending = !_sortAscending;
-              _hasCustomSort = true;
-            });
-            _requestProducts();
-          },
-        ),
-      ),
-    ]);
-
-    return widgets;
-  }
-
-  List<String> _buildVariantOptions(List<Product> products) {
-    final seen = <String>{};
-    final ordered = <String>[];
-    for (final product in products) {
-      final label = _variantLabel(product);
-      if (label != null && seen.add(label)) {
-        ordered.add(label);
-      }
-    }
-    return ordered;
   }
 
   List<Product> _applyLocalFilters(List<Product> products) {
     final filtered = products.where((product) {
-      if (_selectedVariant != _allFilterValue &&
-          _variantLabel(product) != _selectedVariant) {
+      if (!_matchesStockFilter(product)) {
         return false;
       }
-      return switch (_stockFilter) {
-        _ProductStockFilter.all => true,
-        _ProductStockFilter.available => product.isAvailable,
-        _ProductStockFilter.low => _isLowStock(product),
-      };
+      if (!_matchesPriceFilter(product)) {
+        return false;
+      }
+      if (_originFilter != null && product.origin != _originFilter) {
+        return false;
+      }
+      return true;
     }).toList();
 
     if (_hasCustomSort) {
@@ -474,6 +399,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return filtered;
   }
 
+  bool _matchesStockFilter(Product product) {
+    return switch (_stockFilter) {
+      ProductStockFilter.all => true,
+      ProductStockFilter.available => product.isAvailable,
+      ProductStockFilter.low => _isLowStock(product),
+    };
+  }
+
+  bool _matchesPriceFilter(Product product) {
+    return switch (_priceFilter) {
+      ProductPriceFilter.all => true,
+      ProductPriceFilter.under300 => product.basePrice < 300000,
+      ProductPriceFilter.from300To500 =>
+        product.basePrice >= 300000 && product.basePrice <= 500000,
+      ProductPriceFilter.over500 => product.basePrice > 500000,
+    };
+  }
+
   bool _isLowStock(Product product) {
     return product.isAvailable &&
         product.stockQuantity <= product.minOrderQuantity * 6;
@@ -481,9 +424,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   String _sortLabel() {
     if (!_hasCustomSort) {
-      return 'Mặc định';
+      return AppStrings.defaultLabel;
     }
-    return _sortAscending ? 'Giá tăng dần' : 'Giá giảm dần';
+    return _sortAscending
+        ? AppStrings.sortPriceAscending
+        : AppStrings.sortPriceDescending;
   }
 
   int _activeFilterCount() {
@@ -491,10 +436,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
     if (_selectedCategoryId != null) {
       count++;
     }
-    if (_selectedVariant != _allFilterValue) {
+    if (_stockFilter != ProductStockFilter.all) {
       count++;
     }
-    if (_stockFilter != _ProductStockFilter.all) {
+    if (_priceFilter != ProductPriceFilter.all) {
+      count++;
+    }
+    if (_originFilter != null) {
       count++;
     }
     if (_hasCustomSort) {
@@ -503,23 +451,56 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return count;
   }
 
+  List<String> _activeFilterLabels() {
+    final labels = <String>[];
+    if (_selectedCategoryId != null) {
+      final cat = _findCategoryById(_selectedCategoryId);
+      if (cat != null) {
+        labels.add(displayCategoryName(cat));
+      }
+    }
+    if (_stockFilter != ProductStockFilter.all) {
+      labels.add(switch (_stockFilter) {
+        ProductStockFilter.all => '',
+        ProductStockFilter.available => AppStrings.inStock,
+        ProductStockFilter.low => AppStrings.lowStock,
+      });
+    }
+    if (_priceFilter != ProductPriceFilter.all) {
+      labels.add(switch (_priceFilter) {
+        ProductPriceFilter.all => '',
+        ProductPriceFilter.under300 => AppStrings.under300k,
+        ProductPriceFilter.from300To500 => AppStrings.from300To500k,
+        ProductPriceFilter.over500 => AppStrings.over500k,
+      });
+    }
+    if (_originFilter != null) {
+      labels.add(displayOrigin(_originFilter!));
+    }
+    if (_hasCustomSort) {
+      labels.add(
+        _sortAscending
+            ? AppStrings.sortPriceAscending
+            : AppStrings.sortPriceDescending,
+      );
+    }
+    return labels;
+  }
+
   String? _sortParam() {
     if (!_hasCustomSort) {
       return null;
     }
-    return _sortAscending ? 'price' : '-price';
+    return _sortAscending ? 'price_asc' : 'price_desc';
   }
 
-  void _selectStockFilter(_ProductStockFilter filter) {
-    setState(() {
-      _stockFilter = _stockFilter == filter ? _ProductStockFilter.all : filter;
-    });
-  }
-
-  void _openAdvancedFilters() {
+  void _openAdvancedFilters(List<String> originOptions) {
     var draftStockFilter = _stockFilter;
+    var draftPriceFilter = _priceFilter;
+    var draftOriginFilter = _originFilter;
     var draftSortAscending = _sortAscending;
     var draftHasCustomSort = _hasCustomSort;
+    var draftCategoryId = _selectedCategoryId;
 
     showModalBottomSheet<void>(
       context: context,
@@ -531,12 +512,26 @@ class _ProductListScreenState extends State<ProductListScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setDraftState) {
-            return _ProductFilterSheet(
+            return ProductFilterSheet(
               stockFilter: draftStockFilter,
+              priceFilter: draftPriceFilter,
+              originFilter: draftOriginFilter,
+              originOptions: originOptions,
               hasCustomSort: draftHasCustomSort,
               sortAscending: draftSortAscending,
+              categories: _categories,
+              selectedCategoryId: draftCategoryId,
               onStockFilterChanged: (filter) {
                 setDraftState(() => draftStockFilter = filter);
+              },
+              onPriceFilterChanged: (filter) {
+                setDraftState(() => draftPriceFilter = filter);
+              },
+              onOriginFilterChanged: (origin) {
+                setDraftState(() => draftOriginFilter = origin);
+              },
+              onCategoryChanged: (categoryId) {
+                setDraftState(() => draftCategoryId = categoryId);
               },
               onSortChanged: (ascending) {
                 setDraftState(() {
@@ -544,16 +539,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   draftSortAscending = ascending;
                 });
               },
+              onSortReset: () {
+                setDraftState(() {
+                  draftHasCustomSort = false;
+                  draftSortAscending = true;
+                });
+              },
               onReset: () {
                 Navigator.of(sheetContext).pop();
-                _resetProductFilters();
+                setState(() {
+                  _stockFilter = ProductStockFilter.all;
+                  _priceFilter = ProductPriceFilter.all;
+                  _originFilter = null;
+                  _hasCustomSort = false;
+                  _sortAscending = true;
+                  _selectedCategoryId = null;
+                });
+                _requestProducts();
               },
               onApply: () {
                 Navigator.of(sheetContext).pop();
                 setState(() {
                   _stockFilter = draftStockFilter;
+                  _priceFilter = draftPriceFilter;
+                  _originFilter = draftOriginFilter;
                   _hasCustomSort = draftHasCustomSort;
                   _sortAscending = draftSortAscending;
+                  _selectedCategoryId = draftCategoryId;
                 });
                 _requestProducts();
               },
@@ -568,50 +580,41 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _searchController.clear();
     setState(() {
       _selectedCategoryId = null;
-      _selectedVariant = _allFilterValue;
-      _stockFilter = _ProductStockFilter.all;
+      _stockFilter = ProductStockFilter.all;
+      _priceFilter = ProductPriceFilter.all;
+      _originFilter = null;
       _hasCustomSort = false;
       _sortAscending = true;
     });
     _requestProducts();
   }
 
-  String? _variantLabel(Product product) {
-    final lowerName = product.name.toLowerCase();
-    if (lowerName.contains('loai 1')) {
-      return 'Loại 1';
+  String _screenTitle() {
+    return AppStrings.productsTitle;
+  }
+
+  Category? _findCategoryById(String? categoryId, [Category? root]) {
+    if (categoryId == null) {
+      return null;
     }
-    if (lowerName.contains('loai 2')) {
-      return 'Loại 2';
-    }
-    if (lowerName.contains('xe soi')) {
-      return 'Xé sợi';
-    }
-    if (lowerName.contains('dac biet')) {
-      return 'Đặc biệt';
+
+    final candidates = root == null ? _categories : [root];
+    for (final category in candidates) {
+      final matched = _findCategoryInTree(categoryId, category);
+      if (matched != null) return matched;
     }
     return null;
   }
 
-  String _screenTitle() {
-    if (_selectedCategoryId == null) {
-      return 'Sản phẩm';
+  Category? _findCategoryInTree(String categoryId, Category category) {
+    if (category.id == categoryId) {
+      return category;
     }
-
-    for (final category in _categories) {
-      if (category.id == _selectedCategoryId) {
-        return displayCategoryName(category);
-      }
+    for (final child in category.children) {
+      final matched = _findCategoryInTree(categoryId, child);
+      if (matched != null) return matched;
     }
-    return 'Sản phẩm';
-  }
-
-  void _selectCategory(String categoryId) {
-    setState(() {
-      _selectedCategoryId = categoryId;
-      _selectedVariant = _allFilterValue;
-    });
-    _requestProducts();
+    return null;
   }
 
   void _requestProducts() {
@@ -642,656 +645,5 @@ class _ProductListScreenState extends State<ProductListScreen> {
       return;
     }
     BuyerNavigation.push(context, AppRoutes.productDetailPath(productId));
-  }
-}
-
-class _ScrollableState extends StatelessWidget {
-  final Widget child;
-
-  const _ScrollableState({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 28),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: child,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _FilterChipButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChipButton({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? AppColors.primary : const Color(0xFFD9E4EF),
-          ),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: selected ? Colors.white : AppColors.textPrimary,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SortChipButton extends StatelessWidget {
-  final String label;
-  final bool ascending;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _SortChipButton({
-    required this.label,
-    required this.ascending,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F5FF),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: active ? const Color(0xFF006A7C) : const Color(0xFFD1E7F7),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              ascending
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded,
-              size: 16,
-              color: const Color(0xFF006A7C),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: const Color(0xFF006A7C),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AdvancedFilterButton extends StatelessWidget {
-  final int activeCount;
-  final VoidCallback onTap;
-
-  const _AdvancedFilterButton({required this.activeCount, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = activeCount > 0;
-    return InkWell(
-      key: const Key('productAdvancedFilterButton'),
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE8F5FF) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isActive ? const Color(0xFF006A7C) : const Color(0xFFD9E4EF),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF006A7C)),
-            const SizedBox(width: 6),
-            Text(
-              isActive ? 'Lọc ($activeCount)' : 'Lọc',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: isActive
-                    ? const Color(0xFF006A7C)
-                    : AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProductFilterSheet extends StatelessWidget {
-  final _ProductStockFilter stockFilter;
-  final bool hasCustomSort;
-  final bool sortAscending;
-  final ValueChanged<_ProductStockFilter> onStockFilterChanged;
-  final ValueChanged<bool> onSortChanged;
-  final VoidCallback onReset;
-  final VoidCallback onApply;
-
-  const _ProductFilterSheet({
-    required this.stockFilter,
-    required this.hasCustomSort,
-    required this.sortAscending,
-    required this.onStockFilterChanged,
-    required this.onSortChanged,
-    required this.onReset,
-    required this.onApply,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        key: const Key('productFilterSheet'),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD8E3EA),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Lọc sản phẩm',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tồn kho',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _SheetChoiceButton(
-                  key: const Key('productFilterStockAll'),
-                  label: 'Tất cả',
-                  selected: stockFilter == _ProductStockFilter.all,
-                  onTap: () => onStockFilterChanged(_ProductStockFilter.all),
-                ),
-                _SheetChoiceButton(
-                  key: const Key('productFilterStockAvailable'),
-                  label: 'Còn hàng',
-                  selected: stockFilter == _ProductStockFilter.available,
-                  onTap: () =>
-                      onStockFilterChanged(_ProductStockFilter.available),
-                ),
-                _SheetChoiceButton(
-                  key: const Key('productFilterStockLow'),
-                  label: 'Sắp hết',
-                  selected: stockFilter == _ProductStockFilter.low,
-                  onTap: () => onStockFilterChanged(_ProductStockFilter.low),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Sắp xếp',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _SheetChoiceButton(
-                  key: const Key('productFilterSortPriceAsc'),
-                  label: 'Giá tăng dần',
-                  selected: hasCustomSort && sortAscending,
-                  onTap: () => onSortChanged(true),
-                ),
-                _SheetChoiceButton(
-                  key: const Key('productFilterSortPriceDesc'),
-                  label: 'Giá giảm dần',
-                  selected: hasCustomSort && !sortAscending,
-                  onTap: () => onSortChanged(false),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    key: const Key('productFilterResetButton'),
-                    onPressed: onReset,
-                    child: const Text('Đặt lại'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    key: const Key('productFilterApplyButton'),
-                    onPressed: onApply,
-                    child: const Text('Áp dụng'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetChoiceButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _SheetChoiceButton({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : const Color(0xFFF8FBFF),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? AppColors.primary : const Color(0xFFD9E4EF),
-          ),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: selected ? Colors.white : AppColors.textPrimary,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WholesalePolicyCard extends StatelessWidget {
-  final String? categoryName;
-
-  const _WholesalePolicyCard({this.categoryName});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD8F0FF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFB5DDF1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFBFE9F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.local_offer_outlined,
-                  color: Color(0xFF006A7C),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      categoryName == null
-                          ? '\u00c1p d\u1ee5ng cho to\u00e0n b\u1ed9 danh m\u1ee5c h\u1ea3i s\u1ea3n kh\u00f4'
-                          : '\u00c1p d\u1ee5ng cho c\u00e1c m\u1eb7t h\u00e0ng $categoryName',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: const [
-              Expanded(
-                child: _TierMiniCard(
-                  lineOne: '10-49kg',
-                  lineTwo: 'Gi\u00e1 g\u1ed1c',
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _TierMiniCard(
-                  lineOne: '50-99kg',
-                  lineTwo: 'Gi\u1ea3m 5%',
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _TierMiniCard(
-                  lineOne: '100kg+',
-                  lineTwo: 'Gi\u1ea3m 10%',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TierMiniCard extends StatelessWidget {
-  final String lineOne;
-  final String lineTwo;
-
-  const _TierMiniCard({required this.lineOne, required this.lineTwo});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF95CBE5)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            lineOne,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.primaryDark,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            lineTwo,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textPrimary),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProductListCard extends StatelessWidget {
-  final Product product;
-  final VoidCallback onTap;
-
-  const _ProductListCard({required this.product, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final imageProvider = productImageProvider(product);
-    final fallbackVisual = productVisualStyle(product);
-
-    return InkWell(
-      key: Key('productCard-${product.id}'),
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x12052449),
-              blurRadius: 18,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(18),
-              ),
-              child: Container(
-                height: 168,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      fallbackVisual.startColor.withValues(alpha: 0.92),
-                      fallbackVisual.endColor.withValues(alpha: 0.88),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  image: imageProvider != null
-                      ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-                      : null,
-                ),
-                child: Stack(
-                  children: [
-                    if (imageProvider == null)
-                      Align(
-                        alignment: Alignment.center,
-                        child: Icon(
-                          fallbackVisual.icon,
-                          color: Colors.white,
-                          size: 54,
-                        ),
-                      ),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Container(
-                        margin: const EdgeInsets.all(12),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: productStockBgColor(product),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          productStockQuantityLabel(product),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: productStockTextColor(product),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    displayProductName(product),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppColors.primaryDark,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          displayOrigin(product.origin),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Gi\u00e1 t\u1eeb (MOQ ${product.minOrderQuantity}${product.unit})',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: AppColors.textPrimary,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: MoneyFormatter.format(product.basePrice),
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  color: AppColors.primaryDark,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' \u0111/${product.unit}',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      InkWell(
-                        onTap: onTap,
-                        borderRadius: BorderRadius.circular(999),
-                        child: Ink(
-                          width: 42,
-                          height: 42,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.shopping_cart_checkout_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

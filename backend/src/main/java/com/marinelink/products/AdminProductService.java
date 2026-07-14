@@ -1,0 +1,264 @@
+package com.marinelink.products;
+
+import com.marinelink.common.exception.ConflictException;
+import com.marinelink.common.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class AdminProductService {
+
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+
+    public Page<ProductListItemResponse> listProducts(
+            int page,
+            int size,
+            String query,
+            UUID categoryId,
+            ProductStatus status,
+            Boolean featured,
+            String sort) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(1, Math.min(size, 100)),
+                resolveSort(sort));
+
+        Specification<Product> specification = (root, ignoredQuery, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            Join<Product, Category> category = root.join("category");
+            Join<Category, Category> parentCategory = category.join("parent", JoinType.LEFT);
+
+            predicates.add(cb.isNull(root.get("deletedAt")));
+
+            if (query != null && !query.isBlank()) {
+                String keyword = "%" + query.trim().toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), keyword),
+                        cb.like(cb.lower(root.get("slug")), keyword),
+                        cb.like(cb.lower(root.get("origin")), keyword),
+                        cb.like(cb.lower(root.get("shortDescription")), keyword),
+                        cb.like(cb.lower(root.get("description")), keyword)));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.or(
+                        cb.equal(category.get("publicId"), categoryId),
+                        cb.equal(parentCategory.get("publicId"), categoryId)));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (featured != null) {
+                predicates.add(featured ? cb.isTrue(root.get("featured")) : cb.isFalse(root.get("featured")));
+            }
+
+            return cb.and(predicates.toArray(Predicate[]::new));
+        };
+
+        return productRepository.findAll(specification, pageable)
+                .map(ProductListItemResponse::from);
+    }
+
+    public ProductDetailResponse getProductDetail(UUID productId) {
+        Product product = productRepository.findDetailByPublicId(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+        return ProductDetailResponse.from(product);
+    }
+
+    @Transactional
+    public ProductDetailResponse createProduct(AdminProductRequest request) {
+        ensureSlugAvailable(request.slug(), null);
+        Product product = Product.builder()
+                .publicId(UUID.randomUUID())
+                .category(resolveCategoryForCreate(request.categoryId()))
+                .build();
+        applyRequest(product, request);
+        return ProductDetailResponse.from(productRepository.save(product));
+    }
+
+    @Transactional
+    public ProductDetailResponse updateProduct(UUID productId, AdminProductRequest request) {
+        Product product = productRepository.findDetailByPublicId(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+        ensureSlugAvailable(request.slug(), productId);
+        applyRequest(product, request);
+        return ProductDetailResponse.from(productRepository.save(product));
+    }
+
+    @Transactional
+    public void deleteProduct(UUID productId) {
+        Product product = productRepository.findByPublicIdIncludingDeleted(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm"));
+
+        product.setStatus(ProductStatus.DISABLED);
+        if (product.getDeletedAt() == null) {
+            product.setDeletedAt(Instant.now());
+        }
+        productRepository.save(product);
+    }
+
+    private void applyRequest(Product product, AdminProductRequest request) {
+        validatePriceTiers(request.priceTiers());
+
+        // Chỉ cập nhật danh mục khi client gửi categoryId. Khi null: giữ nguyên
+        // danh mục hiện tại (create đã gán danh mục mặc định ở builder).
+        if (request.categoryId() != null) {
+            product.setCategory(findCategory(request.categoryId()));
+        }
+        product.setName(request.name().trim());
+        product.setSlug(request.slug().trim());
+        product.setShortDescription(trimToNull(request.shortDescription()));
+        product.setDescription(trimToNull(request.description()));
+        product.setOrigin(trimToNull(request.origin()));
+        product.setBasePrice(request.basePrice());
+        product.setUnit(request.unit().trim());
+        product.setMinOrderQuantity(request.minOrderQuantity());
+        product.setStockQuantity(request.stockQuantity());
+        product.setStatus(request.status());
+        product.setFeatured(request.isFeatured());
+        // Ảnh: chỉ cập nhật khi client gửi URL (ảnh upload từ thiết bị); null/blank -> giữ nguyên.
+        if (request.imageUrl() != null && !request.imageUrl().isBlank()) {
+            product.setImageUrl(request.imageUrl().trim());
+        }
+
+        applyPriceTiers(product, request.priceTiers());
+    }
+
+    /**
+     * Đồng bộ danh sách mức giá sỉ theo kiểu "reconcile" thay vì xoá sạch rồi tạo lại:
+     * mức giá gửi kèm id thì cập nhật tại chỗ, mức giá không có id thì thêm mới, chỉ
+     * xoá những mức giá không còn trong request. Nhờ vậy một lần sửa sản phẩm bình
+     * thường không xoá dòng price_tiers nào, nên không phá vỡ khoá ngoại từ
+     * cart_items.price_tier_id (giỏ hàng của khách đang trỏ tới mức giá đó).
+     */
+    private void applyPriceTiers(Product product, List<AdminPriceTierRequest> requestTiers) {
+        Map<UUID, PriceTier> existingByPublicId = new LinkedHashMap<>();
+        for (PriceTier tier : product.getPriceTiers()) {
+            if (tier.getPublicId() != null) {
+                existingByPublicId.put(tier.getPublicId(), tier);
+            }
+        }
+
+        Set<UUID> keptPublicIds = new HashSet<>();
+        for (AdminPriceTierRequest tierRequest : safeTiers(requestTiers)) {
+            PriceTier existing = tierRequest.id() == null ? null : existingByPublicId.get(tierRequest.id());
+            if (existing != null) {
+                existing.setMinQuantity(tierRequest.minQuantity());
+                existing.setMaxQuantity(tierRequest.maxQuantity());
+                existing.setUnitPrice(tierRequest.unitPrice());
+                keptPublicIds.add(existing.getPublicId());
+                continue;
+            }
+            // Không có id (mức giá mới) hoặc id không còn tồn tại -> tạo mức giá mới.
+            product.getPriceTiers().add(PriceTier.builder()
+                    .publicId(UUID.randomUUID())
+                    .product(product)
+                    .minQuantity(tierRequest.minQuantity())
+                    .maxQuantity(tierRequest.maxQuantity())
+                    .unitPrice(tierRequest.unitPrice())
+                    .build());
+        }
+
+        product.getPriceTiers().removeIf(tier -> tier.getPublicId() != null
+                && existingByPublicId.containsKey(tier.getPublicId())
+                && !keptPublicIds.contains(tier.getPublicId()));
+    }
+
+    private Category findCategory(UUID categoryId) {
+        return categoryRepository.findActiveByPublicId(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục"));
+    }
+
+    /**
+     * Resolve the category for a newly created product. When the admin does not
+     * provide a categoryId, fall back to the first active category so that the
+     * backend owns the default category assignment.
+     */
+    private Category resolveCategoryForCreate(UUID categoryId) {
+        if (categoryId != null) {
+            return findCategory(categoryId);
+        }
+        return categoryRepository.findFirstByActiveTrueOrderByDisplayOrderAscNameAsc()
+                .orElseThrow(() -> new ResourceNotFoundException("Không có danh mục mặc định"));
+    }
+
+    private void ensureSlugAvailable(String slug, UUID excludedPublicId) {
+        boolean exists = excludedPublicId == null
+                ? productRepository.existsBySlugIgnoreCaseAndDeletedAtIsNull(slug.trim())
+                : productRepository.existsActiveSlugExcluding(slug.trim(), excludedPublicId);
+        if (exists) {
+            throw new ConflictException("Slug sản phẩm đã tồn tại");
+        }
+    }
+
+    private void validatePriceTiers(List<AdminPriceTierRequest> priceTiers) {
+        List<AdminPriceTierRequest> tiers = safeTiers(priceTiers).stream()
+                .sorted(Comparator.comparingInt(AdminPriceTierRequest::minQuantity))
+                .toList();
+
+        Integer previousMax = null;
+        for (int index = 0; index < tiers.size(); index++) {
+            AdminPriceTierRequest tier = tiers.get(index);
+            if (tier.maxQuantity() != null && tier.maxQuantity() < tier.minQuantity()) {
+                throw new ConflictException("Khoảng giá sỉ không hợp lệ");
+            }
+            if (previousMax != null && tier.minQuantity() <= previousMax) {
+                throw new ConflictException("Khoảng giá sỉ bị trùng nhau");
+            }
+            if (previousMax == null && index > 0) {
+                throw new ConflictException("Khoảng giá sỉ bị trùng nhau");
+            }
+            previousMax = tier.maxQuantity();
+        }
+    }
+
+    private List<AdminPriceTierRequest> safeTiers(List<AdminPriceTierRequest> tiers) {
+        return tiers == null ? List.of() : tiers;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private Sort resolveSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.asc("name"));
+        }
+
+        return switch (sort.trim().toLowerCase(Locale.ROOT)) {
+            case "price_asc" -> Sort.by(Sort.Order.asc("basePrice"), Sort.Order.asc("name"));
+            case "price_desc" -> Sort.by(Sort.Order.desc("basePrice"), Sort.Order.asc("name"));
+            case "name_asc" -> Sort.by(Sort.Order.asc("name"));
+            case "name_desc" -> Sort.by(Sort.Order.desc("name"));
+            case "stock_asc" -> Sort.by(Sort.Order.asc("stockQuantity"), Sort.Order.asc("name"));
+            case "stock_desc" -> Sort.by(Sort.Order.desc("stockQuantity"), Sort.Order.asc("name"));
+            case "newest" -> Sort.by(Sort.Order.desc("createdAt"));
+            default -> Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.asc("name"));
+        };
+    }
+}

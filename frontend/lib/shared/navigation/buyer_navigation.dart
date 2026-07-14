@@ -5,18 +5,26 @@ class BuyerNavigation {
   BuyerNavigation._();
 
   static final List<String> _tabStack = <String>[];
+  static StatefulNavigationShell? _activeShell;
 
-  static const Set<String> _buyerRootTabs = {
-    '/home',
-    '/products',
-    '/cart',
-    '/chat',
-    '/profile',
+  static const Map<String, int> _buyerRootTabIndexes = {
+    '/home': 0,
+    '/products': 1,
+    '/cart': 2,
+    '/chat': 3,
+    '/profile': 4,
   };
+
+  static Set<String> get _buyerRootTabs => _buyerRootTabIndexes.keys.toSet();
 
   @visibleForTesting
   static void resetForTesting() {
     _tabStack.clear();
+    _activeShell = null;
+  }
+
+  static void attachShell(StatefulNavigationShell shell) {
+    _activeShell = shell;
   }
 
   static void push(BuildContext context, String location) {
@@ -32,6 +40,10 @@ class BuyerNavigation {
     }
 
     _syncTabStack(current);
+    if (_switchBranch(context, location)) {
+      return;
+    }
+
     if (_popBackToExistingTab(context, location)) {
       return;
     }
@@ -40,23 +52,101 @@ class BuyerNavigation {
     _recordTab(location);
   }
 
-  static void popOrGo(BuildContext context, String fallbackLocation) {
+  static bool popOrGo(BuildContext context, String fallbackLocation) {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
+      final currentTab = _tabKey(_currentLocation(context));
       navigator.pop();
-      if (_tabStack.isNotEmpty) {
+      if (_buyerRootTabs.contains(currentTab) &&
+          _tabStack.isNotEmpty &&
+          _tabStack.last == currentTab) {
         _tabStack.removeLast();
       }
-      return;
+      return true;
+    }
+
+    if (_popTabHistory(context)) {
+      return true;
+    }
+
+    final current = _currentLocation(context);
+    if (_tabKey(current) == _tabKey(fallbackLocation)) {
+      return false;
+    }
+
+    if (_switchBranch(context, fallbackLocation, recordHistory: false)) {
+      _resetTabStack(fallbackLocation);
+      return true;
     }
 
     GoRouter.maybeOf(context)?.go(fallbackLocation);
-    _tabStack
-      ..clear()
-      ..add(_tabKey(fallbackLocation));
+    _resetTabStack(fallbackLocation);
+    return true;
+  }
+
+  static bool _switchBranch(
+    BuildContext context,
+    String location, {
+    bool recordHistory = true,
+  }) {
+    final tabKey = _tabKey(location);
+    final tabIndex = _buyerRootTabIndexes[tabKey];
+    if (tabIndex == null) {
+      return false;
+    }
+
+    if (!_hasShell(context)) {
+      return false;
+    }
+
+    if (_isPlainRootTab(location)) {
+      final currentTab = _tabKey(_currentLocation(context));
+      if (currentTab == tabKey) {
+        GoRouter.maybeOf(context)?.go(location);
+      } else {
+        _goBranch(context, tabIndex);
+      }
+    } else {
+      GoRouter.maybeOf(context)?.go(location);
+    }
+
+    if (recordHistory) {
+      final existingIndex = _tabStack.lastIndexOf(tabKey);
+      if (existingIndex >= 0) {
+        _tabStack.removeRange(existingIndex + 1, _tabStack.length);
+      } else {
+        _tabStack.add(tabKey);
+      }
+    }
+    return true;
+  }
+
+  static bool _popTabHistory(BuildContext context) {
+    if (!_hasShell(context)) {
+      return false;
+    }
+
+    _syncTabStack(_currentLocation(context));
+    if (_tabStack.length <= 1) {
+      return false;
+    }
+
+    _tabStack.removeLast();
+    final previousTab = _tabStack.last;
+    final previousIndex = _buyerRootTabIndexes[previousTab];
+    if (previousIndex == null) {
+      return false;
+    }
+
+    _goBranch(context, previousIndex);
+    return true;
   }
 
   static bool _popBackToExistingTab(BuildContext context, String location) {
+    if (!_isBuyerRootLocation(location)) {
+      return false;
+    }
+
     final targetKey = _tabKey(location);
     if (!_buyerRootTabs.contains(targetKey)) {
       return false;
@@ -74,6 +164,21 @@ class BuyerNavigation {
     }
 
     return _tabStack.isNotEmpty && _tabStack.last == targetKey;
+  }
+
+  static bool _hasShell(BuildContext context) {
+    return StatefulNavigationShell.maybeOf(context) != null ||
+        _activeShell != null;
+  }
+
+  static void _goBranch(BuildContext context, int index) {
+    final shellState = StatefulNavigationShell.maybeOf(context);
+    if (shellState != null) {
+      shellState.goBranch(index);
+      return;
+    }
+
+    _activeShell?.goBranch(index);
   }
 
   static void _syncTabStack(String? location) {
@@ -106,6 +211,12 @@ class BuyerNavigation {
     }
   }
 
+  static void _resetTabStack(String location) {
+    _tabStack
+      ..clear()
+      ..add(_tabKey(location));
+  }
+
   static String? _currentLocation(BuildContext context) {
     try {
       return GoRouterState.of(context).uri.toString();
@@ -121,9 +232,44 @@ class BuyerNavigation {
 
     try {
       final uri = Uri.parse(location);
-      return uri.path;
+      final path = uri.path;
+      if (path == '/home' || path.startsWith('/home/')) {
+        return '/home';
+      }
+      if (path == '/products' || path.startsWith('/products/')) {
+        return '/products';
+      }
+      if (path == '/cart' || path == '/checkout') {
+        return '/cart';
+      }
+      if (path == '/chat' || path.startsWith('/chat/')) {
+        return '/chat';
+      }
+      if (path == '/profile' ||
+          path == '/orders' ||
+          path.startsWith('/orders/')) {
+        return '/profile';
+      }
+      return path;
     } on Exception {
       return location;
+    }
+  }
+
+  static bool _isPlainRootTab(String location) {
+    try {
+      final uri = Uri.parse(location);
+      return uri.queryParameters.isEmpty && uri.fragment.isEmpty;
+    } on Exception {
+      return true;
+    }
+  }
+
+  static bool _isBuyerRootLocation(String location) {
+    try {
+      return _buyerRootTabs.contains(Uri.parse(location).path);
+    } on Exception {
+      return _buyerRootTabs.contains(location);
     }
   }
 }

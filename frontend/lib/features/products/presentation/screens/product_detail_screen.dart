@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
@@ -10,6 +11,8 @@ import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/product.dart';
 import '../../domain/product_repository.dart';
 import '../bloc/product_bloc.dart';
@@ -74,8 +77,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 return const Scaffold(
                   backgroundColor: _detailBackground,
                   body: AppLoadingIndicator(
-                    message:
-                        '\u0110ang t\u1ea3i chi ti\u1ebft s\u1ea3n ph\u1ea9m',
+                    message: AppStrings.loadingProductDetail,
                   ),
                 );
               }
@@ -99,6 +101,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     BuyerNavigation.push(context, AppRoutes.notifications),
                 onDecrease: _decreaseQuantity,
                 onIncrease: _increaseQuantity,
+                onQuantityChanged: _setQuantity,
                 onAddToCart: _addToCart,
               );
             },
@@ -126,13 +129,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     setState(() => _quantity += 1);
   }
 
+  void _setQuantity(ProductDetail detail, int quantity) {
+    final clamped = quantity.clamp(
+      detail.minOrderQuantity,
+      detail.stockQuantity,
+    );
+    setState(() => _quantity = clamped);
+  }
+
   void _addToCart(ProductDetail detail) {
     context.read<CartCubit>().addItem(product: detail, quantity: _quantity);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '\u0110\u00e3 th\u00eam ${displayProductName(detail)} '
-          'v\u00e0o gi\u1ecf h\u00e0ng',
+          AppStrings.addedProductToCart(displayProductName(detail)),
         ),
       ),
     );
@@ -146,6 +156,7 @@ class _ProductDetailContent extends StatelessWidget {
   final VoidCallback onNotifications;
   final void Function(ProductDetail detail) onDecrease;
   final void Function(ProductDetail detail) onIncrease;
+  final void Function(ProductDetail detail, int quantity) onQuantityChanged;
   final void Function(ProductDetail detail) onAddToCart;
 
   const _ProductDetailContent({
@@ -155,6 +166,7 @@ class _ProductDetailContent extends StatelessWidget {
     required this.onNotifications,
     required this.onDecrease,
     required this.onIncrease,
+    required this.onQuantityChanged,
     required this.onAddToCart,
   });
 
@@ -195,9 +207,18 @@ class _ProductDetailContent extends StatelessWidget {
                       onIncrease: quantity < detail.stockQuantity
                           ? () => onIncrease(detail)
                           : null,
-                      onAddToCart: outOfStock
+                      onQuantityChanged: (value) =>
+                          onQuantityChanged(detail, value),
+                      onAddToCart:
+                          (context.read<AuthBloc>().state
+                                  is AuthAuthenticated &&
+                              (context.read<AuthBloc>().state
+                                          as AuthAuthenticated)
+                                      .user
+                                      .status ==
+                                  'PENDING_APPROVAL')
                           ? null
-                          : () => onAddToCart(detail),
+                          : (outOfStock ? null : () => onAddToCart(detail)),
                     ),
                   ],
                 ),

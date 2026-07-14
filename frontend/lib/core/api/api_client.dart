@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 import '../storage/secure_token_storage.dart';
 import 'api_endpoints.dart';
 import 'api_response.dart';
@@ -52,6 +53,9 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
       return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);
@@ -65,6 +69,30 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.post(path, data: data);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
+      return ApiResponse.fromJson(response.data, fromJson);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  /// POST a multipart/form-data body (e.g. file uploads).
+  Future<ApiResponse<T>> postMultipart<T>(
+    String path, {
+    required FormData formData,
+    required T Function(dynamic json) fromJson,
+  }) async {
+    try {
+      final response = await _dio.post(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
       return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);
@@ -78,6 +106,25 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.put(path, data: data);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
+      return ApiResponse.fromJson(response.data, fromJson);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  Future<ApiResponse<T>> patch<T>(
+    String path, {
+    dynamic data,
+    required T Function(dynamic json) fromJson,
+  }) async {
+    try {
+      final response = await _dio.patch(path, data: data);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
       return ApiResponse.fromJson(response.data, fromJson);
     } on DioException catch (e) {
       throw _mapDioError(e);
@@ -92,11 +139,26 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse<T>> deleteFor<T>(
+    String path, {
+    required T Function(dynamic json) fromJson,
+  }) async {
+    try {
+      final response = await _dio.delete(path);
+      if (response.statusCode == 204 || response.data == null) {
+        return const ApiResponse(success: true);
+      }
+      return ApiResponse.fromJson(response.data, fromJson);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   ApiException _mapDioError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return const ApiException(
-        message: 'Kết nối quá chậm. Vui lòng thử lại.',
+        message: AppStrings.apiSlowConnection,
         type: ApiExceptionType.network,
       );
     }
@@ -106,27 +168,27 @@ class ApiClient {
 
     return switch (statusCode) {
       401 => ApiException(
-        message: serverMessage ?? 'Phiên đăng nhập hết hạn.',
+        message: serverMessage ?? AppStrings.sessionExpiredShort,
         type: ApiExceptionType.unauthorized,
         statusCode: statusCode,
       ),
       403 => ApiException(
-        message: serverMessage ?? 'Bạn không có quyền thực hiện thao tác này.',
+        message: serverMessage ?? AppStrings.forbiddenAction,
         type: ApiExceptionType.forbidden,
         statusCode: statusCode,
       ),
       404 => ApiException(
-        message: serverMessage ?? 'Không tìm thấy dữ liệu.',
+        message: serverMessage ?? AppStrings.dataNotFound,
         type: ApiExceptionType.notFound,
         statusCode: statusCode,
       ),
       422 => ApiException(
-        message: serverMessage ?? 'Dữ liệu không hợp lệ.',
+        message: serverMessage ?? AppStrings.invalidData,
         type: ApiExceptionType.validation,
         statusCode: statusCode,
       ),
       _ => ApiException(
-        message: serverMessage ?? 'Lỗi hệ thống. Vui lòng thử lại.',
+        message: serverMessage ?? AppStrings.systemErrorTryAgain,
         type: ApiExceptionType.server,
         statusCode: statusCode,
       ),
@@ -135,7 +197,21 @@ class ApiClient {
 
   String? _extractMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
-      return data['message'] as String?;
+      final errors = data['errors'];
+      if (errors is List && errors.isNotEmpty) {
+        final firstError = errors.first;
+        if (firstError is Map<String, dynamic>) {
+          final fieldMessage = firstError['message'];
+          if (fieldMessage is String && fieldMessage.trim().isNotEmpty) {
+            return fieldMessage.trim();
+          }
+        }
+      }
+
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message.trim();
+      }
     }
     return null;
   }
@@ -183,5 +259,5 @@ class ApiException implements Exception {
   });
 
   @override
-  String toString() => 'ApiException($type, $statusCode): $message';
+  String toString() => message;
 }

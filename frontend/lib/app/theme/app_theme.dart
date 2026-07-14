@@ -1,33 +1,40 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
+// Re-export color tokens để mọi file đang import `app_theme.dart` vẫn dùng
+// được `AppColors` sau khi tách ra file riêng.
+export 'app_colors.dart';
+
 /// MarineLink design system based on `stitch_marinelink_b2b_seafood_ui_kit`.
 abstract class AppTheme {
   static ThemeData light() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: AppColors.primary,
-      onPrimary: Colors.white,
-      primaryContainer: AppColors.primaryDark,
-      onPrimaryContainer: const Color(0xFFD4E3FF),
-      secondary: AppColors.secondary,
-      onSecondary: Colors.white,
-      secondaryContainer: AppColors.surfaceSky,
-      onSecondaryContainer: AppColors.primaryDark,
-      surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
-      onSurfaceVariant: AppColors.textSecondary,
-      outline: AppColors.border,
-      outlineVariant: const Color(0xFFE2E8F0),
-      error: AppColors.error,
-      onError: Colors.white,
-      surfaceContainerLowest: AppColors.surface,
-      surfaceContainerLow: const Color(0xFFF7FBFF),
-      surfaceContainer: const Color(0xFFEAF6FF),
-      surfaceContainerHigh: const Color(0xFFE3F0FB),
-      surfaceContainerHighest: const Color(0xFFDCEBF9),
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          primaryContainer: AppColors.primaryDark,
+          onPrimaryContainer: const Color(0xFFD4E3FF),
+          secondary: AppColors.secondary,
+          onSecondary: Colors.white,
+          secondaryContainer: AppColors.surfaceSky,
+          onSecondaryContainer: AppColors.primaryDark,
+          surface: AppColors.surface,
+          onSurface: AppColors.textPrimary,
+          onSurfaceVariant: AppColors.textSecondary,
+          outline: AppColors.border,
+          outlineVariant: const Color(0xFFE2E8F0),
+          error: AppColors.error,
+          onError: Colors.white,
+          surfaceContainerLowest: AppColors.surface,
+          surfaceContainerLow: const Color(0xFFF7FBFF),
+          surfaceContainer: const Color(0xFFEAF6FF),
+          surfaceContainerHigh: const Color(0xFFE3F0FB),
+          surfaceContainerHighest: const Color(0xFFDCEBF9),
+        );
 
     final baseTextTheme = ThemeData(
       useMaterial3: true,
@@ -111,7 +118,10 @@ abstract class AppTheme {
         filled: true,
         fillColor: Colors.white,
         hintStyle: const TextStyle(color: AppColors.textSecondary),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
@@ -166,36 +176,4 @@ abstract class AppTheme {
       ),
     );
   }
-}
-
-abstract class AppColors {
-  static const primary = Color(0xFF0B4F8F);
-  static const primaryDark = Color(0xFF052449);
-  static const secondary = Color(0xFF00A6B4);
-  static const accent = Color(0xFF1E84C6);
-  static const background = Color(0xFFF4FAFC);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceSky = Color(0xFFEAF6FF);
-  static const textPrimary = Color(0xFF0F172A);
-  static const textSecondary = Color(0xFF64748B);
-  static const border = Color(0xFFD8E7EF);
-  static const success = Color(0xFF16A34A);
-  static const warning = Color(0xFFF59E0B);
-  static const error = Color(0xFFDC2626);
-
-  static const orderPending = Color(0xFFF59E0B);
-  static const orderConfirmed = Color(0xFF1E84C6);
-  static const orderShipping = Color(0xFF0284C7);
-  static const orderCompleted = Color(0xFF16A34A);
-  static const orderCancelled = Color(0xFFDC2626);
-  static const stockAvailable = Color(0xFF16A34A);
-  static const stockLow = Color(0xFFF59E0B);
-  static const stockOut = Color(0xFFDC2626);
-  static const priceHighlight = Color(0xFF0B4F8F);
-
-  static const oceanGradient = LinearGradient(
-    colors: [primaryDark, secondary],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
 }

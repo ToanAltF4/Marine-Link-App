@@ -1,24 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
 
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../core/assets/app_assets.dart';
-import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/navigation/buyer_navigation.dart';
 import '../../../../shared/widgets/app_empty_state.dart';
 import '../../../../shared/widgets/app_error_state.dart';
 import '../../../../shared/widgets/app_back_exit_scope.dart';
 import '../../../../shared/widgets/app_loading_indicator.dart';
 import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../../../shared/widgets/dashboard_header.dart';
+import '../../../cart/domain/cart_pricing.dart';
 import '../../../products/domain/product.dart';
 import '../../../products/domain/product_repository.dart';
 import '../../../products/presentation/bloc/product_bloc.dart';
 import '../../../products/presentation/widgets/product_visuals.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../widgets/category_thumbnail_card.dart';
+import '../widgets/hot_product_card.dart';
+import '../widgets/promo_banner.dart';
 
 const _compactFeaturedGridMaxWidth = 348.0;
 const _compactFeaturedCardAspectRatio = 0.80;
+final _bulkPromotionPolicyText = AppStrings.bulkDiscountPolicySummary(
+  twoPercentMin: CartBulkDiscountPolicy.twoPercentMinQuantity,
+  fourPercentMin: CartBulkDiscountPolicy.fourPercentMinQuantity,
+  sixPercentMin: CartBulkDiscountPolicy.sixPercentMinQuantity,
+  eightPercentMin: CartBulkDiscountPolicy.eightPercentMinQuantity,
+);
 
 class HomeScreen extends StatefulWidget {
   final ProductRepository? productRepository;
@@ -42,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   late final ProductRepository _productRepository;
   late final ProductBloc _productBloc;
-  late final Future<List<_HomeCategorySummary>> _categoriesFuture;
+  late Future<List<HomeCategorySummary>> _categoriesFuture;
 
   @override
   void initState() {
@@ -68,48 +80,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return AppBackExitScope(
       child: Scaffold(
+        key: const Key('homeScreen'),
         backgroundColor: const Color(0xFFF8FBFF),
         bottomNavigationBar: const BuyerBottomNav(
           currentTab: BuyerBottomNavTab.home,
         ),
         body: BlocProvider.value(
           value: _productBloc,
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Image.asset(
-                            AppAssets.headerLight,
-                            height: 42,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                      _NotificationButton(onTap: _openNotifications),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
+          child: Column(
+            children: [
+              DashboardHeader(
+                hasNotification: true,
+                onNotificationPressed: _openNotifications,
+                onProfilePressed: _openProfile,
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _handleRefresh,
                   child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
                     children: [
-                      Text(
-                        'Xin ch\u00e0o, Nguy\u1ec5n V\u0103n A',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: AppColors.primaryDark,
-                          fontFamily: 'serif',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      _buildPendingApprovalBanner(theme),
+                      _buildGreetingWidget(theme),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -130,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '\u0110\u1ea1i l\u00fd',
+                              AppStrings.dealer,
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: const Color(0xFF006A7C),
                                 fontWeight: FontWeight.w700,
@@ -146,8 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onSubmitted: (_) => _submitQuickSearch(),
                         textInputAction: TextInputAction.search,
                         decoration: InputDecoration(
-                          hintText:
-                              'T\u00ecm ki\u1ebfm h\u1ea3i s\u1ea3n kh\u00f4...',
+                          hintText: AppStrings.searchSeafoodHint,
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             size: 30,
@@ -168,18 +160,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 22),
-                      _PromoBanner(onTap: _submitQuickSearch),
+                      PromoBanner(onTap: _submitQuickSearch),
+                      const SizedBox(height: 18),
+                      _WarehouseShortcutCard(onTap: _openWarehouses),
                       const SizedBox(height: 22),
                       Text(
-                        'Danh m\u1ee5c s\u1ea3n ph\u1ea9m',
+                        AppStrings.productCategories,
                         style: _sectionTitleStyle(theme),
                       ),
                       const SizedBox(height: 12),
-                      FutureBuilder<List<_HomeCategorySummary>>(
+                      FutureBuilder<List<HomeCategorySummary>>(
                         future: _categoriesFuture,
                         builder: (context, snapshot) {
                           final categories =
-                              snapshot.data ?? const <_HomeCategorySummary>[];
+                              snapshot.data ?? const <HomeCategorySummary>[];
                           if (snapshot.connectionState ==
                                   ConnectionState.waiting &&
                               categories.isEmpty) {
@@ -190,8 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           if (categories.isEmpty) {
                             return const AppEmptyState(
-                              message:
-                                  'Ch\u01b0a c\u00f3 danh m\u1ee5c s\u1ea3n ph\u1ea9m.',
+                              message: AppStrings.emptyProductCategories,
                               icon: Icons.category_outlined,
                             );
                           }
@@ -205,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const SizedBox(width: 12),
                               itemBuilder: (context, index) {
                                 final item = categories[index];
-                                return _CategoryThumbnailCard(
+                                return CategoryThumbnailCard(
                                   key: Key(
                                     'homeCategoryChip-${item.category.id}',
                                   ),
@@ -249,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Ch\u00ednh s\u00e1ch gi\u00e1 s\u1ec9',
+                                    AppStrings.wholesalePolicy,
                                     style: theme.textTheme.titleLarge?.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.w800,
@@ -257,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Mua t\u1eeb 50kg gi\u1ea3m 5% \u2022 T\u1eeb 100kg gi\u1ea3m 10%',
+                                    _bulkPromotionPolicyText,
                                     style: theme.textTheme.bodyLarge?.copyWith(
                                       color: AppColors.textPrimary,
                                       height: 1.45,
@@ -274,14 +267,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'S\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                              AppStrings.bestSellingProducts,
                               style: _sectionTitleStyle(theme),
                             ),
                           ),
                           TextButton(
                             onPressed: _openCatalog,
                             child: Text(
-                              'Xem t\u1ea5t c\u1ea3',
+                              AppStrings.viewAll,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 color: const Color(0xFF006A7C),
                                 fontWeight: FontWeight.w600,
@@ -298,8 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             return const SizedBox(
                               height: 360,
                               child: AppLoadingIndicator(
-                                message:
-                                    '\u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m b\u00e1n ch\u1ea1y',
+                                message: AppStrings.loadingBestSellingProducts,
                               ),
                             );
                           }
@@ -322,8 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             return const SizedBox(
                               height: 220,
                               child: AppEmptyState(
-                                message:
-                                    'Ch\u01b0a c\u00f3 s\u1ea3n ph\u1ea9m n\u1ed5i b\u1eadt.',
+                                message: AppStrings.noFeaturedProducts,
                                 icon: Icons.inventory_2_outlined,
                               ),
                             );
@@ -349,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                             itemBuilder: (context, index) {
                               final product = loaded.products[index];
-                              return _HotProductCard(
+                              return HotProductCard(
                                 product: product,
                                 onTap: () => _openProductDetail(product.id),
                               );
@@ -374,22 +365,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Future<List<_HomeCategorySummary>> _loadCategories() async {
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _categoriesFuture = _loadCategories();
+    });
+    _productBloc.add(
+      const ProductListRequested(featured: true, status: 'ACTIVE', size: 4),
+    );
+    await _productBloc.stream.firstWhere(
+      (state) => state is! ProductListLoading,
+    );
+  }
+
+  Future<List<HomeCategorySummary>> _loadCategories() async {
     final response = await _productRepository.getProducts(
       page: 0,
       size: 100,
       status: 'ACTIVE',
     );
 
-    final countsByCategory = <String, _HomeCategorySummary>{};
+    final countsByCategory = <String, HomeCategorySummary>{};
     for (final product in response.data ?? const <Product>[]) {
       final category = product.category;
       if (category == null) {
@@ -397,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final existing = countsByCategory[category.id];
-      countsByCategory[category.id] = _HomeCategorySummary(
+      countsByCategory[category.id] = HomeCategorySummary(
         category: category,
         previewPath:
             existing?.previewPath ??
@@ -413,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'cat-005',
       'cat-004',
     ];
-    final ordered = <_HomeCategorySummary>[];
+    final ordered = <HomeCategorySummary>[];
     for (final id in orderedCategoryIds) {
       final item = countsByCategory[id];
       if (item != null) {
@@ -445,9 +448,19 @@ class _HomeScreenState extends State<HomeScreen> {
     BuyerNavigation.push(context, AppRoutes.productList);
   }
 
+  void _openWarehouses() {
+    if (!mounted) return;
+    BuyerNavigation.push(context, AppRoutes.warehouseMap);
+  }
+
   void _openNotifications() {
     if (!mounted) return;
     BuyerNavigation.push(context, AppRoutes.notifications);
+  }
+
+  void _openProfile() {
+    if (!mounted) return;
+    BuyerNavigation.push(context, AppRoutes.profile);
   }
 
   void _openCategory(String categoryId) {
@@ -470,438 +483,70 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     BuyerNavigation.push(context, AppRoutes.productDetailPath(productId));
   }
-}
 
-class _HomeCategorySummary {
-  final Category category;
-  final String? previewPath;
-
-  const _HomeCategorySummary({
-    required this.category,
-    required this.previewPath,
-  });
-}
-
-class _NotificationButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _NotificationButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Stack(
-            alignment: Alignment.center,
-            children: const [
-              Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.primaryDark,
-                size: 28,
-              ),
-              Positioned(
-                right: 8,
-                top: 9,
-                child: CircleAvatar(radius: 4, backgroundColor: Colors.red),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PromoBanner extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _PromoBanner({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final compact = MediaQuery.sizeOf(context).width < 560;
-
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0D4C97), Color(0xFF087B87)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+  Widget _buildGreetingWidget(ThemeData theme) {
+    try {
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      return BlocBuilder<AuthBloc, AuthState>(
+        bloc: authBloc,
+        builder: (context, state) {
+          String name = AppStrings.defaultDealerName;
+          if (state is AuthAuthenticated) {
+            name = state.user.fullName;
+          }
+          return Text(
+            AppStrings.greeting(name),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: AppColors.primaryDark,
+              fontFamily: 'serif',
+              fontWeight: FontWeight.w700,
             ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x220B4F8F),
-                blurRadius: 22,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: SizedBox(height: compact ? 136 : 160),
+          );
+        },
+      );
+    } catch (_) {
+      return Text(
+        AppStrings.defaultGreeting,
+        style: theme.textTheme.headlineSmall?.copyWith(
+          color: AppColors.primaryDark,
+          fontFamily: 'serif',
+          fontWeight: FontWeight.w700,
         ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(painter: _DotPatternPainter()),
-          ),
-        ),
-        Positioned.fill(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      );
+    }
+  }
+
+  Widget _buildPendingApprovalBanner(ThemeData theme) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthAuthenticated &&
+            state.user.status == 'PENDING_APPROVAL') {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF4E5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade300),
+            ),
+            child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFA726),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                const Icon(Icons.pending_actions, color: Colors.orange),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Text(
-                    '\u01afu \u0111\u00e3i',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
+                    AppStrings.pendingAccountNotice,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.orange.shade900,
                     ),
-                  ),
-                ),
-                SizedBox(height: compact ? 6 : 10),
-                Text(
-                  'Flash Sale Th\u00e1ng 5',
-                  style:
-                      (compact
-                              ? theme.textTheme.titleMedium
-                              : theme.textTheme.titleLarge)
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                ),
-                SizedBox(height: compact ? 4 : 6),
-                Text(
-                  'Gi\u1ea3m \u0111\u1ebfn 10% cho \u0111\u01a1n h\u00e0ng t\u1eeb 100kg',
-                  style:
-                      (compact
-                              ? theme.textTheme.bodyMedium
-                              : theme.textTheme.bodyLarge)
-                          ?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            fontWeight: FontWeight.w500,
-                          ),
-                ),
-                const Spacer(),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: FilledButton(
-                    key: const Key('homeQuickSearchButton'),
-                    onPressed: onTap,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFE8F4FF),
-                      foregroundColor: AppColors.primaryDark,
-                      minimumSize: Size(0, compact ? 32 : 40),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: compact
-                          ? theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            )
-                          : null,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 12 : 18,
-                        vertical: compact ? 6 : 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: const Text('Xem ngay'),
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryThumbnailCard extends StatelessWidget {
-  final _HomeCategorySummary summary;
-  final VoidCallback onTap;
-
-  const _CategoryThumbnailCard({
-    super.key,
-    required this.summary,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final previewProvider = _imageProvider(summary.previewPath);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        width: 82,
-        child: Column(
-          children: [
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F6FF),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x12052449),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-                image: previewProvider != null
-                    ? DecorationImage(image: previewProvider, fit: BoxFit.cover)
-                    : null,
-              ),
-              child: previewProvider == null
-                  ? Icon(
-                      categorySymbolIcon(summary.category.id),
-                      color: const Color(0xFF006A7C),
-                      size: 28,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              displayCategoryName(summary.category),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  ImageProvider<Object>? _imageProvider(String? path) {
-    if (path == null || path.isEmpty) {
-      return null;
-    }
-    if (path.startsWith('assets/')) {
-      return AssetImage(path);
-    }
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return NetworkImage(path);
-    }
-    return null;
-  }
-}
-
-class _HotProductCard extends StatelessWidget {
-  final Product product;
-  final VoidCallback onTap;
-
-  const _HotProductCard({required this.product, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final imageProvider = productImageProvider(product);
-    final compact = MediaQuery.sizeOf(context).width < 560;
-    final imageHeight = compact ? 108.0 : 160.0;
-    final contentPadding = compact ? 9.0 : 14.0;
-
-    return InkWell(
-      key: Key('featuredProductCard-${product.id}'),
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x12052449),
-              blurRadius: 20,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(18),
-              ),
-              child: Container(
-                height: imageHeight,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6E7FF),
-                  image: imageProvider != null
-                      ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-                      : null,
-                ),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    margin: const EdgeInsets.all(10),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: productStockBgColor(product),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      productStockLabel(product),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: productStockTextColor(product),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  contentPadding,
-                  contentPadding,
-                  contentPadding,
-                  contentPadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayProductName(product),
-                      maxLines: compact ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          (compact
-                                  ? theme.textTheme.titleMedium?.copyWith(
-                                      fontSize: 14,
-                                      height: 1.1,
-                                    )
-                                  : theme.textTheme.titleLarge)
-                              ?.copyWith(
-                                color: AppColors.primaryDark,
-                                fontWeight: FontWeight.w800,
-                              ),
-                    ),
-                    SizedBox(height: compact ? 3 : 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: compact ? 14 : 18,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: compact ? 3 : 4),
-                        Expanded(
-                          child: Text(
-                            displayOrigin(product.origin),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                (compact
-                                        ? theme.textTheme.bodySmall?.copyWith(
-                                            fontSize: 11,
-                                            height: 1.1,
-                                          )
-                                        : theme.textTheme.bodyLarge)
-                                    ?.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    RichText(
-                      text: TextSpan(
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: MoneyFormatter.format(product.basePrice),
-                            style:
-                                (compact
-                                        ? theme.textTheme.titleMedium?.copyWith(
-                                            fontSize: 14,
-                                            height: 1.1,
-                                          )
-                                        : theme.textTheme.titleLarge)
-                                    ?.copyWith(
-                                      color: const Color(0xFF006A7C),
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                          ),
-                          TextSpan(
-                            text: '/${product.unit}',
-                            style:
-                                (compact
-                                        ? theme.textTheme.bodyMedium?.copyWith(
-                                            fontSize: 11,
-                                            height: 1.1,
-                                          )
-                                        : theme.textTheme.bodyLarge)
-                                    ?.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: compact ? 3 : 6),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 9 : 10,
-                        vertical: compact ? 3 : 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F1FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        'MOQ: ${product.minOrderQuantity}${product.unit}',
-                        style:
-                            (compact
-                                    ? theme.textTheme.bodySmall?.copyWith(
-                                        fontSize: 11,
-                                        height: 1.1,
-                                      )
-                                    : theme.textTheme.bodyMedium)
-                                ?.copyWith(color: AppColors.primaryDark),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }
@@ -915,20 +560,71 @@ TextStyle? _sectionTitleStyle(ThemeData theme) {
   );
 }
 
-class _DotPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.16);
-    const step = 20.0;
-    const radius = 1.2;
+/// Thẻ lối tắt đưa đại lý tới bản đồ kho hàng (xem vị trí + chỉ đường).
+class _WarehouseShortcutCard extends StatelessWidget {
+  final VoidCallback onTap;
 
-    for (double x = 8; x < size.width; x += step) {
-      for (double y = 8; y < size.height; y += step) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
-    }
+  const _WarehouseShortcutCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        key: const Key('homeWarehouseShortcut'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.warehouseShortcutTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppStrings.warehouseShortcutDescription,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

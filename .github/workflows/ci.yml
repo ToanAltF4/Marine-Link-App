@@ -1,0 +1,181 @@
+name: CI
+
+# Mục tiêu: chặn merge vào dev/main nếu FE/BE không pass.
+# - Luôn chạy trên mọi PR vào dev/main (và push vào dev/main).
+# - Lọc thay đổi theo path: chỉ chạy job FE khi đụng frontend/**, job BE khi đụng backend/**.
+# - Job tổng hợp "ci-success" là REQUIRED STATUS CHECK DUY NHẤT cấu hình ở branch protection,
+#   để tránh deadlock khi một job bị skip (monorepo path-filter).
+# - Coverage: CHỈ BÁO CÁO, không fail (theo quyết định dự án).
+# - Fail -> bắn thông báo vào kênh Discord (cần secret DISCORD_WEBHOOK; trống thì bỏ qua).
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.44.1"
+  JAVA_VERSION: "21"
+
+jobs:
+  # ── Kiểm tra tên branch (chỉ với PR) ───────────────────────────────────────
+  branch-name:
+    name: Branch name policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Validate head branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          BASE="${{ github.base_ref }}"
+          echo "Head branch: $BRANCH -> base: $BASE"
+          # PR release (dev -> main) gom sẵn các commit đã qua CI, không phải nhánh
+          # tính năng nên không áp quy ước đặt tên.
+          if [ "$BRANCH" = "dev" ] && [ "$BASE" = "main" ]; then
+            echo "✅ PR release dev -> main, bỏ qua quy ước tên branch."
+          elif echo "$BRANCH" | grep -Eq '^(feat|fix|test|refactor|chore|docs|hotfix)/[a-z0-9._-]+$'; then
+            echo "✅ Branch name hợp lệ."
+          else
+            echo "::error::Tên branch '$BRANCH' không đúng quy ước. Dùng: feat|fix|test|refactor|chore|docs|hotfix/<slug-thuong>"
+            exit 1
+          fi
+
+  # ── Phát hiện vùng thay đổi ─────────────────────────────────────────────────
+  detect-changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
+  # ── Frontend: analyze + test + coverage (report-only) ──────────────────────
+  frontend:
+    name: Frontend (Flutter)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: flutter pub get
+        run: flutter pub get
+      - name: flutter analyze
+        run: flutter analyze
+      - name: flutter test (with coverage)
+        run: flutter test --coverage
+      - name: Coverage summary (report-only, không block)
+        if: always()
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            COVERED=$(grep -c '^DA:.*,[1-9]' coverage/lcov.info || true)
+            TOTAL=$(grep -c '^DA:' coverage/lcov.info || true)
+            echo "Dòng có coverage: $COVERED / $TOTAL"
+            echo "### 📊 Frontend coverage (report-only)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Dòng được test: **$COVERED / $TOTAL**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Không tìm thấy coverage/lcov.info" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+          if-no-files-found: ignore
+
+  # ── Backend: build + test ──────────────────────────────────────────────────
+  backend:
+    name: Backend (Spring Boot)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Build + test
+        run: |
+          if [ -f mvnw ]; then
+            chmod +x mvnw && ./mvnw -B -ntp verify
+          else
+            mvn -B -ntp verify
+          fi
+
+  # ── Cổng tổng hợp: REQUIRED CHECK DUY NHẤT ─────────────────────────────────
+  ci-success:
+    name: ci-success
+    needs: [branch-name, detect-changes, frontend, backend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate result
+        run: |
+          echo "branch-name: ${{ needs.branch-name.result }}"
+          echo "frontend:    ${{ needs.frontend.result }}"
+          echo "backend:     ${{ needs.backend.result }}"
+          # Fail nếu bất kỳ job nào failed/cancelled. 'skipped' được coi là OK (path không đụng / không phải PR).
+          for r in "${{ needs.branch-name.result }}" "${{ needs.frontend.result }}" "${{ needs.backend.result }}"; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::Có job CI thất bại."
+              exit 1
+            fi
+          done
+          echo "✅ Tất cả check cần thiết đã pass (hoặc được skip hợp lệ)."
+
+  # ── Thông báo Discord khi CI fail (chỉ báo kênh, không ping cá nhân) ────────
+  notify-discord:
+    name: Notify Discord on failure
+    needs: [frontend, backend, ci-success]
+    if: always() && (needs.frontend.result == 'failure' || needs.backend.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send failure message to Discord channel
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK chưa cấu hình — bỏ qua thông báo."
+            exit 0
+          fi
+          ACTOR="${{ github.actor }}"
+          REPO="${{ github.repository }}"
+          REF="${{ github.head_ref || github.ref_name }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          CONTENT="❌ **CI FAIL** — \`$REPO\`\n• Branch: \`$REF\`\n• Người đẩy: \`$ACTOR\`\n• Frontend: ${{ needs.frontend.result }} · Backend: ${{ needs.backend.result }}\n• PR: ${PR_URL:-N/A}\n• Log: $RUN_URL\n→ Dev phụ trách vào sửa rồi đẩy lại để CI chạy tiếp."
+          curl -sf -H "Content-Type: application/json" \
+            -d "$(jq -n --arg c "$CONTENT" '{content:$c, username:"MarineLink CI"}')" \
+            "$DISCORD_WEBHOOK" && echo "Đã gửi Discord." || echo "Gửi Discord thất bại (không chặn CI)."

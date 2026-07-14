@@ -39,21 +39,80 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        debug: false
+
 server:
-  port: ${SERVER_PORT:8080}
+  # Render (và nhiều PaaS) tự cấp biến PORT; local dùng SERVER_PORT hoặc 8080.
+  port: ${PORT:${SERVER_PORT:8080}}
   servlet:
     context-path: /
 
 app:
+  auth:
+    pending-verification-retention-hours: ${AUTH_PENDING_VERIFICATION_RETENTION_HOURS:24}
+    pending-verification-cleanup-delay-ms: ${AUTH_PENDING_VERIFICATION_CLEANUP_DELAY_MS:3600000}
   jwt:
     secret: ${JWT_SECRET}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:1440}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8081}
+    allowed-origins: "*"
+    allowed-methods: "*"
+    allowed-headers: "*"
   supabase:
     url: ${SUPABASE_URL:https://kpmxyzvlnvjdiaiutnhe.supabase.co}
     key: ${SUPABASE_KEY:sb_publishable_xdMkwMU4bVTcsqHMYH8CWQ_cuxh24JJ_SUPER_SECRET_KEY_FOR_LOCAL_JWT}
     default-bucket: ${SUPABASE_DEFAULT_BUCKET:product-images}
+  mail:
+    from: ${MAIL_FROM}
+    from-name: ${MAIL_FROM_NAME:MarineLink}
+    otp-expiry-minutes: ${MAIL_OTP_EXPIRY_MINUTES:10}
+    # Gửi email qua HTTP API thay vì SMTP — bắt buộc khi host chặn cổng SMTP
+    # (Render chặn 25/465/587). Bỏ trống tất cả => tự động dùng SMTP (chạy local).
+    # Ưu tiên: Brevo API > Gmail API > SMTP.
+    brevo:
+      api-key: ${BREVO_API_KEY:}
+    gmail-api:
+      client-id: ${GMAIL_CLIENT_ID:}
+      client-secret: ${GMAIL_CLIENT_SECRET:}
+      refresh-token: ${GMAIL_REFRESH_TOKEN:}
+  google:
+    # Comma-separated OAuth client IDs accepted as the ID token audience
+    # (Web client ID used as serverClientId for Android/iOS google_sign_in).
+    client-ids: ${GOOGLE_CLIENT_IDS:}
+  vnpay:
+    tmn-code: ${VNPAY_TMN_CODE:${VNP_TMN_CODE:}}
+    hash-secret: ${VNPAY_HASH_SECRET:${VNP_HASH_SECRET:}}
+    payment-url: ${VNPAY_PAYMENT_URL:${VNP_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}}
+    return-url: ${VNPAY_RETURN_URL:${VNP_RETURN_URL:http://localhost:8080/api/payments/vnpay/return}}
+    frontend-return-url: ${VNPAY_FRONTEND_RETURN_URL:marinelink:///payments/vnpay/result}
+    # Đơn VNPAY chờ thanh toán quá số phút này sẽ bị tự hủy (scheduler).
+    payment-timeout-minutes: ${VNPAY_PAYMENT_TIMEOUT_MINUTES:15}
+    # Chu kỳ quét đơn quá hạn (ms).
+    expiry-check-ms: ${VNPAY_EXPIRY_CHECK_MS:60000}
+  onesignal:
+    # Push notification (OneSignal). Bỏ trống app-id/rest-api-key -> tự tắt push,
+    # broadcast in-app vẫn chạy như cũ.
+    enabled: ${ONESIGNAL_ENABLED:true}
+    app-id: ${ONESIGNAL_APP_ID:}
+    rest-api-key: ${ONESIGNAL_REST_API_KEY:}
+    base-url: ${ONESIGNAL_BASE_URL:https://onesignal.com/api/v1/notifications}
+    # 'Basic' (key cũ) hoặc 'Key' (key mới) — đổi 1 dòng nếu OneSignal đổi định dạng.
+    auth-scheme: ${ONESIGNAL_AUTH_SCHEME:Basic}
+    # Segment mặc định nhận push. OneSignal SDK v5 dùng 'Total Subscriptions'
+    # (tên cũ 'Subscribed Users' của v4 không khớp -> "not subscribed").
+    segment: ${ONESIGNAL_SEGMENT:Total Subscriptions}
 
 springdoc:
   api-docs:
@@ -65,4 +124,5 @@ springdoc:
 logging:
   level:
     com.marinelink: DEBUG
+    com.marinelink.auth.otp: DEBUG
     org.springframework.security: INFO

@@ -1,299 +1,288 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/di/service_locator.dart';
 import '../../../../app/theme/app_theme.dart';
-import '../../../../shared/widgets/buyer_back_to_home_scope.dart';
-import '../../../../shared/widgets/buyer_bottom_nav.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../shared/widgets/app_empty_state.dart';
+import '../../../../shared/widgets/app_error_state.dart';
+import '../../../../shared/widgets/app_loading_indicator.dart';
+import '../../../auth/domain/user.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../bloc/broadcast_cubit.dart';
+import '../bloc/notification_cubit.dart';
+import '../widgets/broadcast_history.dart';
+import '../widgets/notification_header.dart';
+import '../widgets/notification_sections.dart';
+import '../widgets/notification_summary.dart';
 
 class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+  /// Admin/staff see the broadcast composer + history; dealers do not.
+  final bool canManageBroadcasts;
 
-  static const List<_NotificationItem> _items = [
-    _NotificationItem(
-      title: 'Don hang #OD2305 da duoc xac nhan',
-      message: 'Kho Ca Mau da xac nhan 120kg muc kho giao vao sang mai.',
-      timeLabel: '5 phut truoc',
-      categoryLabel: 'Don hang',
-      icon: Icons.inventory_2_outlined,
-      accentColor: AppColors.primary,
-      unread: true,
-    ),
-    _NotificationItem(
-      title: 'Gia tom kho da cap nhat theo tier moi',
-      message: 'Moc gia 5kg va 10kg da duoc dieu chinh cho kenh dai ly.',
-      timeLabel: '25 phut truoc',
-      categoryLabel: 'Gia si',
-      icon: Icons.stacked_line_chart_rounded,
-      accentColor: AppColors.secondary,
-      unread: true,
-    ),
-    _NotificationItem(
-      title: 'Nhan vien ho tro da phan hoi chat',
-      message: 'Ban co tin nhan moi trong phong chat ve don hang dang giao.',
-      timeLabel: '2 gio truoc',
-      categoryLabel: 'Tin nhan',
-      icon: Icons.chat_bubble_outline_rounded,
-      accentColor: Color(0xFF7C3AED),
-      unread: false,
-    ),
-    _NotificationItem(
-      title: 'Lich seed catalog da dong bo',
-      message: 'UI buyer da doc token moi tu Stitch kit Ocean B2B.',
-      timeLabel: 'Hom qua',
-      categoryLabel: 'He thong',
-      icon: Icons.sync_rounded,
-      accentColor: Color(0xFFEA580C),
-      unread: false,
-    ),
-  ];
+  const NotificationsScreen({super.key, this.canManageBroadcasts = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => sl<NotificationCubit>()..loadNotifications(),
+        ),
+        if (canManageBroadcasts)
+          BlocProvider(create: (_) => sl<BroadcastCubit>()..loadBroadcasts()),
+      ],
+      child: _NotificationsView(canManageBroadcasts: canManageBroadcasts),
+    );
+  }
+}
+
+class _NotificationsView extends StatelessWidget {
+  final bool canManageBroadcasts;
+
+  const _NotificationsView({required this.canManageBroadcasts});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = _currentUser(context);
+
+    return Scaffold(
+      key: const Key('notificationsScreen'),
+      backgroundColor: AppColors.background,
+      bottomNavigationBar: NotificationBottomNav(user: user),
+      body: SafeArea(
+        bottom: false,
+        child: BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                final notificationCubit = context.read<NotificationCubit>();
+                final broadcastCubit = canManageBroadcasts
+                    ? context.read<BroadcastCubit>()
+                    : null;
+                await notificationCubit.loadNotifications();
+                await broadcastCubit?.loadBroadcasts();
+              },
+              child: ListView(
+                key: const Key('notificationsScrollView'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                children: [
+                  NotificationHeader(user: user),
+                  const SizedBox(height: 18),
+                  if (canManageBroadcasts) ...[
+                    const _BroadcastManager(),
+                    const SizedBox(height: 20),
+                  ],
+                  NotificationSummary(state: state),
+                  const SizedBox(height: 16),
+                  NotificationFilters(selected: state.filter),
+                  const SizedBox(height: 18),
+                  if (state.status == NotificationStatus.loading)
+                    const SizedBox(
+                      height: 360,
+                      child: AppLoadingIndicator(
+                        key: Key('notificationsLoading'),
+                        message: AppStrings.loadingNotifications,
+                      ),
+                    )
+                  else if (state.status == NotificationStatus.failure)
+                    SizedBox(
+                      height: 360,
+                      child: AppErrorState(
+                        key: const Key('notificationsError'),
+                        message:
+                            state.errorMessage ??
+                            AppStrings.notificationsLoadFailed,
+                        onRetry: () => context
+                            .read<NotificationCubit>()
+                            .loadNotifications(),
+                      ),
+                    )
+                  else if (state.status == NotificationStatus.empty)
+                    const SizedBox(
+                      height: 360,
+                      child: AppEmptyState(
+                        key: Key('notificationsEmpty'),
+                        message: AppStrings.notificationsEmpty,
+                        icon: Icons.notifications_none_rounded,
+                      ),
+                    )
+                  else
+                    NotificationSections(state: state, user: user),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  User? _currentUser(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    return authState is AuthAuthenticated ? authState.user : null;
+  }
+}
+
+/// Admin/staff broadcast composer + sent-history with delete.
+class _BroadcastManager extends StatefulWidget {
+  const _BroadcastManager();
+
+  @override
+  State<_BroadcastManager> createState() => _BroadcastManagerState();
+}
+
+class _BroadcastManagerState extends State<_BroadcastManager> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final created = await context.read<BroadcastCubit>().createBroadcast(
+      title: _titleController.text,
+      body: _bodyController.text,
+    );
+    if (created && mounted) {
+      _titleController.clear();
+      _bodyController.clear();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unreadItems = _items.where((item) => item.unread).toList();
-    final olderItems = _items.where((item) => !item.unread).toList();
-
-    return BuyerBackToHomeScope(
-      child: Scaffold(
-        bottomNavigationBar: const BuyerBottomNav(),
-        body: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+    return BlocConsumer<BroadcastCubit, BroadcastState>(
+      listenWhen: (prev, curr) =>
+          prev.infoMessage != curr.infoMessage ||
+          prev.errorMessage != curr.errorMessage,
+      listener: (context, state) {
+        final messenger = ScaffoldMessenger.of(context);
+        if (state.infoMessage != null) {
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.infoMessage!)));
+        } else if (state.errorMessage != null) {
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+        }
+      },
+      builder: (context, state) {
+        return Container(
+          key: const Key('broadcastComposer'),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  const Icon(Icons.campaign_outlined, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppStrings.broadcastCreateTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
               Text(
-                'Thong bao',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+                AppStrings.broadcastCreateSubtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Theo doi cap nhat don hang, chat va thay doi gia theo nhu cau mua si.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
+              const SizedBox(height: 14),
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _NotificationSummaryCard(
-                        label: 'Chua doc',
-                        value: '${unreadItems.length}',
-                        icon: Icons.mark_chat_unread_outlined,
+                    TextFormField(
+                      key: const Key('broadcastTitleField'),
+                      controller: _titleController,
+                      maxLength: 200,
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.notificationTitleLabel,
+                        counterText: '',
                       ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? AppStrings.notificationTitleRequired
+                          : null,
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: _NotificationSummaryCard(
-                        label: 'Da dong bo',
-                        value: 'Realtime',
-                        icon: Icons.sync_rounded,
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('broadcastBodyField'),
+                      controller: _bodyController,
+                      minLines: 2,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.notificationBodyLabel,
                       ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? AppStrings.notificationBodyRequired
+                          : null,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 22),
-              Text(
-                'Moi nhat',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final item in unreadItems) ...[
-                _NotificationTile(item: item),
-                const SizedBox(height: 12),
-              ],
-              const SizedBox(height: 10),
-              Text(
-                'Truoc do',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final item in olderItems) ...[
-                _NotificationTile(item: item),
-                const SizedBox(height: 12),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationItem {
-  final String title;
-  final String message;
-  final String timeLabel;
-  final String categoryLabel;
-  final IconData icon;
-  final Color accentColor;
-  final bool unread;
-
-  const _NotificationItem({
-    required this.title,
-    required this.message,
-    required this.timeLabel,
-    required this.categoryLabel,
-    required this.icon,
-    required this.accentColor,
-    required this.unread,
-  });
-}
-
-class _NotificationSummaryCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _NotificationSummaryCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSky,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.primary),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-class _NotificationTile extends StatelessWidget {
-  final _NotificationItem item;
-
-  const _NotificationTile({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: item.unread
-              ? item.accentColor.withValues(alpha: 0.24)
-              : AppColors.border,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: item.accentColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(item.icon, color: item.accentColor),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    if (item.unread)
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: item.accentColor,
-                          shape: BoxShape.circle,
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('broadcastSubmitButton'),
+                        onPressed: state.submitting ? null : _submit,
+                        icon: state.submitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.send_rounded),
+                        label: Text(
+                          state.submitting
+                              ? AppStrings.sending
+                              : AppStrings.sendNotification,
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.message,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _NotificationMetaChip(
-                      label: item.categoryLabel,
-                      color: item.accentColor,
-                    ),
-                    _NotificationMetaChip(
-                      label: item.timeLabel,
-                      color: AppColors.textSecondary,
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                AppStrings.broadcastHistoryTitle,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              BroadcastHistory(state: state),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NotificationMetaChip extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _NotificationMetaChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+        );
+      },
     );
   }
 }

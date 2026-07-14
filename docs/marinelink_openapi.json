@@ -33,7 +33,7 @@
         "type": "object",
         "required": ["cartId", "isEmpty", "items", "totalItemCount", "totalSelectedItemCount", "subtotalAmount"],
         "properties": {
-          "cartId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440008" },
+          "cartId": { "type": "string", "format": "uuid", "nullable": true, "example": "550e8400-e29b-41d4-a716-446655440008" },
           "isEmpty": { "type": "boolean", "example": false },
           "items": {
             "type": "array",
@@ -46,7 +46,7 @@
       },
       "CartItemResponse": {
         "type": "object",
-        "required": ["productId", "productName", "productImageUrl", "unit", "quantity", "selected", "unitPrice", "lineTotal"],
+        "required": ["productId", "productName", "productImageUrl", "unit", "quantity", "selected", "baseUnitPrice", "unitPrice", "lineTotal", "minOrderQuantity", "stockQuantity", "priceTiers"],
         "properties": {
           "productId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440003" },
           "productName": { "type": "string", "example": "Muc kho loai 1" },
@@ -55,8 +55,25 @@
           "quantity": { "type": "integer", "minimum": 1, "example": 10 },
           "selected": { "type": "boolean", "example": true },
           "selectedPriceTierId": { "type": "string", "format": "uuid", "nullable": true, "example": "550e8400-e29b-41d4-a716-446655440007" },
+          "baseUnitPrice": { "type": "number", "format": "double", "example": 450000 },
           "unitPrice": { "type": "number", "format": "double", "example": 420000 },
-          "lineTotal": { "type": "number", "format": "double", "example": 4200000 }
+          "lineTotal": { "type": "number", "format": "double", "example": 4200000 },
+          "minOrderQuantity": { "type": "integer", "minimum": 1, "example": 2 },
+          "stockQuantity": { "type": "integer", "minimum": 0, "example": 120 },
+          "priceTiers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CartPriceTierResponse" }
+          }
+        }
+      },
+      "CartPriceTierResponse": {
+        "type": "object",
+        "required": ["id", "minQuantity", "unitPrice"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440007" },
+          "minQuantity": { "type": "integer", "minimum": 1, "example": 10 },
+          "maxQuantity": { "type": "integer", "nullable": true, "example": null },
+          "unitPrice": { "type": "number", "format": "double", "example": 420000 }
         }
       },
       "CartItemCreateRequest": {
@@ -170,6 +187,68 @@
         "responses": {
           "200": {
             "description": "Login successful"
+          }
+        }
+      }
+    },
+    "/api/auth/email-availability": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Check whether an email can be used for registration",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "example": "daily-new@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email availability result"
+          },
+          "400": {
+            "description": "Invalid email format"
+          }
+        }
+      }
+    },
+    "/api/auth/phone-availability": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Check whether a phone number can be used for registration",
+        "parameters": [
+          {
+            "name": "phone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(0|\\+84)[0-9]{9,10}$"
+            },
+            "example": "0912345678"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            },
+            "example": "daily-new@example.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phone availability result"
+          },
+          "400": {
+            "description": "Invalid phone or email format"
           }
         }
       }
@@ -344,7 +423,7 @@
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 0 } },
           { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20 } },
           { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search keyword" },
-          { "name": "categoryId", "in": "query", "schema": { "type": "string" }, "description": "UUID format category ID" },
+          { "name": "categoryId", "in": "query", "schema": { "type": "string", "format": "uuid" }, "description": "Category public UUID. Parent category IDs include products from direct child categories." },
           { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "OUT_OF_STOCK", "DISABLED"] } },
           { "name": "featured", "in": "query", "schema": { "type": "boolean" } },
           { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest", "price_asc", "price_desc", "name_asc", "name_desc"] }, "description": "Whitelisted product sort key" }
@@ -352,6 +431,17 @@
         "responses": {
           "200": {
             "description": "Seafood list"
+          }
+        }
+      }
+    },
+    "/api/products/categories": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List active product category tree",
+        "responses": {
+          "200": {
+            "description": "Active category hierarchy"
           }
         }
       }
@@ -520,8 +610,20 @@
                   "receiverName": { "type": "string", "example": "Nguyễn Văn A" },
                   "receiverPhone": { "type": "string", "example": "0912345678" },
                   "shippingAddress": { "type": "string", "example": "Cần Thơ" },
-                  "paymentMethod": { "type": "string", "enum": ["COD", "BANK_TRANSFER"], "example": "COD" },
-                  "note": { "type": "string", "example": "Giao vào buổi sáng trước 11h." }
+                  "paymentMethod": { "type": "string", "enum": ["COD", "BANK_TRANSFER", "VNPAY"], "example": "COD" },
+                  "note": { "type": "string", "example": "Giao vào buổi sáng trước 11h." },
+                  "items": {
+                    "type": "array",
+                    "description": "Optional checkout fallback items when server-side cart is not yet synced. Backend recalculates all prices.",
+                    "items": {
+                      "type": "object",
+                      "required": ["productId", "quantity"],
+                      "properties": {
+                        "productId": { "type": "string", "format": "uuid", "example": "550e8400-e29b-41d4-a716-446655440012" },
+                        "quantity": { "type": "integer", "minimum": 1, "example": 2 }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -536,7 +638,7 @@
       "get": {
         "tags": ["Commerce"],
         "summary": "List orders by role scope",
-        "description": "USER sees only own orders. STAFF and ADMIN can see orders according to backend role filters.",
+        "description": "USER sees only own orders. STAFF and ADMIN can see orders according to backend role filters. Order list items include paymentMethod and paymentStatus so clients can show BANK_TRANSFER/VNPAY pending orders as waiting for payment instead of waiting for approval.",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "default": 0 } },
@@ -680,6 +782,24 @@
         "responses": {
           "200": {
             "description": "Notification status updated"
+          }
+        }
+      }
+    },
+    "/api/payments/vnpay/return": {
+      "get": {
+        "tags": ["Commerce"],
+        "summary": "Handle VNPAY browser return and redirect to frontend app",
+        "description": "Backend verifies VNPAY checksum, updates payment status, then redirects the browser to the configured frontend VNPAY result route.",
+        "responses": {
+          "302": {
+            "description": "Redirect to frontend VNPAY result screen",
+            "headers": {
+              "Location": {
+                "schema": { "type": "string", "format": "uri" },
+                "example": "marinelink:///payments/vnpay/result?success=true&orderCode=ML-20260614-0027&paymentStatus=PAID&responseCode=00"
+              }
+            }
           }
         }
       }

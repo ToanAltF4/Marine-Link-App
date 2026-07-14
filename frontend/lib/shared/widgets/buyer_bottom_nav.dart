@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/router/app_router.dart';
 import '../../app/theme/app_theme.dart';
+import '../../core/constants/app_strings.dart';
 import '../navigation/buyer_navigation.dart';
 
 enum BuyerBottomNavTab { home, products, cart, chat, profile }
@@ -38,7 +39,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.home_outlined,
               activeIcon: Icons.home_outlined,
-              label: 'Trang ch\u1ee7',
+              label: AppStrings.homeTitle,
               onTap: () => _go(context, AppRoutes.home),
             ),
             _BuyerNavItem(
@@ -46,7 +47,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.sailing_outlined,
               activeIcon: Icons.sailing_outlined,
-              label: 'S\u1ea3n ph\u1ea9m',
+              label: AppStrings.productsTitle,
               onTap: () => _go(context, AppRoutes.productList),
             ),
             _BuyerNavItem(
@@ -54,7 +55,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.shopping_cart_outlined,
               activeIcon: Icons.shopping_cart_outlined,
-              label: 'Gi\u1ecf h\u00e0ng',
+              label: AppStrings.cartTitle,
               onTap: () => _go(context, AppRoutes.cart),
             ),
             _BuyerNavItem(
@@ -62,7 +63,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.chat_bubble_outline_rounded,
               activeIcon: Icons.chat_bubble_outline_rounded,
-              label: 'Chat',
+              label: AppStrings.chatTitle,
               onTap: () => _go(context, AppRoutes.chat),
             ),
             _BuyerNavItem(
@@ -70,7 +71,7 @@ class BuyerBottomNav extends StatelessWidget {
               currentTab: currentTab,
               icon: Icons.person_outline_rounded,
               activeIcon: Icons.person_outline_rounded,
-              label: 'T\u00e0i kho\u1ea3n',
+              label: AppStrings.accountTitle,
               onTap: () => _go(context, AppRoutes.profile),
             ),
           ],

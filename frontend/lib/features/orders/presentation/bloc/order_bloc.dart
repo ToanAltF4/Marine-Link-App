@@ -2,6 +2,8 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:marinelink/core/constants/app_strings.dart';
+import '../../../../core/errors/user_facing_error.dart';
 import '../../domain/order.dart';
 import '../../domain/order_repository.dart';
 
@@ -39,7 +41,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(OrderListError(response.message ?? 'Lỗi tải danh sách đơn hàng'));
+        emit(
+          OrderListError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: AppStrings.orderListLoadError,
+            ),
+          ),
+        );
         return;
       }
 
@@ -53,13 +62,18 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
             orders: orders,
             currentPage: pagination?.page ?? 0,
             totalPages: pagination?.totalPages ?? 1,
-            hasMore: pagination != null &&
+            hasMore:
+                pagination != null &&
                 pagination.page < pagination.totalPages - 1,
           ),
         );
       }
     } catch (e) {
-      emit(OrderListError(e.toString()));
+      emit(
+        OrderListError(
+          userFacingErrorMessage(e, fallback: AppStrings.orderListLoadError),
+        ),
+      );
     }
   }
 
@@ -72,13 +86,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       final response = await _orderRepository.getOrderDetail(event.orderId);
 
       if (!response.success || response.data == null) {
-        emit(OrderDetailError(response.message ?? 'Không tìm thấy đơn hàng'));
+        emit(
+          OrderDetailError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: AppStrings.orderDetailNotFound,
+            ),
+          ),
+        );
         return;
       }
 
       emit(OrderDetailLoaded(response.data!));
     } catch (e) {
-      emit(OrderDetailError(e.toString()));
+      emit(
+        OrderDetailError(
+          userFacingErrorMessage(e, fallback: AppStrings.orderDetailNotFound),
+        ),
+      );
     }
   }
 
@@ -97,13 +122,24 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (!response.success || response.data == null) {
-        emit(OrderCreateError(response.message ?? 'Lỗi tạo đơn hàng'));
+        emit(
+          OrderCreateError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: AppStrings.orderCreateError,
+            ),
+          ),
+        );
         return;
       }
 
       emit(OrderCreateSuccess(response.data!));
     } catch (e) {
-      emit(OrderCreateError(e.toString()));
+      emit(
+        OrderCreateError(
+          userFacingErrorMessage(e, fallback: AppStrings.orderCreateError),
+        ),
+      );
     }
   }
 
@@ -120,9 +156,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       );
 
       if (!response.success) {
-        emit(OrderStatusUpdateError(
-          response.message ?? 'Lỗi cập nhật trạng thái đơn hàng',
-        ));
+        emit(
+          OrderStatusUpdateError(
+            userFacingResponseMessage(
+              response.message,
+              fallback: AppStrings.orderStatusUpdateError,
+            ),
+          ),
+        );
         return;
       }
 
@@ -133,7 +174,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         ),
       );
     } catch (e) {
-      emit(OrderStatusUpdateError(e.toString()));
+      emit(
+        OrderStatusUpdateError(
+          userFacingErrorMessage(
+            e,
+            fallback: AppStrings.orderStatusUpdateError,
+          ),
+        ),
+      );
     }
   }
 }
