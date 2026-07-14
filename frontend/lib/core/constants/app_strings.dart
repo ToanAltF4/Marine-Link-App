@@ -498,6 +498,9 @@ abstract final class AppStrings {
   static const productDetailNotFound = 'Không tìm thấy sản phẩm.';
 
   static const warehouseTitle = 'Kho hàng';
+  static const warehouseShortcutTitle = 'Vị trí kho hàng';
+  static const warehouseShortcutDescription =
+      'Xem kho trên bản đồ và chỉ đường tới nơi lấy hàng.';
   static const warehouseEmpty = 'Chưa có kho hàng đang hoạt động.';
   static const warehouseLoadFailed = 'Không tải được danh sách kho hàng.';
   static const locationChecking =

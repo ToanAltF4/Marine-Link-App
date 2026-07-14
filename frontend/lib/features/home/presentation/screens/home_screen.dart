@@ -161,6 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 22),
                       PromoBanner(onTap: _submitQuickSearch),
+                      const SizedBox(height: 18),
+                      _WarehouseShortcutCard(onTap: _openWarehouses),
                       const SizedBox(height: 22),
                       Text(
                         AppStrings.productCategories,
@@ -446,6 +448,11 @@ class _HomeScreenState extends State<HomeScreen> {
     BuyerNavigation.push(context, AppRoutes.productList);
   }
 
+  void _openWarehouses() {
+    if (!mounted) return;
+    BuyerNavigation.push(context, AppRoutes.warehouseMap);
+  }
+
   void _openNotifications() {
     if (!mounted) return;
     BuyerNavigation.push(context, AppRoutes.notifications);
@@ -551,4 +558,73 @@ TextStyle? _sectionTitleStyle(ThemeData theme) {
     height: 26 / 20,
     fontWeight: FontWeight.w600,
   );
+}
+
+/// Thẻ lối tắt đưa đại lý tới bản đồ kho hàng (xem vị trí + chỉ đường).
+class _WarehouseShortcutCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _WarehouseShortcutCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        key: const Key('homeWarehouseShortcut'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.warehouseShortcutTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppStrings.warehouseShortcutDescription,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

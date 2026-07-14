@@ -96,6 +96,8 @@ void main() {
     expect(find.byKey(const Key('adminLowStockCard')), findsOneWidget);
     expect(find.byKey(const Key('adminActiveUsersCard')), findsOneWidget);
     expect(find.byKey(const Key('adminRecentOrdersSection')), findsOneWidget);
+    // Admin có lối tắt vào bản đồ kho hàng.
+    expect(find.byKey(const Key('adminWarehousesShortcut')), findsOneWidget);
 
     expect(find.text('18 đơn'), findsOneWidget);
     expect(find.text('5 mã'), findsOneWidget);

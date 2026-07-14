@@ -9,12 +9,14 @@ class OperationsSection extends StatelessWidget {
   final VoidCallback onOpenOrders;
   final VoidCallback onOpenProducts;
   final VoidCallback onOpenUsers;
+  final VoidCallback onOpenWarehouses;
 
   const OperationsSection({
     super.key,
     required this.onOpenOrders,
     required this.onOpenProducts,
     required this.onOpenUsers,
+    required this.onOpenWarehouses,
   });
 
   @override
@@ -50,6 +52,14 @@ class OperationsSection extends StatelessWidget {
           title: AppStrings.ordersMonitoring,
           description: AppStrings.adminOrdersOperationDescription,
           onTap: onOpenOrders,
+        ),
+        const SizedBox(height: 10),
+        ActionCard(
+          key: const Key('adminWarehousesShortcut'),
+          icon: Icons.location_on_outlined,
+          title: AppStrings.warehouseTitle,
+          description: AppStrings.warehouseShortcutDescription,
+          onTap: onOpenWarehouses,
         ),
       ],
     );
