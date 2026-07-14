@@ -86,6 +86,8 @@ class _AdminDashboardView extends StatelessWidget {
                                   context.push(AppRoutes.adminProducts),
                               onOpenUsers: () =>
                                   context.push(AppRoutes.adminUsers),
+                              onOpenWarehouses: () =>
+                                  context.push(AppRoutes.adminWarehouses),
                             ),
                             const SizedBox(height: 20),
                             RecentOrdersSection(

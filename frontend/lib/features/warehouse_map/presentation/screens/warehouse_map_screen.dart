@@ -28,6 +28,9 @@ typedef WarehouseMapLauncher =
 
 class WarehouseMapScreen extends StatelessWidget {
   final bool staffMode;
+
+  /// Admin xem kho: dùng thanh điều hướng + nút back của admin.
+  final bool adminMode;
   final WarehouseMapLauncher? mapLauncher;
   final WarehouseLocationService? locationService;
 
@@ -40,6 +43,7 @@ class WarehouseMapScreen extends StatelessWidget {
   const WarehouseMapScreen({
     super.key,
     this.staffMode = false,
+    this.adminMode = false,
     this.mapLauncher,
     this.locationService,
     this.mapController,
@@ -61,6 +65,7 @@ class WarehouseMapScreen extends StatelessWidget {
       ],
       child: _WarehouseMapView(
         staffMode: staffMode,
+        adminMode: adminMode,
         mapLauncher: mapLauncher ?? _openGoogleMaps,
         mapController: mapController,
         tileProvider: tileProvider,
@@ -71,22 +76,30 @@ class WarehouseMapScreen extends StatelessWidget {
 
 class _WarehouseMapView extends StatelessWidget {
   final bool staffMode;
+  final bool adminMode;
   final WarehouseMapLauncher mapLauncher;
   final MapController? mapController;
   final TileProvider? tileProvider;
 
   const _WarehouseMapView({
     required this.staffMode,
+    required this.adminMode,
     required this.mapLauncher,
     this.mapController,
     this.tileProvider,
   });
 
+  /// Nơi quay về khi bấm back — theo role đang xem.
+  String get _backLocation {
+    if (adminMode) return AppRoutes.adminDashboard;
+    if (staffMode) return AppRoutes.staffDashboard;
+    return AppRoutes.home;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBackExitScope(
-      onFirstBack: (context) =>
-          context.go(staffMode ? AppRoutes.staffDashboard : AppRoutes.home),
+      onFirstBack: (context) => context.go(_backLocation),
       child: Scaffold(
         key: const Key('warehouseMapScreen'),
         backgroundColor: AppColors.background,
@@ -95,13 +108,13 @@ class _WarehouseMapView extends StatelessWidget {
             key: const Key('warehouseMapBackButton'),
             tooltip: AppStrings.back,
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            onPressed: () => context.go(
-              staffMode ? AppRoutes.staffDashboard : AppRoutes.home,
-            ),
+            onPressed: () => context.go(_backLocation),
           ),
           title: const Text(AppStrings.warehouseTitle),
         ),
-        bottomNavigationBar: staffMode
+        bottomNavigationBar: adminMode
+            ? const AdminBottomNav(currentTab: AdminBottomNavTab.dashboard)
+            : staffMode
             ? const StaffBottomNav(currentTab: StaffBottomNavTab.work)
             : const BuyerBottomNav(currentTab: BuyerBottomNavTab.home),
         body: BlocBuilder<WarehouseMapCubit, WarehouseMapState>(

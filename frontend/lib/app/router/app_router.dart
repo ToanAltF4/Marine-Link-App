@@ -76,6 +76,7 @@ abstract class AppRoutes {
   static const adminProducts = '/admin/products';
   static const adminUsers = '/admin/users';
   static const adminUserDetail = '/admin/users/detail';
+  static const adminWarehouses = '/admin/warehouses';
   static const adminOrders = '/admin/orders';
   static const adminNotifications = '/admin/notifications';
   static const adminProfile = '/admin/profile';
@@ -333,6 +334,15 @@ class AppRouter {
             path: 'revenue',
             builder: (context, state) =>
                 const AdminRoleGuard(child: AdminRevenueScreen()),
+          ),
+          GoRoute(
+            path: 'warehouses',
+            builder: (context, state) => const AdminRoleGuard(
+              child: WarehouseMapScreen(
+                key: Key('adminWarehousesScreen'),
+                adminMode: true,
+              ),
+            ),
           ),
           GoRoute(
             path: 'products',

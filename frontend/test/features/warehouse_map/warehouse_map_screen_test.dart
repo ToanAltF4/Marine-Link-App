@@ -5,6 +5,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marinelink/app/di/service_locator.dart';
 import 'package:marinelink/core/api/api_response.dart';
+import 'package:marinelink/shared/widgets/buyer_bottom_nav.dart';
+import 'package:marinelink/shared/widgets/role_bottom_nav.dart';
 import 'package:marinelink/features/warehouse_map/domain/warehouse.dart';
 import 'package:marinelink/features/warehouse_map/domain/warehouse_location_service.dart';
 import 'package:marinelink/features/warehouse_map/domain/warehouse_repository.dart';
@@ -40,6 +42,8 @@ Future<void> _pumpScreen(
   // Bản đồ OSM thật cao hơn khung minh hoạ cũ nên viewport test cần cao hơn để
   // thẻ kho + nút "Chỉ đường" nằm trọn trong màn.
   Size size = const Size(430, 1400),
+  bool adminMode = false,
+  bool staffMode = false,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
@@ -50,6 +54,8 @@ Future<void> _pumpScreen(
   await tester.pumpWidget(
     MaterialApp(
       home: WarehouseMapScreen(
+        adminMode: adminMode,
+        staffMode: staffMode,
         mapLauncher: mapLauncher ?? (_, _) async => true,
         locationService: locationService ?? _FakeLocationService.denied(),
         mapController: mapController,
@@ -375,6 +381,38 @@ void main() {
     );
     expect(uri.queryParameters['origin'], '10.02,105.78');
   });
+
+  testWidgets('admin xem kho: dùng thanh điều hướng của admin', (tester) async {
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_warehouse]),
+      ),
+    );
+
+    await _pumpScreen(tester, adminMode: true);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AdminBottomNav), findsOneWidget);
+    expect(find.byType(BuyerBottomNav), findsNothing);
+  });
+
+  testWidgets('đại lý xem kho: dùng thanh điều hướng của đại lý', (
+    tester,
+  ) async {
+    _registerRepo(
+      _FakeRepo(
+        () async =>
+            const ApiResponse(success: true, message: 'OK', data: [_warehouse]),
+      ),
+    );
+
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BuyerBottomNav), findsOneWidget);
+    expect(find.byType(AdminBottomNav), findsNothing);
+  });
 }
 
 Warehouse _makeWarehouse(String id, double latitude, double longitude) {
@@ -388,6 +426,8 @@ Warehouse _makeWarehouse(String id, double latitude, double longitude) {
     longitude: longitude,
     isActive: true,
   );
+
+
 }
 
 /// 5 kho — nhiều hơn 4 để chắc chắn bản đồ không cắt bớt danh sách.
