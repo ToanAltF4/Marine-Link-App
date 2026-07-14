@@ -37,8 +37,13 @@ jobs:
       - name: Validate head branch name
         run: |
           BRANCH="${{ github.head_ref }}"
-          echo "Head branch: $BRANCH"
-          if echo "$BRANCH" | grep -Eq '^(feat|fix|test|refactor|chore|docs|hotfix)/[a-z0-9._-]+$'; then
+          BASE="${{ github.base_ref }}"
+          echo "Head branch: $BRANCH -> base: $BASE"
+          # PR release (dev -> main) gom sẵn các commit đã qua CI, không phải nhánh
+          # tính năng nên không áp quy ước đặt tên.
+          if [ "$BRANCH" = "dev" ] && [ "$BASE" = "main" ]; then
+            echo "✅ PR release dev -> main, bỏ qua quy ước tên branch."
+          elif echo "$BRANCH" | grep -Eq '^(feat|fix|test|refactor|chore|docs|hotfix)/[a-z0-9._-]+$'; then
             echo "✅ Branch name hợp lệ."
           else
             echo "::error::Tên branch '$BRANCH' không đúng quy ước. Dùng: feat|fix|test|refactor|chore|docs|hotfix/<slug-thuong>"
